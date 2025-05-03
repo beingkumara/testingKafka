@@ -5,7 +5,7 @@
     import org.springframework.web.bind.annotation.RequestMapping;
     import org.springframework.web.bind.annotation.RestController;
     import com.raceIQ.authentication.service.AuthenticationService;
-    import com.raceIQ.authentication.models.LoginRequest;
+    import com.raceIQ.authentication.models.AuthRequest;
     import com.raceIQ.authentication.models.User;
 
     @RequestMapping("/api/raceIQ/v1/auth")
@@ -19,7 +19,7 @@
         }
 
         @PostMapping("/login")
-        public String login(@RequestBody LoginRequest request) {
+        public String login(@RequestBody AuthRequest request) {
             User user = new User(request.getUsername(), request.getPassword());
             boolean isAuthenticated = authenticationService.login(user);
             if (isAuthenticated) {
@@ -30,8 +30,8 @@
         }
 
         @PostMapping("/register")
-        public String register(@RequestBody LoginRequest request){
-            authenticationService.register(request.getUsername(), request.getPassword());
+        public String register(@RequestBody AuthRequest request){
+            authenticationService.register(request);
             return "Registration successful";
         }
     }

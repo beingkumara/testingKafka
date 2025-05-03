@@ -1,6 +1,8 @@
 package com.raceIQ.authentication.impl;
 
 import org.springframework.stereotype.Service;
+
+import com.raceIQ.authentication.models.AuthRequest;
 import com.raceIQ.authentication.models.User;
 import com.raceIQ.authentication.repository.UserRepository;
 import com.raceIQ.authentication.security.JwtTokenProvider;
@@ -29,17 +31,15 @@ public class AuthenticationServiceImpl {
         return true;
     }
 
-    public void register(String username, String password) {
+    public void register(AuthRequest request) {
         // Dummy registration logic for demonstration purposes
-        User user = userRepository.findByUsername(username);
+        User user = userRepository.findByUsername(request.getUsername());
         if (user != null) {
-            System.out.println("User already exists: " + username);
+            System.out.println("User already exists: " + request.getUsername());
             return;
         }
-        user = new User();
-        user.setUsername(username);
-        user.setPassword(password);
+        user = new User(request.getUsername(), request.getPassword(),request.getEmail());
         userRepository.save(user);
-        System.out.println("User registered: " + username);
+        System.out.println("User registered: " + request.getUsername());
     }
 }

@@ -4,3 +4,7 @@ spring:
       host: localhost
       port: 27017
       database: authentication
+
+jwt:
+  secret: nuvvuErripukuviNuvvu
+  expiration: 86400

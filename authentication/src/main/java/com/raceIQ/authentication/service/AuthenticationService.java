@@ -1,5 +1,6 @@
 package com.raceIQ.authentication.service;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.raceIQ.authentication.impl.AuthenticationServiceImpl;
@@ -15,11 +16,11 @@ public class AuthenticationService {
         this.authenticationServiceImpl = authenticationServiceImpl;
     }
 
-    public boolean login(User user) {
+    public ResponseEntity<?> login(User user) {
         return authenticationServiceImpl.login(user);
     }
 
-    public void register(AuthRequest authRequest) {
-        authenticationServiceImpl.register(authRequest);
+    public ResponseEntity<?> register(AuthRequest authRequest) {
+        return authenticationServiceImpl.register(authRequest);
     }
 }

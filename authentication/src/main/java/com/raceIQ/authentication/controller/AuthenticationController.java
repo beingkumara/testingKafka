@@ -1,6 +1,10 @@
     package com.raceIQ.authentication.controller;
 
-    import org.springframework.web.bind.annotation.PostMapping;
+    import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
     import org.springframework.web.bind.annotation.RequestBody;
     import org.springframework.web.bind.annotation.RequestMapping;
     import org.springframework.web.bind.annotation.RestController;
@@ -19,19 +23,13 @@
         }
 
         @PostMapping("/login")
-        public String login(@RequestBody AuthRequest request) {
+        public ResponseEntity<?> login(@RequestBody AuthRequest request) {
             User user = new User(request.getUsername(), request.getPassword());
-            boolean isAuthenticated = authenticationService.login(user);
-            if (isAuthenticated) {
-                return "Login successful";
-            } else {
-                return "Invalid username or password";
-            }
+           return authenticationService.login(user);
         }
 
         @PostMapping("/register")
-        public String register(@RequestBody AuthRequest request){
-            authenticationService.register(request);
-            return "Registration successful";
+        public ResponseEntity<?> register(@RequestBody AuthRequest request){
+            return authenticationService.register(request);
         }
     }

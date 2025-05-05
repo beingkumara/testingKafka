@@ -1,45 +1,70 @@
 package com.raceIQ.authentication.security;
+
+import java.util.Base64;
 import java.util.Date;
 
+import jakarta.annotation.PostConstruct;
+import javax.crypto.SecretKey;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import com.raceIQ.authentication.models.User;
-
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtTokenProvider {
-    @Value("${jwt.secret.key}")
-    private String secretKey;
+
+    @Value("${jwt.secret}")
+    private String secretKeyRaw;
 
     @Value("${jwt.expiration}")
     private long expirationTime;
 
-    public String generateToken(User user){
-        return Jwts.builder().
-                setSubject(user.getUsername()).
-                setIssuedAt(new Date()).
-                setExpiration(new Date(System.currentTimeMillis() + expirationTime)).
-                signWith(SignatureAlgorithm.HS512, secretKey).
-                compact();
+    private SecretKey secretKey;
+
+    @PostConstruct
+    public void init() {
+        byte[] keyBytes = Base64.getDecoder().decode(secretKeyRaw);
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String getUsernameFromToken(String token){
-        return Jwts.parser().
-                setSigningKey(secretKey).
-                parseClaimsJws(token).
-                getBody().
-                getSubject();
+    public String generateToken(UserDetails user) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expirationTime);
+
+        return Jwts.builder()
+                .setSubject(user.getUsername())
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(secretKey, SignatureAlgorithm.HS512)
+                .compact();
     }
 
-    public boolean validateToken(String token){
+    public String getUsernameFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    public boolean validateToken(String token) {
         try {
-            Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+            Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token);
             return true;
-        } catch (Exception e) {
-            return false;
+        } catch (ExpiredJwtException e) {
+            System.out.println("JWT expired: " + e.getMessage());
+        } catch (MalformedJwtException e) {
+            System.out.println("Malformed JWT: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("JWT claims string is empty: " + e.getMessage());
         }
+        return false;
     }
 }

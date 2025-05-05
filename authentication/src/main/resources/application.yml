@@ -6,5 +6,5 @@ spring:
       database: authentication
 
 jwt:
-  secret: nuvvuErripukuviNuvvu
+  secret: uYJlJcHDM2whTb4tEDvwMIjupXK2H8TGdDbmlVgEIE+1PQ3C6i8eK+efPd2kO6UOMIj+TQ7bfkUvm59Ht8VXLg==
   expiration: 86400

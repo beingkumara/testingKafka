@@ -5,9 +5,11 @@ import java.util.Collections;
 import java.util.Date;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+@Document(collection = "user")
 public class User implements UserDetails {
     @Id
     private String id;
@@ -73,6 +75,12 @@ public class User implements UserDetails {
     public void setEmail(String email) {
         this.email = email;
     }
+
+    public String getId() {
+        return id;
+    }
+
+
 
 
     @Override

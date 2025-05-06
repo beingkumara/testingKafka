@@ -23,4 +23,12 @@ public class AuthenticationService {
     public ResponseEntity<?> register(AuthRequest authRequest) {
         return authenticationServiceImpl.register(authRequest);
     }
+
+    public ResponseEntity<?> forgotPassword(String username){
+        return authenticationServiceImpl.forgotPassword(username);
+    }
+
+    public ResponseEntity<?> resetPassword(String token, String newPassword){
+        return authenticationServiceImpl.resetPassword(token,newPassword);
+    }
 }

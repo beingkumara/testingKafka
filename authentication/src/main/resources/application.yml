@@ -4,7 +4,29 @@ spring:
       host: localhost
       port: 27017
       database: authentication
+  
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: kumaracads@gmail.com
+    password: dxxm duqo jwjl ppbf
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 jwt:
   secret: uYJlJcHDM2whTb4tEDvwMIjupXK2H8TGdDbmlVgEIE+1PQ3C6i8eK+efPd2kO6UOMIj+TQ7bfkUvm59Ht8VXLg==
   expiration: 86400
+
+
+deepseek:
+  api: sk-09395230157142c2abb1438a6746d23f
+
+token:
+  cleanup:
+    interval: 3600000 # 1 hour in milliseconds
+
+

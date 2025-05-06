@@ -1,9 +1,9 @@
 package com.raceIQ.authentication.controller;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +43,11 @@ public class AuthenticationController {
     public ResponseEntity<?> resetPassword( @RequestParam String token,
     @RequestParam String newPassword){
         return authenticationService.resetPassword(token,newPassword);
+    }
+
+    @GetMapping("/user")
+    public String user(@AuthenticationPrincipal OAuth2User principal) {
+        return "Hello, " + principal.getAttribute("name");
     }
     
 }

@@ -30,6 +30,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/raceIQ/v1/auth/**").permitAll()
                     .anyRequest().authenticated()
                 )
+                .oauth2Login(oauth2 -> oauth2.defaultSuccessUrl("/"))
                 .sessionManagement(session -> session
                     .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )

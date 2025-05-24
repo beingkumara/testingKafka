@@ -1,0 +1,1114 @@
+package com.raceIQ.engine.impl;
+
+import com.raceIQ.engine.model.*;
+import com.raceIQ.engine.model.ErgastConstructor.ConstructorResponse;
+import com.raceIQ.engine.model.ErgastDriver.ErgastResponse;
+import com.raceIQ.engine.model.Race.Practice;
+import com.raceIQ.engine.repository.ConstructorRepository;
+import com.raceIQ.engine.repository.ConstructorStandingsRepository;
+import com.raceIQ.engine.repository.DriverRepository;
+import com.raceIQ.engine.repository.DriverStandingsRepository;
+import com.raceIQ.engine.repository.RaceRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+
+import java.util.*;
+import java.util.function.Supplier;
+
+@Service
+public class FastF1 {
+
+    private final String OPEN_F1 = "https://api.openf1.org/v1/";
+    private final String ERGAST_F1 = "https://api.jolpi.ca/ergast/f1/";
+    private final Integer MAX_ROUNDS = 24;
+    private final WebClient openF1Client;
+    private final WebClient ergastClient;
+
+    @Autowired
+    private DriverRepository driverRepo;
+
+    @Autowired
+    private ConstructorRepository constructorRepo;
+
+    @Autowired
+    private DriverStandingsRepository driverStandingsRepo;
+
+    @Autowired
+    private ConstructorStandingsRepository constructorStandingsRepo;
+
+    @Autowired
+    private RaceRepository raceRepo;
+
+    public FastF1(WebClient.Builder builder) {
+        ExchangeStrategies strategies = ExchangeStrategies.builder()
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
+                .build();
+
+        this.openF1Client = builder
+                .baseUrl(OPEN_F1)
+                .exchangeStrategies(strategies)
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create()))
+                .build();
+
+        this.ergastClient = builder
+                .baseUrl(ERGAST_F1)
+                .exchangeStrategies(strategies)
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create()))
+                .build();
+    }
+
+    public List<Driver> getAllDrivers() {
+        try {
+            // Fetch all Ergast drivers with pagination
+            Map<String, Driver> mergedDrivers = new HashMap<>();
+            int limit = 100;
+            int offset = 0;
+            int total = 900;
+
+            while (offset < total) {
+                String uri = String.format("drivers.json?limit=%d&offset=%d", limit, offset);
+
+                Mono<ErgastResponse> responseMono = ergastClient.get()
+                        .uri(uri)
+                        .retrieve()
+                        .bodyToMono(ErgastResponse.class);
+
+                ErgastResponse ergastResponse = responseMono.block();
+                if (ergastResponse == null || ergastResponse.MRData == null || ergastResponse.MRData.DriverTable == null) {
+                    break;
+                }
+
+                for (ErgastDriver ed : ergastResponse.MRData.DriverTable.Drivers) {
+                    String fullName = (ed.getGivenName() + " " + ed.getFamilyName()).toUpperCase();
+                    Driver d = new Driver();
+                    d.setDriverId(ed.getDriverId() != null ? ed.getDriverId() : fullName.toLowerCase().strip());
+                    d.setFirstName(ed.getGivenName());
+                    d.setLastName(ed.getFamilyName());
+                    d.setFullName(fullName);
+                    d.setDateOfBirth(ed.getDateOfBirth());
+                    d.setNationality(ed.getNationality());
+                    d.setActive(false);
+                    d.setDriverNumber(ed.getPermanentNumber());
+                    d.setPodiums(0);
+                    d.setWins(0);
+                    d.setPoints(0);
+                    d.setPoles(0);
+                    d.setFastestLaps(0);
+                    d.setTotalRaces(0);
+
+                    mergedDrivers.put(fullName, d);
+                }
+
+                offset += limit;
+            }
+
+            // Fetch OpenF1 drivers
+            Mono<OpenF1Driver[]> responseMono = openF1Client.get()
+                    .uri("drivers")
+                    .retrieve()
+                    .bodyToMono(OpenF1Driver[].class);
+
+            OpenF1Driver[] openDrivers = responseMono.block();
+            Map<String, OpenF1Driver> uniqueDrivers = new HashMap<>();
+            if (openDrivers != null) {
+                for (OpenF1Driver od : openDrivers) {
+                    uniqueDrivers.put(od.getFullName().toUpperCase(), od);
+                }
+            }
+
+            System.out.println("Merging OpenF1 drivers with Ergast drivers...");
+            for (OpenF1Driver od : uniqueDrivers.values()) {
+                String key = od.getFullName().toUpperCase();
+                if (mergedDrivers.containsKey(key)) {
+                    Driver d = mergedDrivers.get(key);
+                    d.setActive(true);
+                    d.setDriverNumber(od.getDriverNumber());
+                    d.setTeamName(od.getTeam_name());
+                    d.setDriverImageUrl(od.getHeadshotUrl());
+                    d.setPodiums(0);
+                    d.setWins(0);
+                    d.setPoints(0);
+                    d.setPoles(0);
+                    d.setFastestLaps(0);
+                    d.setTotalRaces(0);
+                    mergedDrivers.put(key, d);
+                } else {
+                    Driver d = new Driver();
+                    d.setDriverId(od.getFullName().toLowerCase().strip());
+                    d.setFullName(od.getFullName().toUpperCase());
+                    d.setActive(true);
+                    d.setDriverNumber(od.getDriverNumber());
+                    d.setTeamName(od.getTeam_name());
+                    d.setDriverImageUrl(od.getHeadshotUrl());
+                    d.setWins(0);
+                    d.setPodiums(0);
+                    d.setPoints(0);
+                    d.setPoles(0);
+                    d.setFastestLaps(0);
+                    d.setTotalRaces(0);
+                    mergedDrivers.put(d.getFullName(), d);
+                }
+            }
+
+            List<Driver> result = new ArrayList<>(mergedDrivers.values());
+            driverRepo.saveAll(result);
+            return result;
+
+        } catch (WebClientResponseException e) {
+            System.err.println("API Error: " + e.getRawStatusCode() + " - " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("General Error while fetching drivers: " + e.getMessage());
+        }
+        return Collections.emptyList();
+    }
+
+    public List<Constructor> getAllConstructors() {
+        try {
+            int limit = 100;
+            int offset = 0;
+            int total = 250;
+            List<Constructor> constructorList = new ArrayList<>();
+
+            while (offset < total) {
+                String uri = String.format("constructors.json?limit=%d&offset=%d", limit, offset);
+                Mono<ConstructorResponse> response = ergastClient.get()
+                        .uri(uri)
+                        .retrieve()
+                        .bodyToMono(ConstructorResponse.class);
+
+                ConstructorResponse constructors = response.block();
+                if (constructors == null || constructors.MRData == null || constructors.MRData.getConstructorTable() == null) {
+                    break;
+                }
+
+                for (ErgastConstructor constructor : constructors.MRData.getConstructorTable().getConstructors()) {
+                    Constructor c = new Constructor();
+                    c.setPodiums(0);
+                    c.setWins(0);
+                    c.setPoints(0);
+                    c.setPolePositions(0);
+                    c.setFastestLaps(0);
+                    c.setTotalRaces(0);
+                    c.setConstructorId(constructor.getConstructorId());
+                    c.setUrl(constructor.getUrl());
+                    c.setNationality(constructor.getNationality());
+                    c.setName(constructor.getName());
+                    constructorList.add(c);
+                }
+
+                offset += limit;
+            }
+
+            constructorRepo.saveAll(constructorList);
+            return constructorList;
+
+        } catch (Exception e) {
+            System.err.println("Error fetching constructors: " + e.getMessage());
+        }
+        return Collections.emptyList();
+    }
+
+    public void updateStatistics() {
+        Integer year = 2025;
+        Integer round = 1;
+        Map<String, Map<String, Integer>> circuitStats = new HashMap<>(); // circuitId -> {driverId/constructorId -> stat}
+
+        while (year >= 2001) {
+            while (round <= MAX_ROUNDS) {
+                String raceUri = String.format("%d/%d/results.json", year, round);
+                String qualiUri = String.format("%d/%d/qualifying.json", year, round);
+                String context = "year " + year + ", round " + round;
+
+                try {
+                    RaceResponse raceResponse = fetchWithRetry(
+                            () -> ergastClient.get().uri(raceUri).retrieve().bodyToMono(RaceResponse.class),
+                            "race results for " + context);
+
+                    if (raceResponse == null || raceResponse.getMrData() == null ||
+                        raceResponse.getMrData().getRaceTable() == null ||
+                        raceResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
+                        System.out.println("No race data for " + context);
+                        round++;
+                        try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                        continue;
+                    }
+
+                    Race race = raceResponse.getMrData().getRaceTable().getRaces().get(0);
+                    String circuitId = race.getCircuit().getCircuitId();
+                    List<Result> results = race.getResults();
+
+                    if (results == null || results.isEmpty()) {
+                        System.out.println("No results in race data for " + context);
+                        round++;
+                        try { Thread.sleep(1000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                        continue;
+                    }
+
+                    RaceResponse qualiResponse = fetchWithRetry(
+                            () -> ergastClient.get().uri(qualiUri).retrieve().bodyToMono(RaceResponse.class),
+                            "qualifying results for " + context);
+                    
+                    List<Result> qualiResults = Collections.emptyList();
+                    if (qualiResponse != null && qualiResponse.getMrData() != null &&
+                        qualiResponse.getMrData().getRaceTable() != null &&
+                        !qualiResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
+                        Race qualiRace = qualiResponse.getMrData().getRaceTable().getRaces().get(0);
+                        if (qualiRace.getQualifyingResults() != null) {
+                             qualiResults = qualiRace.getQualifyingResults();
+                        }
+                    }
+
+                    Map<String, Driver> updatedDrivers = new HashMap<>();
+                    Map<String, Constructor> updatedConstructors = new HashMap<>();
+                    Map<String, DriverStanding> updatedDriverStandings = new HashMap<>();
+                    Map<String, ConstructorStanding> updatedConstructorStandings = new HashMap<>();
+                    Set<String> constructorsProcessedForTotalRaces = new HashSet<>();
+
+                    // Process race results for 2025 only (for standings collections)
+                    if (year == 2025) {
+                        for (int i = 0; i < results.size(); i++) {
+                            Result result = results.get(i);
+                            ErgastDriver ergDriver = result.getDriver();
+                            ErgastConstructor egConstructor = result.getConstructor();
+
+                            if (ergDriver == null || egConstructor == null) continue;
+
+                            String driverId = ergDriver.getDriverId();
+                            String constructorId = egConstructor.getConstructorId();
+
+                            Optional<Driver> driverOpt = driverRepo.findById(driverId);
+                            Optional<Constructor> constructorOpt = constructorRepo.findById(constructorId);
+
+                            if (driverOpt.isEmpty()) {
+                                System.out.println("Missing driver: " + driverId + " for " + context);
+                                continue;
+                            }
+                            if (constructorOpt.isEmpty()) {
+                                System.out.println("Missing constructor: " + constructorId + " for " + context);
+                                continue;
+                            }
+                            
+                            Driver driver = driverOpt.get();
+                            Constructor constructor = updatedConstructors.computeIfAbsent(constructorId, k -> constructorOpt.get());
+                            DriverStanding driverStanding = updatedDriverStandings.computeIfAbsent(driverId, k -> {
+                                DriverStanding ds = new DriverStanding();
+                                ds.setDriverId(driverId);
+                                ds.setFullName(driver.getFullName());
+                                ds.setTeamName(constructor.getName());
+                                ds.setPoints(0);
+                                ds.setWins(0);
+                                ds.setPodiums(0);
+                                ds.setPosition(0);
+                                return ds;
+                            });
+                            ConstructorStanding constructorStanding = updatedConstructorStandings.computeIfAbsent(constructorId, k -> {
+                                ConstructorStanding cs = new ConstructorStanding();
+                                cs.setConstructorId(constructorId);
+                                cs.setName(constructor.getName());
+                                cs.setPoints(0);
+                                cs.setWins(0);
+                                cs.setPodiums(0);
+                                cs.setPosition(0);
+                                return cs;
+                            });
+                            
+                            updatedDrivers.putIfAbsent(driverId, driver);
+
+                            if (i == 0) { // Winner
+                                driver.setWins(driver.getWins() + 1);
+                                driver.setPodiums(driver.getPodiums() + 1);
+                                constructor.setWins(constructor.getWins() + 1);
+                                constructor.setPodiums(constructor.getPodiums() + 1);
+                                driverStanding.setWins(driverStanding.getWins() + 1);
+                                driverStanding.setPodiums(driverStanding.getPodiums() + 1);
+                                constructorStanding.setWins(constructorStanding.getWins() + 1);
+                                constructorStanding.setPodiums(constructorStanding.getPodiums() + 1);
+                            } else if (i < 3) { // Podium
+                                driver.setPodiums(driver.getPodiums() + 1);
+                                constructor.setPodiums(constructor.getPodiums() + 1);
+                                driverStanding.setPodiums(driverStanding.getPodiums() + 1);
+                                constructorStanding.setPodiums(constructorStanding.getPodiums() + 1);
+                            }
+
+                            if (result.getPoints() != null && !result.getPoints().isEmpty()) {
+                                try {
+                                    int points = Integer.parseInt(result.getPoints());
+                                    driver.setPoints(driver.getPoints() + points);
+                                    constructor.setPoints(constructor.getPoints() + points);
+                                    driverStanding.setPoints(driverStanding.getPoints() + points);
+                                    constructorStanding.setPoints(constructorStanding.getPoints() + points);
+                                } catch (NumberFormatException e) {
+                                    System.err.println("Could not parse points: " + result.getPoints() + " for driver " + driverId + " in " + context);
+                                }
+                            }
+
+                            if (result.getFastestLap() != null && result.getFastestLap().getRank() != null &&
+                                result.getFastestLap().getRank().equals("1")) {
+                                driver.setFastestLaps(driver.getFastestLaps() + 1);
+                                constructor.setFastestLaps(constructor.getFastestLaps() + 1);
+                            }
+                            
+                            driver.setTotalRaces(driver.getTotalRaces() != null ? driver.getTotalRaces() + 1 : 1);
+                            if (!constructorsProcessedForTotalRaces.contains(constructorId)) {
+                                constructor.setTotalRaces(constructor.getTotalRaces() != null ? constructor.getTotalRaces() + 1 : 1);
+                                constructorsProcessedForTotalRaces.add(constructorId);
+                            }
+                            
+                            updatedDrivers.put(driverId, driver);
+                            updatedConstructors.put(constructorId, constructor);
+                            updatedDriverStandings.put(driverId, driverStanding);
+                            updatedConstructorStandings.put(constructorId, constructorStanding);
+                        }
+                    } else {
+                        // Process race results for pre-2025 (only update Driver and Constructor)
+                        for (int i = 0; i < results.size(); i++) {
+                            Result result = results.get(i);
+                            ErgastDriver ergDriver = result.getDriver();
+                            ErgastConstructor egConstructor = result.getConstructor();
+
+                            if (ergDriver == null || egConstructor == null) continue;
+
+                            String driverId = ergDriver.getDriverId();
+                            String constructorId = egConstructor.getConstructorId();
+
+                            Optional<Driver> driverOpt = driverRepo.findById(driverId);
+                            Optional<Constructor> constructorOpt = constructorRepo.findById(constructorId);
+
+                            if (driverOpt.isEmpty()) {
+                                System.out.println("Missing driver: " + driverId + " for " + context);
+                                continue;
+                            }
+                            if (constructorOpt.isEmpty()) {
+                                System.out.println("Missing constructor: " + constructorId + " for " + context);
+                                continue;
+                            }
+                            
+                            Driver driver = driverOpt.get();
+                            Constructor constructor = updatedConstructors.computeIfAbsent(constructorId, k -> constructorOpt.get());
+                            
+                            updatedDrivers.putIfAbsent(driverId, driver);
+
+                            if (i == 0) { // Winner
+                                driver.setWins(driver.getWins() + 1);
+                                driver.setPodiums(driver.getPodiums() + 1);
+                                constructor.setWins(constructor.getWins() + 1);
+                                constructor.setPodiums(constructor.getPodiums() + 1);
+                            } else if (i < 3) { // Podium
+                                driver.setPodiums(driver.getPodiums() + 1);
+                                constructor.setPodiums(constructor.getPodiums() + 1);
+                            }
+
+                            if (result.getPoints() != null && !result.getPoints().isEmpty()) {
+                                try {
+                                    int points = Integer.parseInt(result.getPoints());
+                                    driver.setPoints(driver.getPoints() + points);
+                                    constructor.setPoints(constructor.getPoints() + points);
+                                } catch (NumberFormatException e) {
+                                    System.err.println("Could not parse points: " + result.getPoints() + " for driver " + driverId + " in " + context);
+                                }
+                            }
+
+                            if (result.getFastestLap() != null && result.getFastestLap().getRank() != null &&
+                                result.getFastestLap().getRank().equals("1")) {
+                                driver.setFastestLaps(driver.getFastestLaps() + 1);
+                                constructor.setFastestLaps(constructor.getFastestLaps() + 1);
+                            }
+                            
+                            driver.setTotalRaces(driver.getTotalRaces() != null ? driver.getTotalRaces() + 1 : 1);
+                            if (!constructorsProcessedForTotalRaces.contains(constructorId)) {
+                                constructor.setTotalRaces(constructor.getTotalRaces() != null ? constructor.getTotalRaces() + 1 : 1);
+                                constructorsProcessedForTotalRaces.add(constructorId);
+                            }
+                            
+                            updatedDrivers.put(driverId, driver);
+                            updatedConstructors.put(constructorId, constructor);
+                        }
+                    }
+
+                    // Process qualifying results (poles)
+                    if (qualiResults != null && !qualiResults.isEmpty()) {
+                        Result poleResult = qualiResults.get(0); // Assuming first result is P1
+                        if (poleResult.getPosition() != null && poleResult.getPosition().equals("1")) {
+                            ErgastDriver ergDriver = poleResult.getDriver();
+                            ErgastConstructor egConstructor = poleResult.getConstructor();
+
+                            if (ergDriver != null && egConstructor != null) {
+                                String driverId = ergDriver.getDriverId();
+                                String constructorId = egConstructor.getConstructorId();
+
+                                Driver driver = updatedDrivers.get(driverId);
+                                Constructor constructor = updatedConstructors.get(constructorId);
+                                
+                                // If driver/constructor not in map yet (e.g. only pole, no race result), fetch them
+                                if (driver == null) {
+                                    Optional<Driver> dOpt = driverRepo.findById(driverId);
+                                    if (dOpt.isPresent()) driver = dOpt.get();
+                                }
+                                if (constructor == null) {
+                                     Optional<Constructor> cOpt = constructorRepo.findById(constructorId);
+                                     if (cOpt.isPresent()) constructor = cOpt.get();
+                                }
+
+                                if (driver != null && constructor != null) {
+                                    driver.setPoles(driver.getPoles() + 1);
+                                    constructor.setPolePositions(constructor.getPolePositions() + 1);
+                                    updatedDrivers.put(driverId, driver); // Ensure they are in map for saving
+                                    updatedConstructors.put(constructorId, constructor);
+                                } else {
+                                     System.out.println("Pole driver/constructor not found or not in updated map: " + driverId + "/" + constructorId + " for " + context);
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (!updatedDrivers.isEmpty()) {
+                        driverRepo.saveAll(updatedDrivers.values());
+                    }
+                    if (!updatedConstructors.isEmpty()) {
+                        constructorRepo.saveAll(updatedConstructors.values());
+                    }
+                    if (year == 2025) {
+                        if (!updatedDriverStandings.isEmpty()) {
+                            driverStandingsRepo.saveAll(updatedDriverStandings.values());
+                        }
+                        if (!updatedConstructorStandings.isEmpty()) {
+                            constructorStandingsRepo.saveAll(updatedConstructorStandings.values());
+                        }
+                    }
+
+                    System.out.println("Successfully processed " + context + ", circuit " + circuitId);
+
+                } catch (WebClientResponseException e) {
+                    System.err.println("WebClientResponseException for " + context + " after retries (or non-retryable): " + e.getRawStatusCode() + " - " + e.getMessage());
+                } catch (Exception e) {
+                    System.err.println("General error processing " + context + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+
+                round++;
+                try {
+                    Thread.sleep(1000); // 1-second delay between rounds
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Interrupted during round delay for " + context);
+                }
+            }
+
+            year--;
+            round = 1;
+            if (year >= 2001) { // Only sleep if there are more years to process
+                try {
+                    System.out.println("Waiting for 60 seconds before processing year " + year + "...");
+                    Thread.sleep(60000); // 1-minute delay between years
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Interrupted during year delay before year " + year);
+                }
+            }
+        }
+        System.out.println("Circuit Statistics (not implemented): " + circuitStats);
+    }
+
+    private <T> T fetchWithRetry(Supplier<Mono<T>> monoSupplier, String contextForLogging) {
+        int retryCount = 0;
+        int maxRetries = 5;
+        long waitTimeMillis = 60000; // Start with 60 seconds for Ergast
+
+        while (retryCount <= maxRetries) {
+            try {
+                return monoSupplier.get().block(); // Blocking call
+            } catch (WebClientResponseException e) {
+                if (e.getRawStatusCode() == 429 && retryCount < maxRetries) {
+                    retryCount++;
+                    System.out.println("Rate limit (429) for " + contextForLogging +
+                            ". Retry " + retryCount + "/" + maxRetries +
+                            ". Waiting for " + (waitTimeMillis / 1000) + " seconds...");
+                    try {
+                        Thread.sleep(waitTimeMillis);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        System.err.println("Retry sleep interrupted for " + contextForLogging);
+                        throw e;
+                    }
+                    waitTimeMillis *= 2; // Exponential backoff
+                } else if (e.getRawStatusCode() == 404 || e.getRawStatusCode() == 503) { // 404: Not Found (e.g. race doesn't exist), 503: Service Unavailable
+                     System.out.println("API returned " + e.getRawStatusCode() + " for " + contextForLogging + ". Assuming no data. Message: " + e.getMessage());
+                     return null; // Treat as no data available
+                }
+                else {
+                    System.err.println("Non-retryable WebClientResponseException for " + contextForLogging + ": " + e.getRawStatusCode() + " - " + e.getMessage());
+                    throw e;
+                }
+            } catch (Exception e) {
+                 // Includes situations like connection errors, timeout before response, etc.
+                if (retryCount < maxRetries) {
+                    retryCount++;
+                    System.out.println("General error for " + contextForLogging +
+                            ". Retry " + retryCount + "/" + maxRetries +
+                            ". Waiting for " + (waitTimeMillis / 1000) + " seconds... Error: " + e.getMessage());
+                    try {
+                        Thread.sleep(waitTimeMillis);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        System.err.println("Retry sleep interrupted for " + contextForLogging);
+                        throw e; // Re-throw if interrupted
+                    }
+                    waitTimeMillis *= 1.5; // Less aggressive backoff for general errors
+                } else {
+                    System.err.println("General error after max retries for " + contextForLogging + ": " + e.getMessage());
+                    throw e; // Re-throw after max retries
+                }
+            }
+        }
+        System.err.println("Max retries reached for " + contextForLogging + ". Returning null.");
+        return null;
+    }
+
+    public Map<String,String> getCurrentDriversId(){
+        String uri = "drivers?meeting_key=latest&session_key=latest";
+        Mono<OpenF1Driver[]> response = openF1Client.get().uri(uri).retrieve().bodyToMono(OpenF1Driver[].class);
+        OpenF1Driver[] currDrivers = response.block();
+        Map<String,String> driverMapping = new HashMap<>();
+        for(OpenF1Driver od : currDrivers){
+            driverMapping.put(od.getDriverNumber(),od.getFullName().toUpperCase());
+        }
+        return driverMapping;
+    }
+
+    public String getSprintStatistics() {
+        Integer year = 2025;
+        Integer round = 1;
+
+        while (year >= 2021) { // Sprints exist from 2021 onwards
+            while (round <= MAX_ROUNDS) {
+                String sprintUri = String.format("%d/%d/sprint.json", year, round);
+                String context = "sprint for year " + year + ", round " + round;
+
+                Map<String, Driver> updatedDrivers = new HashMap<>();
+                Map<String, Constructor> updatedConstructors = new HashMap<>();
+                Map<String, DriverStanding> updatedDriverStandings = new HashMap<>();
+                Map<String, ConstructorStanding> updatedConstructorStandings = new HashMap<>();
+                Set<String> constructorsProcessedForSprintRaceCount = new HashSet<>();
+
+                try {
+                    RaceResponse sprintResponse = fetchWithRetry(
+                            () -> ergastClient.get().uri(sprintUri).retrieve().bodyToMono(RaceResponse.class),
+                            context);
+
+                    if (sprintResponse == null || sprintResponse.getMrData() == null ||
+                        sprintResponse.getMrData().getRaceTable() == null ||
+                        sprintResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
+                        System.out.println("No sprint data found for " + context);
+                        round++;
+                        try { Thread.sleep(5000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); } // Shorter delay for rounds
+                        continue;
+                    }
+
+                    Race sprintRace = sprintResponse.getMrData().getRaceTable().getRaces().get(0);
+                    List<Result> sprintResults = sprintRace.getSprintResults();
+
+                    if (sprintResults == null || sprintResults.isEmpty()) {
+                        System.out.println("No results in sprint data for " + context);
+                        round++;
+                        try { Thread.sleep(500); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                        continue;
+                    }
+
+                    if (year == 2025) {
+                        for (Result sprintObj : sprintResults) {
+                            if (sprintObj.getDriver() == null || sprintObj.getConstructor() == null) {
+                                System.out.println("Sprint result missing driver or constructor for " + context);
+                                continue;
+                            }
+
+                            String driverId = sprintObj.getDriver().getDriverId();
+                            String constructorId = sprintObj.getConstructor().getConstructorId();
+
+                            Optional<Driver> driverOpt = driverRepo.findById(driverId);
+                            Optional<Constructor> constructorOpt = constructorRepo.findById(constructorId);
+                            Optional<DriverStanding> driverStandingOpt = driverStandingsRepo.findById(driverId);
+                            Optional<ConstructorStanding> constructorStandingOpt = constructorStandingsRepo.findById(constructorId);
+
+                            if (driverOpt.isEmpty()) {
+                                System.out.println("Driver not found in DB: " + driverId + " for " + context);
+                                continue;
+                            }
+                            if (constructorOpt.isEmpty()) {
+                                System.out.println("Constructor not found in DB: " + constructorId + " for " + context);
+                                continue;
+                            }
+
+                            final Driver currentDriver = driverOpt.get();
+                            final Constructor currentConstructor = constructorOpt.get();
+                            final DriverStanding driverStanding = driverStandingOpt.orElseGet(() -> {
+                                DriverStanding ds = new DriverStanding();
+                                ds.setDriverId(driverId);
+                                ds.setFullName(currentDriver.getFullName());
+                                ds.setTeamName(currentConstructor.getName());
+                                ds.setPoints(0);
+                                ds.setWins(0);
+                                ds.setPodiums(0);
+                                ds.setPosition(0);
+                                return ds;
+                            });
+                            final ConstructorStanding constructorStanding = constructorStandingOpt.orElseGet(() -> {
+                                ConstructorStanding cs = new ConstructorStanding();
+                                cs.setConstructorId(constructorId);
+                                cs.setName(currentConstructor.getName());
+                                cs.setPoints(0);
+                                cs.setWins(0);
+                                cs.setPodiums(0);
+                                cs.setPosition(0);
+                                return cs;
+                            });
+
+                            // Use maps to ensure we are updating the same instance
+                            final Driver driver = updatedDrivers.computeIfAbsent(driverId, k -> currentDriver);
+                            final Constructor constructor = updatedConstructors.computeIfAbsent(constructorId, k -> currentConstructor);
+                            updatedDriverStandings.putIfAbsent(driverId, driverStanding);
+                            updatedConstructorStandings.putIfAbsent(constructorId, constructorStanding);
+
+                            // Update points
+                            if (sprintObj.getPoints() != null && !sprintObj.getPoints().isEmpty()) {
+                                try {
+                                    int points = Integer.parseInt(sprintObj.getPoints());
+                                    driver.setPoints(driver.getPoints() + points);
+                                    constructor.setPoints(constructor.getPoints() + points);
+                                    driverStanding.setPoints(driverStanding.getPoints() + points);
+                                    constructorStanding.setPoints(constructorStanding.getPoints() + points);
+                                } catch (NumberFormatException e) {
+                                    System.err.println("Could not parse sprint points: " + sprintObj.getPoints() + " for " + context);
+                                }
+                            }
+
+                            // Update sprint-specific stats
+                            String position = sprintObj.getPosition();
+                            if (position != null) {
+                                if (position.equals("1")) {
+                                    driver.setSprintWins(driver.getSprintWins() != null ? driver.getSprintWins() + 1 : 1);
+                                    driver.setSprintPodiums(driver.getSprintPodiums() != null ? driver.getSprintPodiums() + 1 : 1);
+                                    constructor.setSprintWins(constructor.getSprintWins() != null ? constructor.getSprintWins() + 1 : 1);
+                                    constructor.setSprintPodiums(constructor.getSprintPodiums() != null ? constructor.getSprintPodiums() + 1 : 1);
+                                    driverStanding.setWins(driverStanding.getWins() + 1);
+                                    driverStanding.setPodiums(driverStanding.getPodiums() + 1);
+                                    constructorStanding.setWins(constructorStanding.getWins() + 1);
+                                    constructorStanding.setPodiums(constructorStanding.getPodiums() + 1);
+                                } else if (position.equals("2") || position.equals("3")) {
+                                    driver.setSprintPodiums(driver.getSprintPodiums() != null ? driver.getSprintPodiums() + 1 : 1);
+                                    constructor.setSprintPodiums(constructor.getSprintPodiums() != null ? constructor.getSprintPodiums() + 1 : 1);
+                                    driverStanding.setPodiums(driverStanding.getPodiums() + 1);
+                                    constructorStanding.setPodiums(constructorStanding.getPodiums() + 1);
+                                }
+                            }
+                            driver.setSprintRaces(driver.getSprintRaces() != null ? driver.getSprintRaces() + 1 : 1);
+                            if (!constructorsProcessedForSprintRaceCount.contains(constructorId)) {
+                                constructor.setSprintRaces(constructor.getSprintRaces() != null ? constructor.getSprintRaces() + 1 : 1);
+                                constructorsProcessedForSprintRaceCount.add(constructorId);
+                            }
+                        }
+                    } else {
+                        // Process pre-2025 sprint results (only update Driver and Constructor)
+                        for (Result sprintObj : sprintResults) {
+                            if (sprintObj.getDriver() == null || sprintObj.getConstructor() == null) {
+                                System.out.println("Sprint result missing driver or constructor for " + context);
+                                continue;
+                            }
+
+                            String driverId = sprintObj.getDriver().getDriverId();
+                            String constructorId = sprintObj.getConstructor().getConstructorId();
+
+                            Optional<Driver> driverOpt = driverRepo.findById(driverId);
+                            Optional<Constructor> constructorOpt = constructorRepo.findById(constructorId);
+
+                            if (driverOpt.isEmpty()) {
+                                System.out.println("Driver not found in DB: " + driverId + " for " + context);
+                                continue;
+                            }
+                            if (constructorOpt.isEmpty()) {
+                                System.out.println("Constructor not found in DB: " + constructorId + " for " + context);
+                                continue;
+                            }
+
+                            final Driver currentDriver = driverOpt.get();
+                            final Constructor currentConstructor = constructorOpt.get();
+                            
+                            final Driver driver = updatedDrivers.computeIfAbsent(driverId, k -> currentDriver);
+                            final Constructor constructor = updatedConstructors.computeIfAbsent(constructorId, k -> currentConstructor);
+
+                            if (sprintObj.getPoints() != null && !sprintObj.getPoints().isEmpty()) {
+                                try {
+                                    int points = Integer.parseInt(sprintObj.getPoints());
+                                    driver.setPoints(driver.getPoints() + points);
+                                    constructor.setPoints(constructor.getPoints() + points);
+                                } catch (NumberFormatException e) {
+                                    System.err.println("Could not parse sprint points: " + sprintObj.getPoints() + " for " + context);
+                                }
+                            }
+
+                            String position = sprintObj.getPosition();
+                            if (position != null) {
+                                if (position.equals("1")) {
+                                    driver.setSprintWins(driver.getSprintWins() != null ? driver.getSprintWins() + 1 : 1);
+                                    driver.setSprintPodiums(driver.getSprintPodiums() != null ? driver.getSprintPodiums() + 1 : 1);
+                                    constructor.setSprintWins(constructor.getSprintWins() != null ? constructor.getSprintWins() + 1 : 1);
+                                    constructor.setSprintPodiums(constructor.getSprintPodiums() != null ? constructor.getSprintPodiums() + 1 : 1);
+                                } else if (position.equals("2") || position.equals("3")) {
+                                    driver.setSprintPodiums(driver.getSprintPodiums() != null ? driver.getSprintPodiums() + 1 : 1);
+                                    constructor.setSprintPodiums(constructor.getSprintPodiums() != null ? constructor.getSprintPodiums() + 1 : 1);
+                                }
+                            }
+                            driver.setSprintRaces(driver.getSprintRaces() != null ? driver.getSprintRaces() + 1 : 1);
+                            if (!constructorsProcessedForSprintRaceCount.contains(constructorId)) {
+                                constructor.setSprintRaces(constructor.getSprintRaces() != null ? constructor.getSprintRaces() + 1 : 1);
+                                constructorsProcessedForSprintRaceCount.add(constructorId);
+                            }
+                        }
+                    }
+
+                    if (!updatedDrivers.isEmpty()) {
+                        driverRepo.saveAll(updatedDrivers.values());
+                    }
+                    if (!updatedConstructors.isEmpty()) {
+                        constructorRepo.saveAll(updatedConstructors.values());
+                    }
+                    if (year == 2025) {
+                        if (!updatedDriverStandings.isEmpty()) {
+                            driverStandingsRepo.saveAll(updatedDriverStandings.values());
+                        }
+                        if (!updatedConstructorStandings.isEmpty()) {
+                            constructorStandingsRepo.saveAll(updatedConstructorStandings.values());
+                        }
+                    }
+                    System.out.println("Successfully processed " + context);
+
+                } catch (WebClientResponseException e) {
+                    System.err.println("WebClientResponseException for " + context + " after retries: " + e.getRawStatusCode() + " - " + e.getMessage());
+                } catch (Exception e) {
+                    System.err.println("General error processing " + context + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+
+                round++;
+                try {
+                    Thread.sleep(1000); // 1-second delay between sprint rounds
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Interrupted during sprint round delay for " + context);
+                }
+            }
+
+            year--;
+            round = 1; // Reset round for the next year
+            if (year >= 2021) { // Only sleep if there are more years to process
+                try {
+                    System.out.println("Waiting for 30 seconds before processing sprints for year " + year + "...");
+                    Thread.sleep(30000); // 30-second delay between years for sprints
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Interrupted during sprint year delay before year " + year);
+                }
+            }
+        }
+        System.out.println("Sprint statistics update complete.");
+        return "OK";
+    }
+
+    public String updateStandings() {
+        // Update driver standings
+        String driverContext = "driver standings for 2025";
+        String driverUri = "2025/driverstandings.json";
+
+        try {
+            ErgastDriverStandingsResponse driverResponse = fetchWithRetry(
+                    () -> ergastClient.get().uri(driverUri).retrieve().bodyToMono(ErgastDriverStandingsResponse.class),
+                    driverContext);
+
+            if (driverResponse == null || driverResponse.MRData == null ||
+                driverResponse.MRData.StandingsTable == null ||
+                driverResponse.MRData.StandingsTable.StandingsLists.isEmpty()) {
+                System.out.println("No driver standings data for " + driverContext);
+                return "No driver standings data available";
+            }
+
+            List<ErgastDriverStandingsResponse.DriverStanding> driverStandings = 
+                driverResponse.MRData.StandingsTable.StandingsLists.get(0).DriverStandings;
+            
+            List<DriverStanding> updatedDriverStandings = new ArrayList<>();
+
+            for (ErgastDriverStandingsResponse.DriverStanding standing : driverStandings) {
+                String driverId = standing.Driver.getDriverId();
+                Optional<Driver> driverOpt = driverRepo.findById(driverId);
+
+                if (driverOpt.isEmpty()) {
+                    System.out.println("Driver not found in DB: " + driverId + " for " + driverContext);
+                    continue;   
+                }
+
+                Driver driver = driverOpt.get();
+                DriverStanding driverStanding = new DriverStanding();
+                driverStanding.setDriverId(driverId);
+                driverStanding.setFullName(driver.getFullName());
+                driverStanding.setTeamName(!standing.Constructors.isEmpty() ? standing.Constructors.get(0).getName() : "");
+                try {
+                    driverStanding.setPosition(Integer.parseInt(standing.position));
+                    driverStanding.setPoints(Integer.parseInt(standing.points));
+                    driverStanding.setWins(Integer.parseInt(standing.wins));
+                    // Podiums not directly available in standings API; calculate via results in updateStatistics
+                    driverStanding.setPodiums(0);
+                } catch (NumberFormatException e) {
+                    System.err.println("Could not parse driver standing data for " + driverId + ": " + e.getMessage());
+                    continue;
+                }
+                updatedDriverStandings.add(driverStanding);
+            }
+
+            if (!updatedDriverStandings.isEmpty()) {
+                driverStandingsRepo.deleteAll();
+                driverStandingsRepo.saveAll(updatedDriverStandings);
+                System.out.println("Updated " + updatedDriverStandings.size() + " driver standings for 2025");
+            }
+
+            // Update constructor standings
+            String constructorContext = "constructor standings for 2025";
+            String constructorUri = "2025/constructorstandings.json";
+
+            ErgastConstructorStandingsResponse constructorResponse = fetchWithRetry(
+                    () -> ergastClient.get().uri(constructorUri).retrieve().bodyToMono(ErgastConstructorStandingsResponse.class),
+                    constructorContext);
+
+            if (constructorResponse == null || constructorResponse.MRData == null ||
+                constructorResponse.MRData.StandingsTable == null ||
+                constructorResponse.MRData.StandingsTable.StandingsLists.isEmpty()) {
+                System.out.println("No constructor standings data for " + constructorContext);
+                return "No constructor standings data available";
+            }
+
+            List<ErgastConstructorStandingsResponse.ConstructorStanding> constructorStandings = 
+                constructorResponse.MRData.StandingsTable.StandingsLists.get(0).ConstructorStandings;
+            
+            List<ConstructorStanding> updatedConstructorStandings = new ArrayList<>();
+
+            for (ErgastConstructorStandingsResponse.ConstructorStanding standing : constructorStandings) {
+                String constructorId = standing.Constructor.getConstructorId();
+                Optional<Constructor> constructorOpt = constructorRepo.findById(constructorId);
+
+                if (constructorOpt.isEmpty()) {
+                    System.out.println("Constructor not found in DB: " + constructorId + " for " + constructorContext);
+                    continue;
+                }
+
+                Constructor constructor = constructorOpt.get();
+                ConstructorStanding constructorStanding = new ConstructorStanding();
+                constructorStanding.setConstructorId(constructorId);
+                constructorStanding.setName(constructor.getName());
+                try {
+                    constructorStanding.setPosition(Integer.parseInt(standing.position));
+                    constructorStanding.setPoints(Integer.parseInt(standing.points));
+                    constructorStanding.setWins(Integer.parseInt(standing.wins));
+                    // Podiums not directly available; calculate via results in updateStatistics
+                    constructorStanding.setPodiums(0);
+                } catch (NumberFormatException e) {
+                    System.err.println("Could not parse constructor standing data for " + constructorId + ": " + e.getMessage());
+                    continue;
+                }
+                updatedConstructorStandings.add(constructorStanding);
+            }
+
+            if (!updatedConstructorStandings.isEmpty()) {
+                constructorStandingsRepo.deleteAll();
+                constructorStandingsRepo.saveAll(updatedConstructorStandings);
+                System.out.println("Updated " + updatedConstructorStandings.size() + " constructor standings for 2025");
+            }
+
+            return "Successfully updated driver and constructor standings";
+
+        } catch (WebClientResponseException e) {
+            System.err.println("WebClientResponseException for standings: " + e.getRawStatusCode() + " - " + e.getMessage());
+            return "API error: " + e.getMessage();
+        } catch (Exception e) {
+            System.err.println("General error processing standings: " + e.getMessage());
+            e.printStackTrace();
+            return "Error: " + e.getMessage();
+        }
+    }
+
+    public List<DriverStanding> getDriverStandings() {
+        try {
+            return driverStandingsRepo.findAll(Sort.by(Sort.Order.asc("position")));
+        } catch (Exception e) {
+            System.err.println("Error retrieving driver standings: " + e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    public List<ConstructorStanding> getConstructorStandings() {
+        try {
+            return constructorStandingsRepo.findAll(Sort.by(Sort.Order.asc("position")));
+        } catch (Exception e) {
+            System.err.println("Error retrieving constructor standings: " + e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    public List<Race> accumulateRaces(){
+        Integer year = 2025;
+        String uri = String.format("%d/races.json",year);
+        Mono<RaceResponse> response = ergastClient.get().uri(uri).retrieve().bodyToMono(RaceResponse.class);
+        RaceResponse allraces = response.block();
+        List<Race> races = allraces.getMrData().getRaceTable().getRaces();
+        raceRepo.saveAll(races);
+        return races;
+    }
+    
+    /**
+     * Fetches the latest race results from the Ergast API and stores them in the database.
+     * This method should be called periodically (e.g., via a scheduled task) to keep the data up-to-date.
+     * 
+     * Note: This method will update an existing race entry if it exists in the database but doesn't have results.
+     * 
+     * @return The latest race with results
+     */
+    public List<Result> fetchAndStoreLatestRaceResults() {
+        try {
+            Integer year = 2025;
+            // First, get all races for the current year
+            String uri = String.format("%d/races.json", year);
+            Mono<RaceResponse> response = ergastClient.get().uri(uri).retrieve().bodyToMono(RaceResponse.class);
+            RaceResponse allRaces = response.block();
+            
+            if (allRaces == null || allRaces.getMrData() == null || 
+                allRaces.getMrData().getRaceTable() == null || 
+                allRaces.getMrData().getRaceTable().getRaces().isEmpty()) {
+                return null;
+            }
+            
+            List<Race> races = allRaces.getMrData().getRaceTable().getRaces();
+            
+            // Find the latest completed race by checking each race's results
+            String latestRound = null;
+            
+            // Current date in format YYYY-MM-DD
+            String currentDate = java.time.LocalDate.now().toString();
+            
+            // Find the most recent race that has already occurred
+            for (Race race : races) {
+                if (race.getDate() != null && race.getDate().compareTo(currentDate) <= 0) {
+                    latestRound = race.getRound();
+                } else {
+                    // We've found the first future race, so break
+                    break;
+                }
+            }
+            
+            if (latestRound == null) {
+                System.out.println("No completed races found for the current year.");
+                return null;
+            }
+            
+            System.out.println("Latest completed race round: " + latestRound);
+            
+            // Fetch results for the latest round
+            String raceUri = String.format("%d/%s/results.json", year, latestRound);
+            RaceResponse raceResponse = fetchWithRetry(
+                    () -> ergastClient.get().uri(raceUri).retrieve().bodyToMono(RaceResponse.class),
+                    "race results for year " + year + ", round " + latestRound);
+            
+            if (raceResponse == null || raceResponse.getMrData() == null ||
+                raceResponse.getMrData().getRaceTable() == null ||
+                raceResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
+                return null;
+            }
+            
+            Race latestRace = raceResponse.getMrData().getRaceTable().getRaces().get(0);
+            
+            // First, delete any existing race entries for this season and round
+            List<Race> existingRaces = raceRepo.findAll();
+            Race deletedRace = null;
+            for (Race existingRace : existingRaces) {
+                if (existingRace.getSeason() != null && existingRace.getSeason().equals(year.toString()) &&
+                    existingRace.getRound() != null && existingRace.getRound().equals(latestRound)) {
+                    // Found an existing race for this season and round
+                    System.out.println("Removing existing race entry for season " + year + ", round " + latestRound);
+                    deletedRace = existingRace;
+                    raceRepo.delete(existingRace);
+                    break;
+                }
+            }
+            if(deletedRace != null){
+                latestRace.setQualifying(deletedRace.getQualifying());
+                latestRace.setQualifyingResults(deletedRace.getQualifyingResults());
+                latestRace.setSprint(deletedRace.getSprint());
+                latestRace.setSprintResults(deletedRace.getSprintResults());
+                latestRace.setFirstPractice(deletedRace.getFirstPractice());
+                latestRace.setSecondPractice(deletedRace.getSecondPractice());
+                latestRace.setThirdPractice(deletedRace.getThirdPractice());
+                latestRace.setSprintQualifying(deletedRace.getSprintQualifying());
+                // Save the new race with results to the database
+                System.out.println("Saving race entry with results for season " + year + ", round " + latestRound);
+                raceRepo.save(latestRace);
+            }
+            
+            
+            return latestRace != null ? latestRace.getResults() : null;
+        } catch (Exception e) {
+            System.err.println("Error fetching latest race results: " + e.getMessage());
+            e.printStackTrace(); // Print the full stack trace for better debugging
+            return null;
+        }
+    }
+    
+    /**
+     * Gets the latest race results from the database.
+     * If no results are found, it attempts to fetch them from the API.
+     * 
+     * @return The latest race with results
+     */
+    public List<Result> getLatestRaceResults() {
+        try {
+            // Get all races from the database
+            List<Race> races = raceRepo.findAll();
+            
+            if (races.isEmpty()) {
+                // If no races in database, fetch from API
+                return fetchAndStoreLatestRaceResults();
+            }
+            
+            // Current date in format YYYY-MM-DD
+            String currentDate = java.time.LocalDate.now().toString();
+            
+            // Find the most recent completed race that has results
+            Race latestRaceWithResults = null;
+            String latestDate = "0000-00-00";
+            
+            for (Race race : races) {
+                if (race.getResults() != null && !race.getResults().isEmpty() && 
+                    race.getDate() != null && race.getDate().compareTo(currentDate) <= 0) {
+                    // This race has occurred and has results
+                    if (race.getDate().compareTo(latestDate) > 0) {
+                        latestDate = race.getDate();
+                        latestRaceWithResults = race;
+                    }
+                }
+            }
+            
+            if (latestRaceWithResults != null) {
+                return latestRaceWithResults.getResults();
+            } else {
+                // If no race with results found in database, fetch from API
+                return fetchAndStoreLatestRaceResults();
+            }
+        } catch (Exception e) {
+            System.err.println("Error getting latest race results: " + e.getMessage());
+            e.printStackTrace(); // Print the full stack trace for better debugging
+            return null;
+        }
+    }
+}

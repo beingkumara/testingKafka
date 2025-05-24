@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Formula1-Bold';
+  src: url('/fonts/Formula1-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap');
+
+@layer base {
+  body {
+    @apply bg-white dark:bg-secondary-800 text-secondary-800 dark:text-white font-sans transition-colors duration-200;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded font-medium transition-all duration-200 inline-flex items-center justify-center;
+  }
+
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 text-white;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-600 hover:bg-secondary-700 text-white;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white;
+  }
+
+  .input {
+    @apply w-full px-4 py-2 rounded bg-white dark:bg-secondary-700 border border-secondary-200 dark:border-secondary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-white dark:bg-secondary-700 rounded-lg shadow-md overflow-hidden transition-all duration-200;
+  }
+
+  .nav-link {
+    @apply p-2 rounded-md hover:bg-secondary-100 dark:hover:bg-secondary-700 transition-colors duration-200;
+  }
+
+  .nav-link.active {
+    @apply bg-secondary-100 dark:bg-secondary-700 font-medium;
+  }
+}

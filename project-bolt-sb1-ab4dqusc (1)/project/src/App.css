@@ -1,0 +1,117 @@
+@keyframes racing-line {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
+}
+
+@keyframes checkered-flag {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tire-smoke {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.8);
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(1.5);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.racing-line {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 20px,
+    rgba(225, 6, 0, 0.3) 20px,
+    rgba(225, 6, 0, 0.3) 40px
+  );
+  background-size: 200% 100%;
+  animation: racing-line 20s linear infinite;
+}
+
+.loader {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: #E10600;
+  animation: spin 1s ease-in-out infinite;
+}
+
+.checkered-flag {
+  background-image: 
+    repeating-linear-gradient(45deg, #000 0, #000 10px, #fff 0, #fff 20px),
+    repeating-linear-gradient(-45deg, #000 0, #000 10px, #fff 0, #fff 20px);
+  animation: checkered-flag 2s infinite ease-in-out;
+}
+
+.fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.tire-smoke {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: tire-smoke 1s ease-out forwards;
+}
+
+/* Custom scrollbar for the F1 aesthetic */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #15151E;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E10600;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c10500;
+}

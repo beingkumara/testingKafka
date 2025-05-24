@@ -74,7 +74,7 @@ export const getLastRaceResults = async () => {
     driver: result.Driver.givenName,
     team: result.Constructor.name,
     time: result.Time
-      ? result.Time.time + (result.Time.millis ? ` (${result.Time.millis} ms)` : '')
+      ? result.Time.time
       : 'N/A',
     points: parseInt(result.points, 10)
   }));

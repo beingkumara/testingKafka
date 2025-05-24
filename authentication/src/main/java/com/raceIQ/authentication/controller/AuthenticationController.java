@@ -13,7 +13,7 @@ import com.raceIQ.authentication.service.AuthenticationService;
 import com.raceIQ.authentication.models.AuthRequest;
 import com.raceIQ.authentication.models.User;
 
-@RequestMapping("/api/raceIQ/v1/auth")
+@RequestMapping("/api/f1nity/v1/auth")
 @RestController
 public class AuthenticationController {
 

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,6 +17,7 @@ import com.raceIQ.engine.model.Race;
 import com.raceIQ.engine.model.Result;
 import com.raceIQ.engine.service.F1nityService;
 import org.springframework.web.bind.annotation.RequestParam;
+
 
 
 @RestController
@@ -109,4 +111,16 @@ public class F1inityController {
     public List<Result> updateLatestRaceResults() {
         return fastf1.fetchAndStoreLatestRaceResults();
     }
+
+
+    @GetMapping("/updateImagesForRaces")
+    public void updateImagesForRaces() {
+        fastf1.updateCircuitUrls();
+    }
+
+    @GetMapping("/drivers/{driverId}")
+    public Driver getDriverById(@PathVariable String driverId) {
+        return f1nityService.getDriverById(driverId);
+    }
+    
 }

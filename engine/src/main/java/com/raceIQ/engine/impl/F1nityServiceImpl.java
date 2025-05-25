@@ -42,4 +42,8 @@ public class F1nityServiceImpl{
         return races;
     }
 
+    public Driver getDriverById(String driverId) {
+        return driverRepo.findById(driverId).orElse(null);
+    }
+
 }

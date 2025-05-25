@@ -21,6 +21,8 @@ public class Constructor {
     private Integer sprintWins;
     private Integer sprintPodiums;
     private Integer sprintRaces;
+    private String colorCode;
+
     public String getConstructorId() {
         return constructorId;
     }
@@ -90,7 +92,14 @@ public class Constructor {
         this.sprintWins = sprintWins;
     }
 
-    
+
+    public void setColorCode(String code){
+        this.colorCode = code;
+    }
+
+    public String getColorCode(){
+        return this.colorCode;
+    }
     
     @Override
     public String toString() {

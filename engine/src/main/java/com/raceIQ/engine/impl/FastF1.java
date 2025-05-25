@@ -1,14 +1,14 @@
 package com.raceIQ.engine.impl;
 
-import com.raceIQ.engine.model.*;
-import com.raceIQ.engine.model.ErgastConstructor.ConstructorResponse;
-import com.raceIQ.engine.model.ErgastDriver.ErgastResponse;
-import com.raceIQ.engine.model.Race.Practice;
-import com.raceIQ.engine.repository.ConstructorRepository;
-import com.raceIQ.engine.repository.ConstructorStandingsRepository;
-import com.raceIQ.engine.repository.DriverRepository;
-import com.raceIQ.engine.repository.DriverStandingsRepository;
-import com.raceIQ.engine.repository.RaceRepository;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -17,11 +17,32 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
+import com.raceIQ.engine.model.Constructor;
+import com.raceIQ.engine.model.ConstructorStanding;
+import com.raceIQ.engine.model.Driver;
+import com.raceIQ.engine.model.DriverStanding;
+import com.raceIQ.engine.model.ErgastConstructor;
+import com.raceIQ.engine.model.ErgastConstructor.ConstructorResponse;
+import com.raceIQ.engine.model.ErgastConstructorStandingsResponse;
+import com.raceIQ.engine.model.ErgastDriver;
+import com.raceIQ.engine.model.ErgastDriver.ErgastResponse;
+import com.raceIQ.engine.model.ErgastDriverStandingsResponse;
+import com.raceIQ.engine.model.OpenF1Driver;
+import com.raceIQ.engine.model.Race;
+import com.raceIQ.engine.model.RaceResponse;
+import com.raceIQ.engine.model.Result;
+import com.raceIQ.engine.repository.ConstructorRepository;
+import com.raceIQ.engine.repository.ConstructorStandingsRepository;
+import com.raceIQ.engine.repository.DriverRepository;
+import com.raceIQ.engine.repository.DriverStandingsRepository;
+import com.raceIQ.engine.repository.RaceRepository;
+
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
-
-import java.util.*;
-import java.util.function.Supplier;
 
 @Service
 public class FastF1 {
@@ -909,6 +930,7 @@ public class FastF1 {
                 ConstructorStanding constructorStanding = new ConstructorStanding();
                 constructorStanding.setConstructorId(constructorId);
                 constructorStanding.setName(constructor.getName());
+                constructorStanding.setColor(constructor.getColorCode());
                 try {
                     constructorStanding.setPosition(Integer.parseInt(standing.position));
                     constructorStanding.setPoints(Integer.parseInt(standing.points));
@@ -1111,4 +1133,122 @@ public class FastF1 {
             return null;
         }
     }
+
+
+    public void updateCircuitUrls() {
+        // Get all races from the repository
+        List<Race> races = raceRepo.findAll();
+        if (races.isEmpty()) {
+            System.out.println("No races found in the repository");
+            return;
+        }
+
+        // Map of circuit round numbers to their corresponding URLs
+        Map<String, String> circuitUrlMap = createCircuitUrlMap();
+        int updatedCount = 0;
+
+        for (Race race : races) {
+            if (race.getCircuit() != null && race.getRound() != null) {
+                String round = race.getRound();
+                if (circuitUrlMap.containsKey(round)) {
+                    String newUrl = circuitUrlMap.get(round);
+                    race.getCircuit().setUrl(newUrl);
+                    updatedCount++;
+                }
+            }
+        }
+
+        // Save all updated races back to the repository
+        if (updatedCount > 0) {
+            raceRepo.saveAll(races);
+            System.out.println("Updated " + updatedCount + " circuit URLs");
+        } else {
+            System.out.println("No circuit URLs were updated");
+        }
+
+
+    }
+
+    /**
+     * Creates a mapping of race rounds to circuit URLs
+     * @return Map of round numbers to circuit URLs
+     */
+    private Map<String, String> createCircuitUrlMap() {
+        Map<String, String> map = new HashMap<>();
+        
+        map.put("1", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Bahrain%20carbon.png");
+        map.put("2", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Saudi%20Arabia%20carbon.png");
+        map.put("3", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Australia%20carbon.png");
+        map.put("4", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Japan%20carbon.png");
+        map.put("5", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/China%20carbon.png");
+        map.put("6", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Miami%20carbon.png");
+        map.put("7", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Emilia%20Romagna%20carbon.png");
+        map.put("8", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Monte%20Carlo%20carbon.png");
+        map.put("9", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Canada%20carbon.png");
+        map.put("10", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Spain%20carbon.png");
+        map.put("11", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Austria%20carbon.png");
+        map.put("12", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Great%20Britain%20carbon.png");
+        map.put("13", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Hungary%20carbon.png");
+        map.put("14", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Belgium%20carbon.png");
+        map.put("15", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Netherlands%20carbon.png");
+        map.put("16", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Italy%20carbon.png");
+        map.put("17", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Azerbaijan%20carbon.png");
+        map.put("18", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Singapore%20carbon.png");
+        map.put("19", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/United%20States%20carbon.png");
+        map.put("20", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Mexico%20carbon.png");
+        map.put("21", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Brazil%20carbon.png");
+        map.put("22", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Las%20Vegas%20carbon.png");
+        map.put("23", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Qatar%20carbon.png");
+        map.put("24", "https://media.formula1.com/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/Abu%20Dhabi%20carbon.png");
+        
+        return map;
+    }
+
+
+    public  void updateDriverImages() {
+        // Map of driver _id to their new image URL
+        Map<String, String> updates = Map.ofEntries(
+            Map.entry("leclerc", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CHALEC01_Charles_Leclerc/chalec01.png"),
+            Map.entry("norris", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANNOR01_Lando_Norris/lannor01.png"),
+            Map.entry("max_verstappen", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png"),
+            Map.entry("russell", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GEORUS01_George_Russell/georus01.png"),
+            Map.entry("hamilton", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LEWHAM01_Lewis_Hamilton/lewham01.png"),
+            Map.entry("kimi antonelli", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/K/ANDANT01_Kimi_Antonelli/andant01.png"),
+            Map.entry("albon", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ALEALB01_Alexander_Albon/alealb01.png"),
+            Map.entry("ocon", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/E/ESTOCO01_Esteban_Ocon/estoco01.png"),
+            Map.entry("stroll", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANSTR01_Lance_Stroll/lanstr01.png"),
+            Map.entry("sainz", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CARSAI01_Carlos_Sainz/carsai01.png"),
+            Map.entry("tsunoda", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/Y/YUKTSU01_Yuki_Tsunoda/yuktsu01.png"),
+            Map.entry("gasly", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/P/PIEGAS01_Pierre_Gasly/piegas01.png"),
+            Map.entry("hadjar", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/I/ISAHAD01_Isack_Hadjar/isahad01.png"),
+            Map.entry("hulkenberg", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/N/NICHUL01_Nico_Hulkenberg/nichul01.png"),
+            Map.entry("bearman", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OLIBEA01_Oliver_Bearman/olibea01.png"),
+            Map.entry("alonso", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FERALO01_Fernando_Alonso/feralo01.png"),
+            Map.entry("lawson", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LIALAW01_Liam_Lawson/lialaw01.png"),
+            Map.entry("bortoleto", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GABBOR01_Gabriel_Bortoleto/gabbor01.png"),
+            Map.entry("colapinto", "https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FRACOL01_Franco_Colapinto/fracol01.png"),
+            Map.entry("piastri","https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OSCPIA01_Oscar_Piastri/oscpia01.png")
+        );
+
+        updates.forEach((driverId, url) -> {
+            driverRepo.findById(driverId).ifPresent(driver -> {
+                driver.setDriverImageUrl(url);
+                driverRepo.save(driver);
+                System.out.println("Updated driverImageUrl for: " + driverId);
+            });
+        });
+    }
+
+    private static final Map<String, String> colorMap = Map.of(
+        "mclaren", "#FF8700",
+        "mercedes", "#00D2BE",
+        "red_bull", "#1E41FF",
+        "ferrari", "#DC0000",
+        "williams", "#005AFF",
+        "haas", "#B6BABD",
+        "aston_martin", "#006F62",
+        "rb", "#1E41FF",           // Assuming 'rb' same as Red Bull
+        "alpine", "#2293D1",
+        "sauber", "#900000"
+    );
 }

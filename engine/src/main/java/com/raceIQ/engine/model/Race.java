@@ -115,11 +115,6 @@ public class Race {
         this.results = results;
     }
 
-    
-
-    
-    
-
     @Override
     public String toString() {
         return "Race [season=" + season + ", round=" + round + ", url=" + url + ", raceName=" + raceName + ", date="
@@ -141,10 +136,6 @@ public class Race {
     public void setSprintResults(List<Result> sprintResults) {
         this.sprintResults = sprintResults;
     }
-
-
-
-    
 
     public String getTime() {
         return time;
@@ -194,12 +185,7 @@ public class Race {
         this.qualifying = qualifying;
     }
 
-
-
-
-
     public static class Practice{
-
         private String date;
         private String time;
 
@@ -220,10 +206,6 @@ public class Race {
         }
     }
 
-
-
-
-
     public Practice getSprintQualifying() {
         return sprintQualifying;
     }
@@ -232,4 +214,3 @@ public class Race {
         this.sprintQualifying = sprintQualifying;
     }
 }
-

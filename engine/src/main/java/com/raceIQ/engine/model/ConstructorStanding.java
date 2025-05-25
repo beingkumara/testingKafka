@@ -12,6 +12,8 @@ public class ConstructorStanding {
     private int points; // 2025 season points
     private int wins; // 2025 season race wins
     private int podiums; // 2025 season podiums
+    private String color;
+
 
     // Getters and setters
     public String getConstructorId() { return constructorId; }
@@ -26,4 +28,8 @@ public class ConstructorStanding {
     public void setWins(int wins) { this.wins = wins; }
     public int getPodiums() { return podiums; }
     public void setPodiums(int podiums) { this.podiums = podiums; }
+
+    public String getColor() { return color; }
+
+    public void setColor(String color) { this.color = color; }
 }

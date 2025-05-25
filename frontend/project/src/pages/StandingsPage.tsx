@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { getDriverStandings, getConstructorStandings } from '../services/f1Service';
+import { getDriverStandings, getConstructorStandings } from '../services';
 import LoadingScreen from '../components/ui/LoadingScreen';
 
 interface Driver {

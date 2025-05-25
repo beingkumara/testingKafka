@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin, Award, Activity, TrendingUp } from 'lucide-react';
-import { getDriverStandings, getRaces, getLastRaceResults } from '../services/f1Service';
+import { getDriverStandings, getRaces, getLastRaceResults } from '../services';
 import LoadingScreen from '../components/ui/LoadingScreen';
+import { Link } from 'react-router-dom';
 
 interface Driver {
   id: number;
@@ -132,10 +133,10 @@ const DashboardPage: React.FC = () => {
               </div>
               
               <div className="mt-4 text-right">
-                <a href="/standings" className="text-primary-500 hover:text-primary-600 text-sm font-medium inline-flex items-center">
+                <Link to="/standings" className="text-primary-500 hover:text-primary-600 text-sm font-medium inline-flex items-center">
                   View full standings
                   <TrendingUp className="ml-1 h-4 w-4" />
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -197,10 +198,10 @@ const DashboardPage: React.FC = () => {
               </div>
               
               <div className="mt-4 text-right">
-                <a href="/races" className="text-primary-500 hover:text-primary-600 text-sm font-medium inline-flex items-center">
+                <Link to="/races" className="text-primary-500 hover:text-primary-600 text-sm font-medium inline-flex items-center">
                   View full race results
                   <TrendingUp className="ml-1 h-4 w-4" />
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -254,9 +255,9 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <a href="/races" className="btn btn-primary w-full">
+                  <Link to="/races" className="btn btn-primary w-full">
                     View Race Details
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -301,9 +302,9 @@ const DashboardPage: React.FC = () => {
             </div>
             
             <div className="p-4 text-center">
-              <a href="/races" className="text-primary-500 hover:text-primary-600 text-sm font-medium">
+              <Link to="/races" className="text-primary-500 hover:text-primary-600 text-sm font-medium">
                 View full race calendar
-              </a>
+              </Link>
             </div>
           </div>
         </div>

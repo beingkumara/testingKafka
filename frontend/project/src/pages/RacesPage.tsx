@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, Clock, ChevronRight } from 'lucide-react';
-import { getRaces } from '../services/f1Service';
+import { getRaces } from '../services';
 import LoadingScreen from '../components/ui/LoadingScreen';
 
 interface Race {

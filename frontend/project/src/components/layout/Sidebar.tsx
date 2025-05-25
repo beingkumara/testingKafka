@@ -1,8 +1,52 @@
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Flag, Trophy, BarChart } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { getRaces, getConstructorStandings, getDriverStandings } from '../../services';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const [nextRace, setNextRace] = useState<string>('Loading...');
+  const [topTeam, setTopTeam] = useState<string>('Loading...');
+  const [topDriver, setTopDriver] = useState<string>('Loading...');
+  const [completedRaces, setCompletedRaces] = useState<string>('0/0');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Get races data
+        const races = await getRaces();
+        const completed = races.filter(race => race.completed).length;
+        const total = races.length;
+        setCompletedRaces(`${completed}/${total}`);
+        
+        // Find next race
+        const upcoming = races.filter(race => !race.completed);
+        if (upcoming.length > 0) {
+          // Truncate race name if too long
+          const raceName = upcoming[0].name;
+          setNextRace(raceName);
+        } else {
+          setNextRace('Season complete');
+        }
+        
+        // Get constructor standings
+        const constructors = await getConstructorStandings();
+        if (constructors.length > 0) {
+          setTopTeam(constructors[0].name.toUpperCase());
+        }
+        
+        // Get driver standings
+        const drivers = await getDriverStandings();
+        if (drivers.length > 0) {
+          setTopDriver(drivers[0].name);
+        }
+      } catch (error) {
+        console.error('Error fetching sidebar data:', error);
+      }
+    };
+    
+    fetchData();
+  }, []);
 
   const navItems = [
     {
@@ -62,15 +106,19 @@ const Sidebar: React.FC = () => {
             <div className="text-sm space-y-2">
               <div className="flex justify-between">
                 <span>Races completed:</span>
-                <span className="font-mono">14/23</span>
+                <span className="font-mono">{completedRaces}</span>
+              </div>
+              <div className="flex justify-between items-start">
+                <span className="whitespace-nowrap">Next race:</span>
+                <span className="font-mono text-right ml-2">{nextRace}</span>
               </div>
               <div className="flex justify-between">
-                <span>Next race:</span>
-                <span className="font-mono">Singapore</span>
+                <span>Top driver:</span>
+                <span className="font-mono">{topDriver}</span>
               </div>
               <div className="flex justify-between">
                 <span>Top team:</span>
-                <span className="font-mono">Red Bull</span>
+                <span className="font-mono">{topTeam}</span>
               </div>
             </div>
           </div>

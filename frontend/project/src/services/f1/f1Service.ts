@@ -1,11 +1,12 @@
-// Mock F1 data service
+import { API_BASE_URL } from '../../config/constants';
 
+// Mock F1 data service
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Driver standings data
 export const getDriverStandings = async (): Promise<DriverStanding[]> => {
   try {
-    const response = await fetch('http://localhost:8080/api/v1/driver-standings');
+    const response = await fetch(`${API_BASE_URL}/driver-standings`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch driver standings: ${response.status} ${response.statusText}`);
@@ -31,7 +32,7 @@ export const getDriverStandings = async (): Promise<DriverStanding[]> => {
 // Constructor standings data
 export const getConstructorStandings = async (): Promise<ConstructorStanding[]> => {
   try {
-    const response = await fetch('http://localhost:8080/api/v1/constructor-standings', {
+    const response = await fetch(`${API_BASE_URL}/constructor-standings`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -58,13 +59,10 @@ export const getConstructorStandings = async (): Promise<ConstructorStanding[]> 
   }
 };
 
-// Races data
-
-
 // Last race results
 export const getLastRaceResults = async () => {
   await delay(800);
-  const response = await fetch('http://localhost:8080/api/v1/latest-race-results');
+  const response = await fetch(`${API_BASE_URL}/latest-race-results`);
   if (!response.ok) {
     throw new Error(`Failed to fetch last race results`);
   }
@@ -80,12 +78,10 @@ export const getLastRaceResults = async () => {
   }));
 };
 
-
 // Drivers data
 export const getDrivers = async (): Promise<Driver[]> => {
-  const response = await fetch('http://localhost:8080/api/v1/currentDrivers');
+  const response = await fetch(`${API_BASE_URL}/currentDrivers`);
   const data: DriverFromAPI[] = await response.json();
-  console.log(data);
   return data.map((driver: DriverFromAPI) => ({
     id: driver._id,
     name: driver.fullName,
@@ -99,9 +95,25 @@ export const getDrivers = async (): Promise<Driver[]> => {
   }));
 };
 
+// Get driver details by ID
+export const getDriverById = async (id: string): Promise<any> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/drivers/${id}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch driver details: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching driver details:', error);
+    throw error;
+  }
+};
+
 export const getRaces = async () => {
   await delay(800);
-  const response = await fetch("http://localhost:8080/api/v1/races");
+  const response = await fetch(`${API_BASE_URL}/races`);
   const data: Race[]  = await response.json();
   return data.map((race: Race) => { 
     const raceDateTime = new Date(`${race.date}T${race.time}`);
@@ -117,10 +129,9 @@ export const getRaces = async () => {
       image: race.Circuit.url,
     };
   });
-  
 };
 
-
+// Type definitions
 interface DriverFromAPI {
   _id: string;
   driverNumber: string;
@@ -145,7 +156,6 @@ interface Driver {
   image: string;
 }
 
-
 interface DriverStanding {
   id: string; // Maps to driverId
   position: number;
@@ -165,7 +175,7 @@ interface ConstructorStanding {
   podiums: number;
 }
 
-interface Race{
+interface Race {
   id: string;
   raceName: string;
   Circuit: Circuit;
@@ -176,25 +186,23 @@ interface Race{
   image: string;
 }
 
-interface Circuit{
+interface Circuit {
   circuitId: string;
-  url : string;
+  url: string;
   circuitName: string;
   Location: Location;
   image: string;
 }
 
-interface Location{
+interface Location {
   lat: string;
   long: string;
   locality: string;
   country: string;
 }
 
-
-
 interface RaceResultFromAPI {
-  position:  string;
+  position: string;
   number: string;
   positionText: string;
   points: string;

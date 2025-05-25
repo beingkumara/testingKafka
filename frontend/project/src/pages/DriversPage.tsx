@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, Filter } from 'lucide-react';
-import { getDrivers } from '../services/f1Service';
+import { getDrivers } from '../services';
 import LoadingScreen from '../components/ui/LoadingScreen';
 
 interface Driver {
@@ -17,6 +18,7 @@ interface Driver {
 }
 
 const DriversPage: React.FC = () => {
+  const navigate = useNavigate();
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -172,7 +174,10 @@ const DriversPage: React.FC = () => {
                 </div>
               </div>
 
-              <button className="btn btn-outline w-full mt-4">
+              <button 
+                onClick={() => navigate(`/drivers/${driver.id}`)}
+                className="btn btn-outline w-full mt-4"
+              >
                 View Profile
               </button>
             </div>

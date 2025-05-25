@@ -6,7 +6,7 @@ import { getDrivers } from '../services';
 import LoadingScreen from '../components/ui/LoadingScreen';
 
 interface Driver {
-  id: number;
+  id: string;
   name: string;
   number: number;
   team: string;
@@ -175,7 +175,16 @@ const DriversPage: React.FC = () => {
               </div>
 
               <button 
-                onClick={() => navigate(`/drivers/${driver.id}`)}
+                onClick={() => {
+                  // For debugging
+                  console.log('Driver data:', driver);
+                  
+                  // Use driver name as fallback if id is undefined
+                  const driverId = driver.id || driver.name.toLowerCase().replace(' ', '-');
+                  console.log('Navigating to driver profile:', driverId);
+                  
+                  navigate(`/drivers/${driverId}`);
+                }}
                 className="btn btn-outline w-full mt-4"
               >
                 View Profile

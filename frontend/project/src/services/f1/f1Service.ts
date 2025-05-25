@@ -52,6 +52,7 @@ export const getConstructorStandings = async (): Promise<ConstructorStanding[]> 
       points: standing.points,
       wins: standing.wins,
       podiums: standing.podiums,
+      color: standing.color,
     }));
   } catch (error) {
     console.error('Error fetching constructor standings:', error);
@@ -82,17 +83,25 @@ export const getLastRaceResults = async () => {
 export const getDrivers = async (): Promise<Driver[]> => {
   const response = await fetch(`${API_BASE_URL}/currentDrivers`);
   const data: DriverFromAPI[] = await response.json();
-  return data.map((driver: DriverFromAPI) => ({
-    id: driver._id,
-    name: driver.fullName,
-    number: parseInt(driver.driverNumber),
-    team: driver.teamName,
-    nationality: driver.nationality,
-    points: driver.points,
-    wins: driver.wins,
-    podiums: driver.podiums,
-    image: driver.headshot_url
-  }));
+  console.log('API response data:', data);
+  
+  return data.map((driver: DriverFromAPI) => {
+    // Use driverId if available, otherwise fallback to _id
+    const driverId = driver.driverId || driver._id;
+    console.log('Driver mapping:', driver.fullName, 'ID:', driverId);
+    
+    return {
+      id: driverId,
+      name: driver.fullName,
+      number: parseInt(driver.driverNumber),
+      team: driver.teamName,
+      nationality: driver.nationality,
+      points: driver.points,
+      wins: driver.wins,
+      podiums: driver.podiums,
+      image: driver.headshot_url
+    };
+  });
 };
 
 // Get driver details by ID
@@ -133,7 +142,8 @@ export const getRaces = async () => {
 
 // Type definitions
 interface DriverFromAPI {
-  _id: string;
+  _id?: string;
+  driverId?: string;
   driverNumber: string;
   fullName: string;
   teamName: string;

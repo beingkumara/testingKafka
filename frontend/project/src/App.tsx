@@ -14,6 +14,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const DriversPage = lazy(() => import('./pages/DriversPage'));
+const DriverDetailsPage = lazy(() => import('./pages/DriverDetailsPage'));
 const RacesPage = lazy(() => import('./pages/RacesPage'));
 const StandingsPage = lazy(() => import('./pages/StandingsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
@@ -53,6 +54,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <DriversPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path={ROUTES.DRIVER_DETAILS}
+                  element={
+                    <ProtectedRoute>
+                      <DriverDetailsPage />
                     </ProtectedRoute>
                   } 
                 />

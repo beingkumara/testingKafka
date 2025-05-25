@@ -22,6 +22,7 @@ interface DriverDetails {
   poles: number;
   fastestLaps: number;
   totalRaces: number;
+  sprintWins: number;
   sprintPodiums: number;
   sprintRaces: number;
 }
@@ -37,6 +38,8 @@ const DriverDetailsPage: React.FC = () => {
     const fetchDriverDetails = async () => {
       try {
         setIsLoading(true);
+        console.log('Fetching driver with ID:', id);
+        
         const response = await fetch(`${API_BASE_URL}/drivers/${id}`);
         
         if (!response.ok) {
@@ -44,7 +47,30 @@ const DriverDetailsPage: React.FC = () => {
         }
         
         const data = await response.json();
-        setDriver(data);
+        console.log('Driver data:', data);
+        
+        // Map API response to our component's expected format
+        setDriver({
+          _id: data.driverId,
+          driverNumber: data.driverNumber,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          teamName: data.teamName,
+          fullName: data.fullName,
+          driverImageUrl: data.headshot_url,
+          nationality: data.nationality,
+          dateOfBirth: data.dateOfBirth,
+          isActive: data.active,
+          wins: data.wins,
+          podiums: data.podiums,
+          points: data.points,
+          poles: data.poles,
+          fastestLaps: data.fastestLaps || 0,
+          totalRaces: data.totalRaces,
+          sprintWins: data.sprintWins || 0,
+          sprintPodiums: data.sprintPodiums || 0,
+          sprintRaces: data.sprintRaces || 0
+        });
       } catch (err) {
         console.error('Error fetching driver details:', err);
         setError('Failed to load driver details. Please try again later.');
@@ -235,7 +261,15 @@ const DriverDetailsPage: React.FC = () => {
             </div>
 
             <h2 className="text-2xl font-bold mt-8 mb-6">Sprint Race Statistics</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="card p-4 bg-secondary-50 dark:bg-secondary-800">
+                <div className="flex items-center mb-2">
+                  <Trophy className="text-yellow-500 mr-2" size={20} />
+                  <h3 className="font-semibold">Sprint Wins</h3>
+                </div>
+                <p className="text-3xl font-bold font-mono">{driver.sprintWins}</p>
+              </div>
+              
               <div className="card p-4 bg-secondary-50 dark:bg-secondary-800">
                 <div className="flex items-center mb-2">
                   <Award className="text-primary-500 mr-2" size={20} />

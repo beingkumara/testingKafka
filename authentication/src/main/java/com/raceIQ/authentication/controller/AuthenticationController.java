@@ -2,13 +2,15 @@ package com.raceIQ.authentication.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.Map;
 import com.raceIQ.authentication.service.AuthenticationService;
 import com.raceIQ.authentication.models.AuthRequest;
 import com.raceIQ.authentication.models.User;
@@ -25,6 +27,7 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+        // Frontend sends email as username for login
         User user = new User(request.getUsername(), request.getPassword());
         return authenticationService.login(user);
     }
@@ -35,8 +38,8 @@ public class AuthenticationController {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody String username){
-       return authenticationService.forgotPassword(username);
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request){
+       return authenticationService.forgotPassword(request.get("username"));
     }
 
     @PostMapping("/reset-password")
@@ -46,8 +49,8 @@ public class AuthenticationController {
     }
 
     @GetMapping("/user")
-    public String user(@AuthenticationPrincipal OAuth2User principal) {
-        return "Hello, " + principal.getAttribute("name");
+    public ResponseEntity<?> getCurrentUser() {
+        return authenticationService.getCurrentUser();
     }
     
 }

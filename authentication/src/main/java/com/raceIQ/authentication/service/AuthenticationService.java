@@ -31,4 +31,8 @@ public class AuthenticationService {
     public ResponseEntity<?> resetPassword(String token, String newPassword){
         return authenticationServiceImpl.resetPassword(token,newPassword);
     }
+    
+    public ResponseEntity<?> getCurrentUser() {
+        return authenticationServiceImpl.getCurrentUser();
+    }
 }

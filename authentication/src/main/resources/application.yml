@@ -1,3 +1,6 @@
+server:
+  port: 8085
+
 spring:
   data:
     mongodb:
@@ -25,7 +28,7 @@ spring:
             client-id: 1012662831288-saksn9f9o1rm7itl3uuvamo0spt90oc0.apps.googleusercontent.com
             client-secret: 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
             scope: email, profile
-            redirect-uri: http://localhost:8080//api/raceIQ/v1/auth/login/oauth2/code/google
+            redirect-uri: http://localhost:8085/api/raceIQ/v1/auth/login/oauth2/code/google
 
 jwt:
   secret: uYJlJcHDM2whTb4tEDvwMIjupXK2H8TGdDbmlVgEIE+1PQ3C6i8eK+efPd2kO6UOMIj+TQ7bfkUvm59Ht8VXLg==

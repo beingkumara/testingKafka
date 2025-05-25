@@ -21,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.mail.SimpleMailMessage;
@@ -34,12 +35,10 @@ public class AuthenticationServiceImpl {
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetTokenRepository tokenRepo;
 
-    private static final String RESET_PASSWORD_URL = "http://localhost:8080/reset-password?token=";
+    private static final String RESET_PASSWORD_URL = "http://localhost:8085/reset-password?token=";
 
     @Autowired
     private JavaMailSender mailSender;
-
-
 
     public AuthenticationServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder,PasswordResetTokenRepository tokenRepo) {
         this.authenticationManager = authenticationManager;
@@ -48,10 +47,24 @@ public class AuthenticationServiceImpl {
         this.passwordEncoder = passwordEncoder;
         this.tokenRepo=tokenRepo;
     }
+    
     public ResponseEntity<?> login(User user) {
         try{
-            Authentication auth = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+            // Try to authenticate with username first
+            Authentication auth;
+            try {
+                auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+            } catch (Exception e) {
+                // If username authentication fails, try with email
+                User userByEmail = userRepository.findByEmail(user.getUsername());
+                if (userByEmail == null) {
+                    throw new Exception("Invalid username/email or password");
+                }
+                auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(userByEmail.getUsername(), user.getPassword()));
+            }
+            
             UserDetails userDetails = (UserDetails) auth.getPrincipal();
             String token = jwtTokenProvider.generateToken(userDetails);
             System.out.println("Login successful for user: " + userDetails.getUsername());
@@ -62,18 +75,21 @@ public class AuthenticationServiceImpl {
         } catch(Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
-        
     }
 
     public ResponseEntity<?> register(AuthRequest request) {
-        // Dummy registration logic for demonstration purposes
-        User user = userRepository.findByUsername(request.getUsername());
+        // Check if username or email already exists
+        User userByUsername = userRepository.findByUsername(request.getUsername());
+        User userByEmail = userRepository.findByEmail(request.getEmail());
+        
         Map<String,Object> response = new HashMap<>();
-        if (user != null) {
+        if (userByUsername != null || userByEmail != null) {
             response.put("message", "User already exists");
             return ResponseEntity.badRequest().body(response);
         }
-        user = new User(request.getUsername(), passwordEncoder.encode(request.getPassword()), request.getEmail());
+        
+        // Create new user with name as username and separate email
+        User user = new User(request.getUsername(), passwordEncoder.encode(request.getPassword()), request.getEmail());
         userRepository.save(user);
         System.out.println("User registered: " + request.getUsername());
         response.put("message", "Registration successful");
@@ -126,5 +142,31 @@ public class AuthenticationServiceImpl {
         Map<String,Object> response = new HashMap<>();
         response.put("message", "Password Reset Successful");
         return ResponseEntity.ok().body(response);
+    }
+    
+    public ResponseEntity<?> getCurrentUser() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(401).body("User not authenticated");
+            }
+            
+            String username = authentication.getName();
+            User user = userRepository.findByUsername(username);
+            
+            if (user == null) {
+                return ResponseEntity.status(404).body("User not found");
+            }
+            
+            // Create a response that matches the frontend User interface
+            Map<String, Object> userResponse = new HashMap<>();
+            userResponse.put("id", user.getId());
+            userResponse.put("name", user.getUsername());
+            userResponse.put("email", user.getEmail());
+            
+            return ResponseEntity.ok(userResponse);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error retrieving user: " + e.getMessage());
+        }
     }
 }

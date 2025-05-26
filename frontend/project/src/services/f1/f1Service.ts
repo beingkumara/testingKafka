@@ -1,19 +1,34 @@
-import { API_BASE_URL } from '../../config/constants';
+/**
+ * Formula 1 Data Service
+ * 
+ * This service handles all F1-related API calls and data transformations.
+ */
+import { f1Api } from '../api';
+import { 
+  Driver, 
+  DriverFromAPI, 
+  DriverStanding, 
+  ConstructorStanding,
+  Race,
+  RaceResult,
+  RaceResultFromAPI,
+  RaceFromAPI
+} from '../../types/f1.types';
 
-// Mock F1 data service
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+/**
+ * Utility for simulating network delay in development
+ * @param ms - Milliseconds to delay
+ */
+const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
-// Driver standings data
+/**
+ * Fetches current driver standings
+ * @returns Promise with driver standings data
+ */
 export const getDriverStandings = async (): Promise<DriverStanding[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/driver-standings`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch driver standings: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    // Map backend fields to frontend structure
+    const data = await f1Api.get<any[]>('/driver-standings');
+    
     return data.map((standing: any) => ({
       id: standing.driverId,
       position: standing.position,
@@ -29,22 +44,14 @@ export const getDriverStandings = async (): Promise<DriverStanding[]> => {
   }
 };
 
-// Constructor standings data
+/**
+ * Fetches current constructor standings
+ * @returns Promise with constructor standings data
+ */
 export const getConstructorStandings = async (): Promise<ConstructorStanding[]> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/constructor-standings`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch constructor standings: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    // Map backend fields to frontend structure
+    const data = await f1Api.get<any[]>('/constructor-standings');
+    
     return data.map((standing: any) => ({
       id: standing.constructorId,
       position: standing.position,
@@ -60,183 +67,123 @@ export const getConstructorStandings = async (): Promise<ConstructorStanding[]> 
   }
 };
 
-// Last race results
-export const getLastRaceResults = async () => {
-  await delay(800);
-  const response = await fetch(`${API_BASE_URL}/latest-race-results`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch last race results`);
-  }
-  const data: RaceResultFromAPI[] = await response.json();
-  return data.map((result: RaceResultFromAPI) => ({
-    position: parseInt(result.position, 10),
-    driver: result.Driver.givenName,
-    team: result.Constructor.name,
-    time: result.Time
-      ? result.Time.time
-      : 'N/A',
-    points: parseInt(result.points, 10)
-  }));
-};
-
-// Drivers data
-export const getDrivers = async (): Promise<Driver[]> => {
-  const response = await fetch(`${API_BASE_URL}/currentDrivers`);
-  const data: DriverFromAPI[] = await response.json();
-  console.log('API response data:', data);
-  
-  return data.map((driver: DriverFromAPI) => {
-    // Use driverId if available, otherwise fallback to _id
-    const driverId = driver.driverId || driver._id;
-    console.log('Driver mapping:', driver.fullName, 'ID:', driverId);
+/**
+ * Fetches results from the most recent race
+ * @returns Promise with race results data
+ */
+export const getLastRaceResults = async (): Promise<RaceResult[]> => {
+  try {
+    await delay(800); // Simulated network delay
+    const data = await f1Api.get<RaceResultFromAPI[]>('/latest-race-results');
     
-    return {
-      id: driverId,
-      name: driver.fullName,
-      number: parseInt(driver.driverNumber),
-      team: driver.teamName,
-      nationality: driver.nationality,
-      points: driver.points,
-      wins: driver.wins,
-      podiums: driver.podiums,
-      image: driver.headshot_url
-    };
-  });
+    return data.map((result: RaceResultFromAPI) => ({
+      position: parseInt(result.position, 10),
+      driver: result.Driver.givenName,
+      team: result.Constructor.name,
+      time: result.Time ? result.Time.time : 'N/A',
+      points: parseInt(result.points, 10)
+    }));
+  } catch (error) {
+    console.error('Error fetching last race results:', error);
+    throw error;
+  }
 };
 
-// Get driver details by ID
+/**
+ * Fetches all current F1 drivers
+ * @returns Promise with drivers data
+ */
+export const getDrivers = async (): Promise<Driver[]> => {
+  try {
+    const data = await f1Api.get<DriverFromAPI[]>('/currentDrivers');
+    
+    return data.map((driver: DriverFromAPI) => {
+      // Use driverId if available, otherwise fallback to _id
+      const driverId = driver.driverId || driver._id;
+      
+      return {
+        id: driverId,
+        name: driver.fullName,
+        number: parseInt(driver.driverNumber),
+        team: driver.teamName,
+        nationality: driver.nationality,
+        points: driver.points,
+        wins: driver.wins,
+        podiums: driver.podiums,
+        image: driver.headshot_url
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching drivers:', error);
+    return [];
+  }
+};
+
+/**
+ * Fetches detailed information about a specific driver
+ * @param id - Driver ID
+ * @returns Promise with driver details
+ */
 export const getDriverById = async (id: string): Promise<any> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/drivers/${id}`);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch driver details: ${response.status}`);
-    }
-    
-    return await response.json();
+    return await f1Api.get<any>(`/drivers/${id}`);
   } catch (error) {
     console.error('Error fetching driver details:', error);
     throw error;
   }
 };
 
-export const getRaces = async () => {
-  await delay(800);
-  const response = await fetch(`${API_BASE_URL}/races`);
-  const data: Race[]  = await response.json();
-  return data.map((race: Race) => { 
-    const raceDateTime = new Date(`${race.date}T${race.time}`);
-    const now = new Date();
-    return {
-      id: race.id,
-      name: race.raceName,
-      date: race.date,
-      time: race.time,
-      country: race.Circuit.Location.country,
-      circuit: race.Circuit.circuitName,
-      completed: now > raceDateTime,
-      image: race.Circuit.url,
-    };
-  });
+/**
+ * Fetches all races for the current season
+ * @returns Promise with races data
+ */
+export const getRaces = async (): Promise<Race[]> => {
+  try {
+    const data = await f1Api.get<RaceFromAPI[]>('/races');
+    
+    return data.map((race: RaceFromAPI) => { 
+      const raceDateTime = new Date(`${race.date}T${race.time}`);
+      const now = new Date();
+      
+      return {
+        id: race.id,
+        name: race.raceName,
+        date: race.date,
+        time: race.time,
+        country: race.Circuit.Location.country,
+        circuit: race.Circuit.circuitName,
+        completed: now > raceDateTime,
+        image: race.Circuit.url,
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching races:', error);
+    return [];
+  }
 };
 
-// Type definitions
-interface DriverFromAPI {
-  _id?: string;
-  driverId?: string;
-  driverNumber: string;
-  fullName: string;
-  teamName: string;
-  nationality: string;
-  points: number;
-  wins: number;
-  podiums: number;
-  headshot_url: string;
-}
-
-interface Driver {
-  id: string;
-  name: string;
-  number: number;
-  team: string;
-  nationality: string;
-  points: number;
-  wins: number;
-  podiums: number;
-  image: string;
-}
-
-interface DriverStanding {
-  id: string; // Maps to driverId
-  position: number;
-  name: string; // Maps to fullName
-  team: string; // Maps to teamName
-  points: number;
-  wins: number;
-  podiums: number;
-}
-
-interface ConstructorStanding {
-  id: string; // Maps to constructorId
-  position: number;
-  name: string;
-  points: number;
-  wins: number;
-  podiums: number;
-}
-
-interface Race {
-  id: string;
-  raceName: string;
-  Circuit: Circuit;
-  date: string;
-  time: string;
-  country: string;
-  completed: boolean;
-  image: string;
-}
-
-interface Circuit {
-  circuitId: string;
-  url: string;
-  circuitName: string;
-  Location: Location;
-  image: string;
-}
-
-interface Location {
-  lat: string;
-  long: string;
-  locality: string;
-  country: string;
-}
-
-interface RaceResultFromAPI {
-  position: string;
-  number: string;
-  positionText: string;
-  points: string;
-  grid: string;
-  laps: string;
-  status: string;
-  Time: {
-    millis: string;
-    time: string;
-  };
-  Driver: {
-    driverId: string;
-    permanentNumber: string;
-    code: string;
-    url: string;
-    givenName: string;
-    familyName: string;
-    dateOfBirth: string;
-    nationality: string;
-  };
-  Constructor: {
-    constructorId: string;
-    url: string;
-    name: string;
-    nationality: string;
-  };
-}
+/**
+ * Fetches race results for a specific year and round
+ * @param year - Season year (1951-2025)
+ * @param round - Race round number (1-24)
+ * @returns Promise with race results data
+ */
+export const getRaceResultsByYearAndRound = async (year: number, round: number): Promise<RaceResult[]> => {
+  try {
+    await delay(600); // Simulated network delay
+    const data = await f1Api.get<{driver: string, constructor: string, position: string, points: string, time?: string}[]>(`/results/${year}/${round}`);
+    
+    return data.map(result => ({
+      position: parseInt(result.position, 10),
+      driver: result.driver,
+      team: result.constructor,
+      time: result.time || 'N/A',
+      points: parseInt(result.points, 10),
+      status: 'Finished',
+      circuit: result.circuit || 'Unknown Circuit',
+    }));
+  } catch (error) {
+    console.error(`Error fetching race results for ${year} round ${round}:`, error);
+    return [];
+  }
+};

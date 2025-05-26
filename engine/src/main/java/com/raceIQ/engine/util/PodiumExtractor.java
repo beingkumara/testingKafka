@@ -8,13 +8,16 @@ import com.raceIQ.engine.model.Race;
 import com.raceIQ.engine.model.RaceResponse;
 import com.raceIQ.engine.model.Result;
 
+/**
+ * Utility class for extracting podium information from race results.
+ */
 public class PodiumExtractor {
 
     /**
-     * Extracts podium information from a race response
+     * Extracts podium information from a race response.
      * 
      * @param raceResponse The race response from Ergast API
-     * @return A Podium object containing the top 3 finishers
+     * @return A Podium object containing the top 3 finishers, or null if data is insufficient
      */
     public static Podium extractPodium(RaceResponse raceResponse) {
         if (raceResponse == null || raceResponse.getMrData() == null || 

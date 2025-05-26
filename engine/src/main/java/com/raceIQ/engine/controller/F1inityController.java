@@ -1,6 +1,7 @@
 package com.raceIQ.engine.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,70 +17,97 @@ import com.raceIQ.engine.model.DriverStanding;
 import com.raceIQ.engine.model.Race;
 import com.raceIQ.engine.model.Result;
 import com.raceIQ.engine.service.F1nityService;
-import org.springframework.web.bind.annotation.RequestParam;
 
-
-
+/**
+ * REST controller for F1 data operations.
+ * Provides endpoints for accessing driver, constructor, race, and standings information.
+ */
 @RestController
 @RequestMapping(value = "/api/v1")
 public class F1inityController {
+    
     @Autowired
     private FastF1 fastf1;
 
     @Autowired
     private F1nityService f1nityService;
 
-
+    // Driver related endpoints
+    
+    /**
+     * Retrieves all drivers from the database.
+     * 
+     * @return List of all drivers
+     */
     @GetMapping("/drivers")
     public List<Driver> getAllDrivers() {
         return fastf1.getAllDrivers();
     }
+    
+    /**
+     * Retrieves current season drivers.
+     * 
+     * @return List of current drivers
+     */
+    @GetMapping("/currentDrivers")
+    public List<Driver> getCurrentDrivers() {
+        return f1nityService.getCurrentDrivers();
+    }
+    
+    /**
+     * Retrieves a specific driver by ID.
+     * 
+     * @param driverId The ID of the driver to retrieve
+     * @return The driver with the specified ID
+     */
+    @GetMapping("/drivers/{driverId}")
+    public Driver getDriverById(@PathVariable String driverId) {
+        return f1nityService.getDriverById(driverId);
+    }
 
+    // Constructor related endpoints
+    
+    /**
+     * Retrieves all constructors from the database.
+     * 
+     * @return List of all constructors
+     */
     @GetMapping("/constructors")
     public List<Constructor> getAllConstructors() {
         return fastf1.getAllConstructors();
     }
 
-    @GetMapping("/podiums")
-    public void getPodiums() {
-        fastf1.updateStatistics();
-    }
-
-    @GetMapping("/currentDrivers")
-    public List<Driver> getCurrentDrivers() {
-        return f1nityService.getCurrentDrivers();
-    }
-
-
-    @GetMapping("/sprints")
-    public String getMethodName() {
-        return fastf1.getSprintStatistics();
-    }
+    // Race related endpoints
     
-    @GetMapping("/standings")
-    public String getStandings() {
-        return fastf1.updateStandings();
-    }
-
-    @GetMapping("/driver-standings")
-    public List<DriverStanding> getDriverStandings() {
-        return fastf1.getDriverStandings();
-    }
-
-    @GetMapping("/constructor-standings")
-    public List<ConstructorStanding> getConstructorStandings() {
-        return fastf1.getConstructorStandings();
-    }
-    
+    /**
+     * Retrieves all races for the current year.
+     * 
+     * @return List of races for the current year
+     */
     @GetMapping("/races")
     public List<Race> getAllRaces() {
         return f1nityService.getRacesOfCurrentYear();
     }
-
+    
+    /**
+     * Accumulates race data from the API.
+     * 
+     * @return List of accumulated races
+     */
     @GetMapping("/accumulateRaces")
-    public List<Race> accumulateRaces(){
+    public List<Race> accumulateRaces() {
         return fastf1.accumulateRaces();
     }
+    
+    /**
+     * Updates circuit image URLs for races.
+     */
+    @GetMapping("/updateImagesForRaces")
+    public void updateImagesForRaces() {
+        fastf1.updateCircuitUrls();
+    }
+
+    // Results related endpoints
     
     /**
      * Gets the latest race results from the database.
@@ -112,15 +140,58 @@ public class F1inityController {
         return fastf1.fetchAndStoreLatestRaceResults();
     }
 
-
-    @GetMapping("/updateImagesForRaces")
-    public void updateImagesForRaces() {
-        fastf1.updateCircuitUrls();
-    }
-
-    @GetMapping("/drivers/{driverId}")
-    public Driver getDriverById(@PathVariable String driverId) {
-        return f1nityService.getDriverById(driverId);
+    // Statistics and standings endpoints
+    
+    /**
+     * Updates podium statistics.
+     */
+    @GetMapping("/podiums")
+    public void getPodiums() {
+        fastf1.updateStatistics();
     }
     
+    /**
+     * Retrieves sprint race statistics.
+     * 
+     * @return Sprint statistics as a string
+     */
+    @GetMapping("/sprints")
+    public String getSprintStatistics() {
+        return fastf1.getSprintStatistics();
+    }
+    
+    /**
+     * Updates standings data.
+     * 
+     * @return Status message
+     */
+    @GetMapping("/standings")
+    public String getStandings() {
+        return fastf1.updateStandings();
+    }
+    
+    /**
+     * Retrieves current driver standings.
+     * 
+     * @return List of driver standings
+     */
+    @GetMapping("/driver-standings")
+    public List<DriverStanding> getDriverStandings() {
+        return fastf1.getDriverStandings();
+    }
+    
+    /**
+     * Retrieves current constructor standings.
+     * 
+     * @return List of constructor standings
+     */
+    @GetMapping("/constructor-standings")
+    public List<ConstructorStanding> getConstructorStandings() {
+        return fastf1.getConstructorStandings();
+    }
+
+    @GetMapping("/results/{year}/{round}")
+    public List<Map<String, String>> getResultsByYearAndByRound(@PathVariable String year, @PathVariable String round) {
+        return f1nityService.getResultsByYearAndByRound(year, round);
+    }
 }

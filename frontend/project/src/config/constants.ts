@@ -21,6 +21,7 @@ export const ROUTES = {
   DRIVER_DETAILS: '/drivers/:id',
   RACES: '/races',
   STANDINGS: '/standings',
+  RACE_RESULTS: '/race-results',
 };
 
 // App settings

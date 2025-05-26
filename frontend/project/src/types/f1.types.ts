@@ -88,6 +88,8 @@ export interface RaceResult {
   team: string;
   time: string;
   points: number;
+  status?: string;
+  circuit: string;
 }
 
 export interface RaceResultFromAPI {

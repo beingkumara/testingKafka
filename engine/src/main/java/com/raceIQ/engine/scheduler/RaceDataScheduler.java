@@ -8,9 +8,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.raceIQ.engine.impl.FastF1;
-import com.raceIQ.engine.model.Race;
 import com.raceIQ.engine.model.Result;
 
+/**
+ * Scheduler for periodic F1 data updates.
+ * Handles automatic updates of race results and other data.
+ */
 @Component
 @EnableScheduling
 public class RaceDataScheduler {
@@ -31,7 +34,7 @@ public class RaceDataScheduler {
         System.out.println("Scheduled task: Updating latest race results...");
         List<Result> latestRace = fastF1.fetchAndStoreLatestRaceResults();
         if (latestRace != null) {
-            System.out.println("Updated latest race results for: "+latestRace);
+            System.out.println("Updated latest race results for: " + latestRace);
         } else {
             System.out.println("Failed to update latest race results or no new results available.");
         }

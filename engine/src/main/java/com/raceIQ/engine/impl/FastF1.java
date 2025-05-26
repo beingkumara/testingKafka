@@ -1251,4 +1251,31 @@ public class FastF1 {
         "alpine", "#2293D1",
         "sauber", "#900000"
     );
+
+    public List<Map<String, String>> getResultsByYearAndByRound(String year, String round){
+        String uri = String.format("%s/%s/results.json", year, round);
+        Mono<RaceResponse> response = ergastClient.get().uri(uri).retrieve().bodyToMono(RaceResponse.class);
+        RaceResponse raceResponse = response.block();
+        if (raceResponse != null && raceResponse.getMrData() != null && raceResponse.getMrData().getRaceTable() != null) {
+            List<Race> races = raceResponse.getMrData().getRaceTable().getRaces();
+            if (races != null && !races.isEmpty()) {
+                String circuitName = races.get(0).getRaceName();
+                List<Result> results = races.get(0).getResults();
+                List<Map<String, String>> updatedResults = new ArrayList<>();
+                for (Result result : results) {
+                    Map<String, String> resultMap = new HashMap<>();
+                    resultMap.put("position", result.getPosition());
+                    resultMap.put("driver", result.getDriver().getGivenName() +" "+ result.getDriver().getFamilyName());
+                    resultMap.put("constructor", result.getConstructor().getName());
+                    resultMap.put("points", result.getPoints());
+                    resultMap.put("time", result.getTime() != null ? result.getTime().getTime() : result.getStatus());
+                    resultMap.put("circuit",circuitName);
+                    // String color = colorMap.getOrDefault(constructorName, "#000000"); // Default to black if not found                    
+                    updatedResults.add(resultMap);
+                }
+                return updatedResults;
+            }
+        }
+        return null;
+    }
 }

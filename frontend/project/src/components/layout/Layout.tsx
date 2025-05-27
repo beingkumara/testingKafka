@@ -24,7 +24,7 @@ const Layout: React.FC = () => {
           </aside>
         )}
         
-        <main className={`flex-1 ${showSidebar ? 'md:ml-64' : ''}`}>
+        <main className={`flex-1 ${showSidebar ? 'sm:ml' : ''}`}>
           <div className="container mx-auto px-4 py-8">
             <Outlet />
           </div>

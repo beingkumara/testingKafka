@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, MapPin, Award, Activity, TrendingUp } from 'lucide-react';
+import { Calendar, Clock, MapPin, Award, Activity, TrendingUp, Trophy, Medal, Flag } from 'lucide-react';
 import { getDriverStandings, getRaces, getLastRaceResults } from '../services';
 import LoadingScreen from '../components/ui/LoadingScreen';
 import { Link } from 'react-router-dom';
@@ -84,11 +84,16 @@ const DashboardPage: React.FC = () => {
         {/* Main content - 2/3 width */}
         <div className="lg:col-span-2 space-y-6">
           {/* Top Drivers Card */}
-          <div className="card overflow-visible">
-            <div className="p-6 border-b dark:border-secondary-600">
+          <div className="card overflow-visible shadow-md hover:shadow-lg transition-shadow duration-300">
+            <div className="p-6 border-b dark:border-secondary-600 bg-secondary-50 dark:bg-secondary-800/50">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold">Driver Standings</h2>
-                <Award className="h-5 w-5 text-primary-500" />
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Award className="h-5 w-5 text-primary-500" />
+                  <span>Driver Standings</span>
+                </h2>
+                <span className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-sm font-medium rounded-full">
+                  2025 Season
+                </span>
               </div>
             </div>
             
@@ -96,12 +101,12 @@ const DashboardPage: React.FC = () => {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="text-left text-sm text-secondary-500 dark:text-secondary-400">
-                      <th className="pb-3 font-medium">Pos</th>
-                      <th className="pb-3 font-medium">Driver</th>
-                      <th className="pb-3 font-medium">Team</th>
-                      <th className="pb-3 font-medium text-right">Points</th>
-                      <th className="pb-3 font-medium text-right">Wins</th>
+                    <tr className="text-left text-sm border-b dark:border-secondary-700 bg-secondary-100 dark:bg-secondary-800/30">
+                      <th className="p-3 font-medium">Pos</th>
+                      <th className="p-3 font-medium">Driver</th>
+                      <th className="p-3 font-medium">Team</th>
+                      <th className="p-3 font-medium text-right">Points</th>
+                      <th className="p-3 font-medium text-center">Wins</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -111,58 +116,96 @@ const DashboardPage: React.FC = () => {
                         initial={{ x: -20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ duration: 0.3, delay: index * 0.1 }}
-                        className="border-b dark:border-secondary-700 last:border-0"
+                        className={`border-b dark:border-secondary-700 last:border-0 hover:bg-secondary-50 dark:hover:bg-secondary-700/50 transition-colors ${
+                          index < 3 ? 'bg-secondary-50/50 dark:bg-secondary-800/20' : ''
+                        }`}
                       >
-                        <td className="py-4 text-center">
-                          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium ${
+                        <td className="p-3">
+                          <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
                             driver.position === 1 
                               ? 'bg-primary-500 text-white' 
+                              : driver.position === 2
+                              ? 'bg-secondary-300 dark:bg-secondary-600 text-secondary-800 dark:text-white'
+                              : driver.position === 3
+                              ? 'bg-accent-400 dark:bg-accent-600 text-secondary-800 dark:text-white'
                               : 'bg-secondary-100 dark:bg-secondary-700 text-secondary-800 dark:text-white'
                           }`}>
                             {driver.position}
                           </span>
                         </td>
-                        <td className="py-4 font-medium">{driver.name}</td>
-                        <td className="py-4">{driver.team}</td>
-                        <td className="py-4 text-right font-mono font-medium">{driver.points}</td>
-                        <td className="py-4 text-right font-mono">{driver.wins}</td>
+                        <td className="p-3">
+                          <Link to={`/drivers/${driver.id}`} className="font-medium hover:text-primary-500 transition-colors flex items-center gap-2">
+                            {driver.position === 1 && <Award className="h-4 w-4 text-primary-500" />}
+                            {driver.name}
+                          </Link>
+                        </td>
+                        <td className="p-3">
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-secondary-100 dark:bg-secondary-700">
+                            {driver.team}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-mono font-bold text-lg">{driver.points}</td>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Award className="h-4 w-4 text-primary-500" />
+                            <span className="font-mono">{driver.wins}</span>
+                          </div>
+                        </td>
                       </motion.tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               
-              <div className="mt-4 text-right">
-                <Link to="/standings" className="text-primary-500 hover:text-primary-600 text-sm font-medium inline-flex items-center">
-                  View full standings
-                  <TrendingUp className="ml-1 h-4 w-4" />
+              <div className="mt-6 flex justify-center">
+                <Link 
+                  to="/standings" 
+                  className="btn btn-primary btn-sm flex items-center gap-2 px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  View Complete Standings
                 </Link>
               </div>
             </div>
           </div>
           
           {/* Last Race Results */}
-          <div className="card overflow-visible">
-            <div className="p-6 border-b dark:border-secondary-600">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold">Last Race Results</h2>
-                <Activity className="h-5 w-5 text-primary-500" />
+          <div className="card overflow-visible shadow-md hover:shadow-lg transition-shadow duration-300">
+            <div className="p-6 border-b dark:border-secondary-600 bg-secondary-50 dark:bg-secondary-800/50">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary-500" />
+                    <span>Last Race Results</span>
+                  </h2>
+                  <div className="flex items-center gap-4 mt-1 text-secondary-600 dark:text-secondary-300">
+                    <div className="flex items-center gap-1">
+                      <Flag className="h-4 w-4 text-primary-500" />
+                      <span>Monaco Grand Prix</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4 text-secondary-500" />
+                      <span>Monte Carlo</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-secondary-100 dark:bg-secondary-700 rounded-lg px-3 py-2 flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-primary-500" />
+                  <span>June 12, 2025</span>
+                </div>
               </div>
-              <p className="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
-                Monaco Grand Prix - Monte Carlo
-              </p>
             </div>
             
             <div className="p-6">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="text-left text-sm text-secondary-500 dark:text-secondary-400">
-                      <th className="pb-3 font-medium">Pos</th>
-                      <th className="pb-3 font-medium">Driver</th>
-                      <th className="pb-3 font-medium">Team</th>
-                      <th className="pb-3 font-medium">Time</th>
-                      <th className="pb-3 font-medium text-right">Pts</th>
+                    <tr className="text-left text-sm border-b dark:border-secondary-700 bg-secondary-100 dark:bg-secondary-800/30">
+                      <th className="p-3 font-medium">Pos</th>
+                      <th className="p-3 font-medium">Driver</th>
+                      <th className="p-3 font-medium">Team</th>
+                      <th className="p-3 font-medium">Time</th>
+                      <th className="p-3 font-medium text-right">Pts</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -172,10 +215,12 @@ const DashboardPage: React.FC = () => {
                         initial={{ x: -20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="border-b dark:border-secondary-700 last:border-0"
+                        className={`border-b dark:border-secondary-700 last:border-0 hover:bg-secondary-50 dark:hover:bg-secondary-700/50 transition-colors ${
+                          index < 3 ? 'bg-secondary-50/50 dark:bg-secondary-800/20' : ''
+                        }`}
                       >
-                        <td className="py-3 text-center">
-                          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium ${
+                        <td className="p-3">
+                          <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
                             result.position === 1 
                               ? 'bg-primary-500 text-white' 
                               : result.position === 2
@@ -187,21 +232,60 @@ const DashboardPage: React.FC = () => {
                             {result.position}
                           </span>
                         </td>
-                        <td className="py-3 font-medium">{result.driver}</td>
-                        <td className="py-3">{result.team}</td>
-                        <td className="py-3 font-mono text-sm">{result.time}</td>
-                        <td className="py-3 text-right font-mono font-medium">{result.points}</td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            {result.position === 1 && <Trophy className="h-4 w-4 text-primary-500" />}
+                            {result.position === 2 && <Medal className="h-4 w-4 text-secondary-400" />}
+                            {result.position === 3 && <Medal className="h-4 w-4 text-accent-500" />}
+                            <span className="font-medium">{result.driver}</span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-secondary-100 dark:bg-secondary-700">
+                            {result.team}
+                          </span>
+                        </td>
+                        <td className="p-3 font-mono text-sm">
+                          {result.time || 'DNF'}
+                        </td>
+                        <td className="p-3 text-right">
+                          <span className={`font-mono font-bold text-lg ${
+                            result.points > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-secondary-400'
+                          }`}>
+                            {result.points}
+                          </span>
+                        </td>
                       </motion.tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               
-              <div className="mt-4 text-right">
-                <Link to="/races" className="text-primary-500 hover:text-primary-600 text-sm font-medium inline-flex items-center">
-                  View full race results
-                  <TrendingUp className="ml-1 h-4 w-4" />
+              <div className="mt-6 flex justify-center">
+                <Link 
+                  to="/race-results" 
+                  className="btn btn-primary btn-sm flex items-center gap-2 px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all"
+                >
+                  <Flag className="h-4 w-4" />
+                  View Complete Race Results
                 </Link>
+              </div>
+            </div>
+            
+            <div className="p-4 border-t dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800/50">
+              <div className="flex flex-wrap gap-4 justify-center text-sm text-secondary-500 dark:text-secondary-400">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-primary-500"></div>
+                  <span>1st Place</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-secondary-300 dark:bg-secondary-600"></div>
+                  <span>2nd Place</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full bg-accent-400 dark:bg-accent-600"></div>
+                  <span>3rd Place</span>
+                </div>
               </div>
             </div>
           </div>

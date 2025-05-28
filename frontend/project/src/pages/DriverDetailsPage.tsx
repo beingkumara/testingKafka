@@ -163,11 +163,11 @@ const DriverDetailsPage: React.FC = () => {
 
         <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="md:col-span-1">
-            <div className="aspect-[3/4] overflow-hidden rounded-lg mb-6">
+            <div className="aspect-[2/3] overflow-hidden rounded-lg mb-6">
               <img
                 src={driver.driverImageUrl}
                 alt={driver.fullName}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-[center_top]"
                 onError={(e) => {
                   e.currentTarget.src = '/default-driver.jpg';
                 }}

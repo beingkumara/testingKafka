@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ChevronDown, Trophy, Users, Clock, BarChart3 } from 'lucide-react';
 import CountUp from 'react-countup';
+import { useAuth } from '../context/AuthContext';
 
 const HomePage: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -84,12 +86,20 @@ const HomePage: React.FC = () => {
               transition={{ duration: 0.7, delay: 0.5 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
-              <Link to="/signup" className="btn btn-primary text-lg px-8 py-3 rounded-lg">
-                Get Started
-              </Link>
-              <Link to="/login" className="btn btn-outline text-lg px-8 py-3 rounded-lg">
-                Log In
-              </Link>
+              {!isAuthenticated ? (
+                <>
+                  <Link to="/signup" className="btn btn-primary text-lg px-8 py-3 rounded-lg">
+                    Get Started
+                  </Link>
+                  <Link to="/login" className="btn btn-outline text-lg px-8 py-3 rounded-lg">
+                    Log In
+                  </Link>
+                </>
+              ) : (
+                <Link to="/dashboard" className="btn btn-primary text-lg px-8 py-3 rounded-lg">
+                  Go to Dashboard
+                </Link>
+              )}
             </motion.div>
           </div>
         </div>
@@ -250,12 +260,21 @@ const HomePage: React.FC = () => {
                 <p className="text-xl text-secondary-300 mb-10">
                   Join thousands of fans who've enhanced their Formula 1 experience with F1nity.
                 </p>
-                <Link 
-                  to="/signup" 
-                  className="btn btn-primary text-lg px-10 py-3 rounded-lg"
-                >
-                  Get Started For Free
-                </Link>
+                {!isAuthenticated ? (
+                  <Link 
+                    to="/signup" 
+                    className="btn btn-primary text-lg px-10 py-3 rounded-lg"
+                  >
+                    Get Started For Free
+                  </Link>
+                ) : (
+                  <Link 
+                    to="/dashboard" 
+                    className="btn btn-primary text-lg px-10 py-3 rounded-lg"
+                  >
+                    Go to Dashboard
+                  </Link>
+                )}
               </motion.div>
             </div>
           </div>

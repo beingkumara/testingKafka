@@ -123,7 +123,7 @@ const DriversPage: React.FC = () => {
             transition={{ duration: 0.4, delay: index * 0.05 }}
             className="card overflow-hidden group hover:shadow-lg dark:hover:shadow-secondary-900/30 transition-all duration-300"
           >
-            <div className="h-48 relative overflow-hidden">
+            <div className="h-56 relative overflow-hidden">
               <img
                 src={driver.image}
                 srcSet={
@@ -132,7 +132,7 @@ const DriversPage: React.FC = () => {
                     : '/default-driver.jpg 1x'
                 }
                 alt={driver.name}
-                className="object-cover w-full h-full"
+                className="object-cover object-[center_top] w-full h-full"
                 onError={(e) => {
                   e.currentTarget.src = '/default-driver.jpg'; // Use your local fallback image path
                 }}

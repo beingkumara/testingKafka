@@ -10,4 +10,5 @@ import com.raceIQ.engine.model.Race;
  */
 public interface RaceRepository extends MongoRepository<Race, String> {
     // Default methods from MongoRepository are sufficient for current needs
+    public Race findByRound(String round);
 }

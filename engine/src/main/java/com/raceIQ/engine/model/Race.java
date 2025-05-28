@@ -51,6 +51,7 @@ public class Race {
     @JsonProperty("SprintQualifying")
     private Practice sprintQualifying;
 
+    private boolean standingsUpdated;
     public String getId() {
         return id;
     }
@@ -210,7 +211,17 @@ public class Race {
         return sprintQualifying;
     }
 
+    
     public void setSprintQualifying(Practice sprintQualifying) {
         this.sprintQualifying = sprintQualifying;
     }
+
+    public boolean getStandingsUpdated() {
+        return standingsUpdated;
+    }
+
+    public void setStandingsUpdated(boolean updated){
+        this.standingsUpdated = updated;
+    }
+
 }

@@ -15,6 +15,8 @@ public class Result {
     private String Q1;
     private String Q2;
     private String Q3;
+    
+    @JsonProperty("FastestLap")
     private FastestLap fastestLap;
     
     @JsonProperty("Time")

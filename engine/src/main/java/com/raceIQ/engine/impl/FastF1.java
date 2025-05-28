@@ -264,6 +264,7 @@ public class FastF1 {
 
                     Race race = raceResponse.getMrData().getRaceTable().getRaces().get(0);
                     String circuitId = race.getCircuit().getCircuitId();
+                    
                     List<Result> results = race.getResults();
 
                     if (results == null || results.isEmpty()) {
@@ -292,11 +293,15 @@ public class FastF1 {
                     Map<String, DriverStanding> updatedDriverStandings = new HashMap<>();
                     Map<String, ConstructorStanding> updatedConstructorStandings = new HashMap<>();
                     Set<String> constructorsProcessedForTotalRaces = new HashSet<>();
-
+                    Map<String,Race> updateRaces = new HashMap<>();
+                    String currentRound = race.getRound();
                     // Process race results for 2025 only (for standings collections)
                     if (year == 2025) {
                         for (int i = 0; i < results.size(); i++) {
                             Result result = results.get(i);
+                            Race existingRace = raceRepo.findByRound(currentRound);
+                            existingRace.setStandingsUpdated(true);
+                            updateRaces.put(currentRound,existingRace);
                             ErgastDriver ergDriver = result.getDriver();
                             ErgastConstructor egConstructor = result.getConstructor();
 
@@ -373,8 +378,8 @@ public class FastF1 {
 
                             if (result.getFastestLap() != null && result.getFastestLap().getRank() != null &&
                                 result.getFastestLap().getRank().equals("1")) {
-                                driver.setFastestLaps(driver.getFastestLaps() + 1);
-                                constructor.setFastestLaps(constructor.getFastestLaps() + 1);
+                                driver.setFastestLaps(driver.getFastestLaps() != null ? driver.getFastestLaps() + 1: 1);
+                                constructor.setFastestLaps(constructor.getFastestLaps() != null ? constructor.getFastestLaps() + 1: 1);
                             }
                             
                             driver.setTotalRaces(driver.getTotalRaces() != null ? driver.getTotalRaces() + 1 : 1);
@@ -504,6 +509,9 @@ public class FastF1 {
                             constructorStandingsRepo.saveAll(updatedConstructorStandings.values());
                         }
                     }
+                    if(!updateRaces.isEmpty()){
+                        raceRepo.saveAll(updateRaces.values());
+                    }
 
                     System.out.println("Successfully processed " + context + ", circuit " + circuitId);
 
@@ -535,7 +543,7 @@ public class FastF1 {
                 }
             }
         }
-        System.out.println("Circuit Statistics (not implemented): " + circuitStats);
+        // System.out.println("Circuit Statistics (not implemented): " + circuitStats);
     }
 
     private <T> T fetchWithRetry(Supplier<Mono<T>> monoSupplier, String contextForLogging) {

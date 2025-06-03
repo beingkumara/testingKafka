@@ -75,11 +75,23 @@ const StandingsPage: React.FC = () => {
       return <Minus className="h-4 w-4 text-secondary-400" />;
     }
     
+    const diff = Math.abs(previous - current);
+    
     if (current < previous) {
-      return <ArrowUp className="h-4 w-4 text-green-500" />;
+      return (
+        <div className="flex items-center">
+          <ArrowUp className="h-4 w-4 text-green-500" />
+          <span className="ml-1 text-xs text-green-500 font-medium">{diff}</span>
+        </div>
+      );
     }
     
-    return <ArrowDown className="h-4 w-4 text-red-500" />;
+    return (
+      <div className="flex items-center">
+        <ArrowDown className="h-4 w-4 text-red-500" />
+        <span className="ml-1 text-xs text-red-500 font-medium">{diff}</span>
+      </div>
+    );
   };
   
   if (isLoading) {

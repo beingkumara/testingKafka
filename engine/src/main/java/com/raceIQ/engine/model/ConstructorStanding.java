@@ -13,7 +13,7 @@ public class ConstructorStanding {
     private int wins; // 2025 season race wins
     private int podiums; // 2025 season podiums
     private String color;
-
+    private int previousPosition;
 
     // Getters and setters
     public String getConstructorId() { return constructorId; }
@@ -32,4 +32,8 @@ public class ConstructorStanding {
     public String getColor() { return color; }
 
     public void setColor(String color) { this.color = color; }
+
+    public int getPreviousPosition(){ return previousPosition; }
+
+    public void setPreviousPosition(int previousPosition){ this.previousPosition = previousPosition; }
 }

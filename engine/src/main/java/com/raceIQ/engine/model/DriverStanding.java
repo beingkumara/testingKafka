@@ -13,6 +13,7 @@ public class DriverStanding {
     private int wins; // 2025 season race wins
     private int podiums; // 2025 season podiums
     private String teamName; // Current team for 2025
+    private int previousPosition;
 
     // Getters and setters
     public String getDriverId() { return driverId; }
@@ -29,4 +30,6 @@ public class DriverStanding {
     public void setPodiums(int podiums) { this.podiums = podiums; }
     public String getTeamName() { return teamName; }
     public void setTeamName(String teamName) { this.teamName = teamName; }
+    public int getPreviousPosition() { return previousPosition; }
+    public void setPreviousPosition(int previousPosition) { this.previousPosition = previousPosition;}
 }

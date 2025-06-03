@@ -162,7 +162,7 @@ public class F1inityController {
     
     /**
      * Updates standings data.
-     * 
+     * this is to update the db. not used by the application
      * @return Status message
      */
     @GetMapping("/standings")
@@ -194,4 +194,5 @@ public class F1inityController {
     public List<Map<String, String>> getResultsByYearAndByRound(@PathVariable String year, @PathVariable String round) {
         return f1nityService.getResultsByYearAndByRound(year, round);
     }
+
 }

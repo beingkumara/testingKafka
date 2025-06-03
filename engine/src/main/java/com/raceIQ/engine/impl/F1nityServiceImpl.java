@@ -67,4 +67,5 @@ public class F1nityServiceImpl {
     public List<Map<String, String>> getResultsByYearAndByRound(String year, String round) {
         return fastF1.getResultsByYearAndByRound(year, round);
     }
+
 }

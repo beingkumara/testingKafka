@@ -240,7 +240,6 @@ public class FastF1 {
     public void updateStatistics() {
         Integer year = 2025;
         Integer round = 1;
-        Map<String, Map<String, Integer>> circuitStats = new HashMap<>(); // circuitId -> {driverId/constructorId -> stat}
 
         while (year >= 2001) {
             while (round <= MAX_ROUNDS) {
@@ -880,7 +879,8 @@ public class FastF1 {
                     System.out.println("Driver not found in DB: " + driverId + " for " + driverContext);
                     continue;   
                 }
-
+                Optional<DriverStanding> existingDriverStandingOpt = driverStandingsRepo.findById(driverId);
+                DriverStanding existingDriverStanding = existingDriverStandingOpt.get();
                 Driver driver = driverOpt.get();
                 DriverStanding driverStanding = new DriverStanding();
                 driverStanding.setDriverId(driverId);
@@ -890,6 +890,12 @@ public class FastF1 {
                     driverStanding.setPosition(Integer.parseInt(standing.position));
                     driverStanding.setPoints(Integer.parseInt(standing.points));
                     driverStanding.setWins(Integer.parseInt(standing.wins));
+                    if(existingDriverStanding != null){
+                        driverStanding.setPreviousPosition(existingDriverStanding.getPosition());
+                    } else{
+                        driverStanding.setPreviousPosition(Integer.parseInt(standing.position));
+                    }
+                    
                     // Podiums not directly available in standings API; calculate via results in updateStatistics
                     driverStanding.setPodiums(0);
                 } catch (NumberFormatException e) {
@@ -936,6 +942,8 @@ public class FastF1 {
 
                 Constructor constructor = constructorOpt.get();
                 ConstructorStanding constructorStanding = new ConstructorStanding();
+                Optional<ConstructorStanding> existingConstructorStandingOpt = constructorStandingsRepo.findById(constructorId);
+                ConstructorStanding existingConstructorStanding = existingConstructorStandingOpt.get();
                 constructorStanding.setConstructorId(constructorId);
                 constructorStanding.setName(constructor.getName());
                 constructorStanding.setColor(constructor.getColorCode());
@@ -943,6 +951,12 @@ public class FastF1 {
                     constructorStanding.setPosition(Integer.parseInt(standing.position));
                     constructorStanding.setPoints(Integer.parseInt(standing.points));
                     constructorStanding.setWins(Integer.parseInt(standing.wins));
+                    if(existingConstructorStanding != null){
+                        constructorStanding.setPreviousPosition(existingConstructorStanding.getPosition());
+                    } else{
+                        constructorStanding.setPreviousPosition(Integer.parseInt(standing.position));
+                    }
+                   
                     // Podiums not directly available; calculate via results in updateStatistics
                     constructorStanding.setPodiums(0);
                 } catch (NumberFormatException e) {

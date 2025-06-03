@@ -8,9 +8,9 @@ import com.raceIQ.authentication.models.User;
 import com.raceIQ.authentication.repository.PasswordResetTokenRepository;
 import com.raceIQ.authentication.repository.UserRepository;
 import com.raceIQ.authentication.security.JwtTokenProvider;
+import com.raceIQ.authentication.utils.AuthenticationUtil;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -34,18 +34,20 @@ public class AuthenticationServiceImpl {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetTokenRepository tokenRepo;
+    private final AuthenticationUtil authenticationUtil;
 
     private static final String RESET_PASSWORD_URL = "http://localhost:8085/reset-password?token=";
 
     @Autowired
     private JavaMailSender mailSender;
 
-    public AuthenticationServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder,PasswordResetTokenRepository tokenRepo) {
+    public AuthenticationServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder,PasswordResetTokenRepository tokenRepo, AuthenticationUtil authenticationUtil) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenRepo=tokenRepo;
+        this.authenticationUtil = authenticationUtil;
     }
     
     public ResponseEntity<?> login(User user) {
@@ -88,6 +90,15 @@ public class AuthenticationServiceImpl {
             return ResponseEntity.badRequest().body(response);
         }
         
+        if(!authenticationUtil.isValidEmailAddress(request.getEmail())){
+            response.put("message","Invalid Email Address. Please enter a valid email address");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if(!authenticationUtil.isValidPassword(request.getPassword())){
+            response.put("message","Invalid Password. Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
+            return ResponseEntity.badRequest().body(response);
+        }
         // Create new user with name as username and separate email
         User user = new User(request.getUsername(), passwordEncoder.encode(request.getPassword()), request.getEmail());
         userRepository.save(user);

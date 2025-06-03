@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -10,17 +10,93 @@ const SignupPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [passwordFeedback, setPasswordFeedback] = useState('');
+  const [isEmailValid, setIsEmailValid] = useState(true);
   
   const { signup } = useAuth();
   const navigate = useNavigate();
   
+  // Check if password meets requirements
+  const validatePassword = (pass: string): { isValid: boolean; message: string } => {
+    if (pass.length < 8) {
+      return { isValid: false, message: 'Password must be at least 8 characters' };
+    }
+    
+    // Check for alphanumeric (at least one letter and one number)
+    const hasLetter = /[a-zA-Z]/.test(pass);
+    const hasNumber = /[0-9]/.test(pass);
+    
+    if (!hasLetter || !hasNumber) {
+      return { isValid: false, message: 'Password must contain both letters and numbers' };
+    }
+    
+    return { isValid: true, message: '' };
+  };
+  
+  // Calculate password strength
+  const calculatePasswordStrength = (pass: string): number => {
+    if (!pass) return 0;
+    
+    let strength = 0;
+    
+    // Length check
+    if (pass.length >= 8) strength += 1;
+    if (pass.length >= 12) strength += 1;
+    
+    // Complexity checks
+    if (/[a-z]/.test(pass)) strength += 1; // lowercase
+    if (/[A-Z]/.test(pass)) strength += 1; // uppercase
+    if (/[0-9]/.test(pass)) strength += 1; // numbers
+    if (/[^a-zA-Z0-9]/.test(pass)) strength += 1; // special chars
+    
+    // Scale to 0-100
+    return Math.min(Math.floor((strength / 6) * 100), 100);
+  };
+  
+  // Validate email format
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
+  // Update password strength when password changes
+  useEffect(() => {
+    const strength = calculatePasswordStrength(password);
+    setPasswordStrength(strength);
+    
+    if (strength === 0) {
+      setPasswordFeedback('');
+    } else if (strength < 40) {
+      setPasswordFeedback('Weak');
+    } else if (strength < 70) {
+      setPasswordFeedback('Moderate');
+    } else {
+      setPasswordFeedback('Strong');
+    }
+  }, [password]);
+  
+  // Validate email when it changes
+  useEffect(() => {
+    if (email) {
+      setIsEmailValid(validateEmail(email));
+    } else {
+      setIsEmailValid(true); // Don't show error when field is empty
+    }
+  }, [email]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
     
-    // Simple validation
+    // Validation
     if (!name || !email || !password || !confirmPassword) {
       setFormError('Please fill in all fields');
+      return;
+    }
+    
+    if (!validateEmail(email)) {
+      setFormError('Please enter a valid email address');
       return;
     }
     
@@ -29,8 +105,9 @@ const SignupPage: React.FC = () => {
       return;
     }
     
-    if (password.length < 6) {
-      setFormError('Password must be at least 6 characters');
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      setFormError(passwordValidation.message);
       return;
     }
     
@@ -105,10 +182,15 @@ const SignupPage: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="input"
+                    className={`input ${email && !isEmailValid ? 'border-error-500' : ''}`}
                     placeholder="your.email@example.com"
                     required
                   />
+                  {email && !isEmailValid && (
+                    <p className="mt-1 text-xs text-error-500">
+                      Please enter a valid email address
+                    </p>
+                  )}
                 </div>
                 
                 <div className="mb-4">
@@ -124,9 +206,47 @@ const SignupPage: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="input"
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     required
+                    aria-describedby="password-requirements"
                   />
+                  {password && (
+                    <>
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium">Password Strength:</span>
+                          <span className={`text-xs font-medium ${
+                            passwordStrength < 40 ? 'text-error-500' : 
+                            passwordStrength < 70 ? 'text-warning-500' : 
+                            'text-success-500'
+                          }`}>
+                            {passwordFeedback}
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-secondary-200 dark:bg-secondary-700 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${
+                              passwordStrength < 40 ? 'bg-error-500' : 
+                              passwordStrength < 70 ? 'bg-warning-500' : 
+                              'bg-success-500'
+                            }`}
+                            style={{ width: `${passwordStrength}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      <div id="password-requirements" className="mt-2 text-xs text-secondary-600 dark:text-secondary-400">
+                        <p>Password must:</p>
+                        <ul className="list-disc pl-4 mt-1 space-y-1">
+                          <li className={password.length >= 8 ? 'text-success-500' : ''}>
+                            Be at least 8 characters long
+                          </li>
+                          <li className={/[a-zA-Z]/.test(password) && /[0-9]/.test(password) ? 'text-success-500' : ''}>
+                            Contain both letters and numbers
+                          </li>
+                        </ul>
+                      </div>
+                    </>
+                  )}
                 </div>
                 
                 <div className="mb-6">
@@ -142,7 +262,7 @@ const SignupPage: React.FC = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="input"
-                    placeholder="••••••••"
+                    placeholder="Re-enter your password"
                     required
                   />
                 </div>

@@ -18,9 +18,6 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Updates;
 import com.raceIQ.engine.model.Constructor;
 import com.raceIQ.engine.model.ConstructorStanding;
 import com.raceIQ.engine.model.Driver;
@@ -300,8 +297,12 @@ public class FastF1 {
                         for (int i = 0; i < results.size(); i++) {
                             Result result = results.get(i);
                             Race existingRace = raceRepo.findByRound(currentRound);
-                            existingRace.setStandingsUpdated(true);
-                            updateRaces.put(currentRound,existingRace);
+                            if (existingRace != null) {
+                                existingRace.setStandingsUpdated(true);
+                                updateRaces.put(currentRound, existingRace);
+                            } else {
+                                System.out.println("Warning: Race not found for round " + currentRound + " in year " + year);
+                            }
                             ErgastDriver ergDriver = result.getDriver();
                             ErgastConstructor egConstructor = result.getConstructor();
 
@@ -366,7 +367,7 @@ public class FastF1 {
 
                             if (result.getPoints() != null && !result.getPoints().isEmpty()) {
                                 try {
-                                    int points = Integer.parseInt(result.getPoints());
+                                    double points = Double.parseDouble(result.getPoints());
                                     driver.setPoints(driver.getPoints() + points);
                                     constructor.setPoints(constructor.getPoints() + points);
                                     driverStanding.setPoints(driverStanding.getPoints() + points);
@@ -886,15 +887,33 @@ public class FastF1 {
                 driverStanding.setDriverId(driverId);
                 driverStanding.setFullName(driver.getFullName());
                 driverStanding.setTeamName(!standing.Constructors.isEmpty() ? standing.Constructors.get(0).getName() : "");
+                
+                // Calculate position change from previous race
+                Integer currentPosition = Integer.parseInt(standing.position);
+                Integer currentWins = Integer.parseInt(standing.wins);
+                double currentPoints = Double.parseDouble(standing.points);
+                
+                // Get previous race position and calculate position change
+                Optional<DriverStanding> prevStanding = driverStandingsRepo.findById(driverId);
+                int positionsMoved = 0; // Default to 0 if no previous race data
+                if (prevStanding.isPresent()) {
+                    DriverStanding prev = prevStanding.get();
+                    // Calculate position change: positive if moved up, negative if moved down
+                    positionsMoved = currentPosition - prev.getPosition();
+                }
+                
                 try {
-                    driverStanding.setPosition(Integer.parseInt(standing.position));
-                    driverStanding.setPoints(Integer.parseInt(standing.points));
-                    driverStanding.setWins(Integer.parseInt(standing.wins));
+                    driverStanding.setPosition(currentPosition);
+                    driverStanding.setPoints(currentPoints);
+                    driverStanding.setWins(currentWins);
+                    driverStanding.setPositionsMoved(positionsMoved);
                     // Podiums not directly available in standings API; calculate via results in updateStatistics
                     driverStanding.setPodiums(0);
                 } catch (NumberFormatException e) {
                     System.err.println("Could not parse driver standing data for " + driverId + ": " + e.getMessage());
                     continue;
+                } finally {
+                    updatedDriverStandings.add(driverStanding);
                 }
                 updatedDriverStandings.add(driverStanding);
             }
@@ -939,15 +958,32 @@ public class FastF1 {
                 constructorStanding.setConstructorId(constructorId);
                 constructorStanding.setName(constructor.getName());
                 constructorStanding.setColor(constructor.getColorCode());
+                
+                // Calculate previous race points
+                double currentPoints = Double.parseDouble(standing.points);
+                Integer currentWins = Integer.parseInt(standing.wins);
+                Integer currentPosition = Integer.parseInt(standing.position);
+                
+                // Get previous race points by subtracting current race points
+                Optional<ConstructorStanding> prevStanding = constructorStandingsRepo.findById(constructorId);
+                Integer positionsMoved = 0;
+                if (prevStanding != null && prevStanding.isPresent()) {
+                    ConstructorStanding prev = prevStanding.get();
+                    positionsMoved =  currentPosition - prev.getPosition();
+                }
+                
                 try {
-                    constructorStanding.setPosition(Integer.parseInt(standing.position));
-                    constructorStanding.setPoints(Integer.parseInt(standing.points));
-                    constructorStanding.setWins(Integer.parseInt(standing.wins));
+                    constructorStanding.setPosition(currentPosition);
+                    constructorStanding.setPoints(currentPoints);
+                    constructorStanding.setWins(currentWins);
+                    constructorStanding.setpositionsMoved(positionsMoved);
                     // Podiums not directly available; calculate via results in updateStatistics
                     constructorStanding.setPodiums(0);
                 } catch (NumberFormatException e) {
                     System.err.println("Could not parse constructor standing data for " + constructorId + ": " + e.getMessage());
                     continue;
+                } finally {
+                    updatedConstructorStandings.add(constructorStanding);
                 }
                 updatedConstructorStandings.add(constructorStanding);
             }

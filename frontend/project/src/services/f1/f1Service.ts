@@ -37,6 +37,7 @@ export const getDriverStandings = async (): Promise<DriverStanding[]> => {
       points: standing.points,
       wins: standing.wins,
       podiums: standing.podiums,
+      positionsMoved: standing.positionsMoved,
     }));
   } catch (error) {
     console.error('Error fetching driver standings:', error);
@@ -60,6 +61,7 @@ export const getConstructorStandings = async (): Promise<ConstructorStanding[]> 
       wins: standing.wins,
       podiums: standing.podiums,
       color: standing.color,
+      positionsMoved: standing.positionsMoved,
     }));
   } catch (error) {
     console.error('Error fetching constructor standings:', error);

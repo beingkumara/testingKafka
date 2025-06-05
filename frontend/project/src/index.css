@@ -10,6 +10,22 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Formula1-Regular';
+  src: url('/fonts/Formula1-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Formula1-Wide';
+  src: url('/fonts/Formula1-Wide.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap');
 
@@ -17,30 +33,39 @@
   :root {
     --header-height: 4rem;
     --sidebar-width: 16rem;
+    --f1-red: #E10600;
+    --f1-dark: #15151E;
+    --f1-blue: #0090D0;
   }
 
   body {
-    @apply bg-gradient-to-br from-dark-50 to-dark-100 dark:from-dark-800 dark:to-dark-900 text-dark-800 dark:text-white font-sans transition-colors duration-300;
+    @apply bg-gradient-to-br from-dark-50 to-dark-100 dark:from-dark-600 dark:to-dark-800 text-dark-800 dark:text-white font-sans transition-colors duration-300;
+    background-image: url('/images/f1-grid-pattern.svg');
+    background-attachment: fixed;
+    background-size: 100px;
+    background-blend-mode: overlay;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading;
+    @apply font-heading text-dark-800 dark:text-white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   h1 {
-    @apply text-3xl md:text-4xl lg:text-5xl;
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold;
   }
 
   h2 {
-    @apply text-2xl md:text-3xl lg:text-4xl;
+    @apply text-2xl md:text-3xl lg:text-4xl font-bold;
   }
 
   h3 {
-    @apply text-xl md:text-2xl lg:text-3xl;
+    @apply text-xl md:text-2xl lg:text-3xl font-bold;
   }
 
   h4 {
-    @apply text-lg md:text-xl;
+    @apply text-lg md:text-xl font-bold;
   }
 
   a {
@@ -53,7 +78,7 @@
 }
 
 @layer components {
-  /* Buttons */
+  /* F1 Buttons */
   .btn {
     @apply px-4 py-2 rounded-md font-medium transition-all duration-300 inline-flex items-center justify-center relative overflow-hidden shadow-md hover:shadow-lg;
   }
@@ -67,19 +92,19 @@
   }
 
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 text-white;
+    @apply bg-primary-500 hover:bg-primary-600 text-white shadow-glow-red;
   }
 
   .btn-secondary {
-    @apply bg-secondary-500 hover:bg-secondary-600 text-white;
+    @apply bg-secondary-500 hover:bg-secondary-600 text-white shadow-glow-blue;
   }
 
   .btn-tertiary {
-    @apply bg-tertiary-500 hover:bg-tertiary-600 text-white;
+    @apply bg-tertiary-500 hover:bg-tertiary-600 text-white shadow-glow-green;
   }
 
   .btn-accent {
-    @apply bg-accent-500 hover:bg-accent-600 text-white;
+    @apply bg-accent-500 hover:bg-accent-600 text-white shadow-glow-orange;
   }
 
   .btn-outline {
@@ -90,21 +115,21 @@
     @apply border-2 border-secondary-500 text-secondary-500 hover:bg-secondary-500 hover:text-white;
   }
 
-  /* Form elements */
+  /* F1 Form elements */
   .input {
-    @apply w-full px-4 py-2 rounded-md bg-white dark:bg-dark-600 border border-dark-200 dark:border-dark-500 focus:outline-none focus:ring-2 focus:ring-secondary-500 transition-all duration-300 shadow-sm;
+    @apply w-full px-4 py-2 rounded-md bg-white dark:bg-dark-600 border border-dark-200 dark:border-dark-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-300 shadow-sm;
   }
 
-  /* Cards */
+  /* F1 Cards */
   .card {
-    @apply bg-white dark:bg-dark-600 rounded-xl shadow-card hover:shadow-card-hover overflow-hidden transition-all duration-300 border border-dark-100 dark:border-dark-700;
+    @apply bg-white dark:bg-dark-600 rounded-md shadow-[0_8px_20px_rgba(225,6,0,0.15)] hover:shadow-[0_12px_28px_rgba(225,6,0,0.25)] overflow-hidden transition-all duration-300 border-l-4 border-primary-500 border-t border-r border-b border-dark-100 dark:border-dark-700;
   }
 
   .card-gradient {
-    @apply bg-gradient-to-br from-white to-dark-50 dark:from-dark-600 dark:to-dark-700 rounded-xl shadow-card hover:shadow-card-hover overflow-hidden transition-all duration-300;
+    @apply bg-gradient-to-br from-white to-dark-50 dark:from-dark-600 dark:to-dark-700 rounded-md shadow-[0_8px_20px_rgba(225,6,0,0.15)] hover:shadow-[0_12px_28px_rgba(225,6,0,0.25)] overflow-hidden transition-all duration-300 border-l-4 border-primary-500;
   }
 
-  /* Navigation */
+  /* F1 Navigation */
   .nav-link {
     @apply p-2 rounded-md hover:bg-dark-100 dark:hover:bg-dark-600 transition-colors duration-300 relative;
   }
@@ -125,12 +150,12 @@
     @apply w-full opacity-100;
   }
 
-  /* Glassmorphism */
+  /* F1 Glassmorphism */
   .glass {
-    @apply bg-white/70 dark:bg-dark-800/70 backdrop-blur-md border border-white/20 dark:border-dark-700/20;
+    @apply bg-white/70 dark:bg-dark-800/80 backdrop-blur-md border border-white/20 dark:border-dark-700/20;
   }
 
-  /* Gradients */
+  /* F1 Gradients */
   .gradient-text {
     @apply text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-secondary-500;
   }
@@ -139,12 +164,12 @@
     @apply border-2 border-transparent bg-gradient-to-r from-primary-500 to-secondary-500 bg-origin-border;
   }
 
-  /* Animations */
+  /* F1 Animations */
   .animate-float {
     @apply animate-float;
   }
 
-  /* Glow effects */
+  /* F1 Glow effects */
   .glow-red {
     @apply shadow-glow-red;
   }
@@ -159,5 +184,61 @@
 
   .glow-orange {
     @apply shadow-glow-orange;
+  }
+
+  /* F1 Tables */
+  .f1-table {
+    @apply w-full border-collapse overflow-hidden rounded-md;
+  }
+
+  .f1-table thead {
+    @apply bg-dark-500 text-white;
+  }
+
+  .f1-table th {
+    @apply py-3 px-4 text-left font-heading uppercase text-sm tracking-wider;
+  }
+
+  .f1-table tbody tr {
+    @apply border-b border-dark-200 dark:border-dark-700 transition-colors duration-200;
+  }
+
+  .f1-table tbody tr:hover {
+    @apply bg-dark-100/50 dark:bg-dark-700/50;
+  }
+
+  .f1-table td {
+    @apply py-3 px-4;
+  }
+
+  /* F1 Badges */
+  .f1-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium;
+  }
+
+  .f1-badge-primary {
+    @apply bg-primary-500 text-white;
+  }
+
+  .f1-badge-secondary {
+    @apply bg-secondary-500 text-white;
+  }
+
+  .f1-badge-tertiary {
+    @apply bg-tertiary-500 text-white;
+  }
+
+  .f1-badge-accent {
+    @apply bg-accent-500 text-white;
+  }
+
+  /* F1 Dividers */
+  .f1-divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-primary-500 to-transparent my-8;
+  }
+
+  /* F1 Quotes */
+  .f1-quote {
+    @apply relative pl-4 border-l-4 border-primary-500 italic text-dark-600 dark:text-dark-300;
   }
 }

@@ -6,24 +6,23 @@ import { Trophy, Medal, Award, Flag, TrendingUp, ArrowUp, ArrowDown, Minus } fro
 import { Link } from 'react-router-dom';
 
 interface Driver {
-  id: number;
+  id: string;
   position: number;
   name: string;
   team: string;
   points: number;
   wins: number;
   podiums: number;
-  previousPosition?: number;
+  positionsMoved?: number;
 }
 
 interface Constructor {
-  id: number;
+  id: string;
   position: number;
   name: string;
   points: number;
   wins: number;
-  color: string;
-  previousPosition?: number;
+  positionsMoved?: number;
 }
 
 const StandingsPage: React.FC = () => {
@@ -47,19 +46,8 @@ const StandingsPage: React.FC = () => {
           getConstructorStandings()
         ]);
         
-        // Add mock previous positions for UI demonstration
-        const driversWithPositionChange = driversData.map(driver => ({
-          ...driver,
-          previousPosition: Math.max(1, driver.position + Math.floor(Math.random() * 3) - 1)
-        }));
-        
-        const constructorsWithPositionChange = constructorsData.map(constructor => ({
-          ...constructor,
-          previousPosition: Math.max(1, constructor.position + Math.floor(Math.random() * 3) - 1)
-        }));
-        
-        setDriverStandings(driversWithPositionChange);
-        setConstructorStandings(constructorsWithPositionChange);
+        setDriverStandings(driversData);
+        setConstructorStandings(constructorsData);
       } catch (error) {
         console.error('Error fetching standings:', error);
       } finally {
@@ -70,16 +58,21 @@ const StandingsPage: React.FC = () => {
     fetchStandings();
   }, [season]);
   
-  const getPositionChange = (current: number, previous?: number) => {
-    if (!previous || current === previous) {
-      return <Minus className="h-4 w-4 text-secondary-400" />;
+  const getPositionChange = (standing: Driver | Constructor) => {
+    if (!standing.positionsMoved || standing.positionsMoved === 0) {
+      return <div className="flex items-center"><Minus className="h-4 w-4 text-secondary-400" /></div>;
     }
     
-    if (current < previous) {
-      return <ArrowUp className="h-4 w-4 text-green-500" />;
-    }
+    const Icon = standing.positionsMoved > 0 ? ArrowUp : ArrowDown;
+    const color = standing.positionsMoved > 0 ? 'text-green-500' : 'text-red-500';
+    const absMoved = Math.abs(standing.positionsMoved);
     
-    return <ArrowDown className="h-4 w-4 text-red-500" />;
+    return (
+      <div className="flex items-center gap-1">
+        <Icon className={`h-4 w-4 ${color}`} />
+        <span className={`text-sm ${color}`}>{absMoved}</span>
+      </div>
+    );
   };
   
   if (isLoading) {
@@ -196,10 +189,8 @@ const StandingsPage: React.FC = () => {
                         {driver.position}
                       </span>
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-center">
-                        {getPositionChange(driver.position, driver.previousPosition)}
-                      </div>
+                    <td className="p-4 text-center">
+                      {getPositionChange(driver)}
                     </td>
                     <td className="p-4">
                       <Link to={`/drivers/${driver.id}`} className="font-medium hover:text-primary-500 transition-colors flex items-center gap-2">
@@ -302,10 +293,8 @@ const StandingsPage: React.FC = () => {
                         {constructor.position}
                       </span>
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-center">
-                        {getPositionChange(constructor.position, constructor.previousPosition)}
-                      </div>
+                    <td className="p-4 text-center">
+                      {getPositionChange(constructor)}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center">
@@ -313,11 +302,11 @@ const StandingsPage: React.FC = () => {
                           className="w-4 h-16 mr-3 rounded-sm shadow-md" 
                           style={{ backgroundColor: constructor.color }}
                         ></div>
-                        <div>
-                          <span className="font-medium block">
-                            {constructor.position === 1 && <Trophy className="h-4 w-4 text-primary-500 inline mr-1" />}
-                            {constructor.name}
-                          </span>
+                        <div className="flex flex-col justify-center">
+                          <div className="font-medium flex items-center">
+                            {constructor.position === 1 && <Trophy className="h-4 w-4 text-primary-500 mr-1" />}
+                            <span>{constructor.name}</span>
+                          </div>
                           <span className="text-xs text-secondary-500 dark:text-secondary-400">
                             {constructor.position <= 3 ? 'Championship contender' : 'Midfield team'}
                           </span>

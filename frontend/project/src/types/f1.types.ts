@@ -90,6 +90,8 @@ export interface RaceResult {
   points: number;
   status?: string;
   circuit: string;
+  fastestLap: string;
+  date: string;
 }
 
 export interface RaceResultFromAPI {
@@ -120,4 +122,16 @@ export interface RaceResultFromAPI {
     name: string;
     nationality: string;
   };
+
+}
+
+
+export interface RaceDetails {
+  circuit: string;
+  date: string;
+}
+
+export interface RaceResultForYearAndRound {
+  raceDetails: RaceDetails;
+  results: RaceResult[];
 }

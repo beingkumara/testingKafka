@@ -48,15 +48,17 @@ const RaceResultsPage: React.FC = () => {
         setCircuit(data.length > 0 && data[0].circuit ? data[0].circuit : 'Unknown Circuit');
         
         // Set mock race date for UI demonstration
-        setRaceDate(`${['March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Math.floor(Math.random() * 10)]} ${Math.floor(Math.random() * 28) + 1}, ${year}`);
-        
-        // Set mock fastest lap for UI demonstration
+        setRaceDate(data[0].date);     
         if (data.length > 0) {
-          const randomDriverIndex = Math.floor(Math.random() * Math.min(data.length, 5));
-          setFastestLap({
-            driver: data[randomDriverIndex].driver,
-            time: `1:${Math.floor(Math.random() * 10) + 30}.${Math.floor(Math.random() * 1000)}`
-          });
+          for(let i = 0; i < data.length; i++) {
+            if(data[i].fastestLap && data[i].fastestLap !== 'N/A') {
+              setFastestLap({
+                driver: data[i].driver,
+                time: data[i].fastestLap,
+              });
+              break;
+            }
+          }
         } else {
           setFastestLap(null);
         }

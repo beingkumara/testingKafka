@@ -12,7 +12,8 @@ import {
   Race,
   RaceResult,
   RaceResultFromAPI,
-  RaceFromAPI
+  RaceFromAPI,
+  RaceResultForYearAndRound
 } from '../../types/f1.types';
 
 /**
@@ -172,18 +173,36 @@ export const getRaces = async (): Promise<Race[]> => {
  */
 export const getRaceResultsByYearAndRound = async (year: number, round: number): Promise<RaceResult[]> => {
   try {
-    await delay(600); // Simulated network delay
-    const data = await f1Api.get<{driver: string, constructor: string, position: string, points: string, time?: string}[]>(`/results/${year}/${round}`);
+    await delay(600);
+    const data = await f1Api.get<Array<{
+      [key: string]: string;
+    }>>(`/results/${year}/${round}`);
     
-    return data.map(result => ({
-      position: parseInt(result.position, 10),
-      driver: result.driver,
-      team: result.constructor,
-      time: result.time || 'N/A',
-      points: parseInt(result.points, 10),
-      status: 'Finished',
-      circuit: result.circuit || 'Unknown Circuit',
-    }));
+    if (data.length <= 1) { // First item is race details, so we need at least 2 items
+      return [];
+    }
+
+    const raceDetails = data[0]; // First item contains race details
+    const results = data.slice(1); // Remaining items are race results
+
+    return results.map((result, index) => {
+      const position = result.position && !isNaN(parseInt(result.position, 10)) 
+        ? parseInt(result.position, 10) 
+        : index + 1;
+        
+      return {
+        position,
+        driver: result.driver || 'Unknown Driver',
+        team: result.constructor || 'Unknown Team',
+        time: result.time || 'N/A',
+        fastestLap: result.fastestLap || 'N/A',
+        points: parseInt(result.points, 10) || 0,
+        status: result.time ? 'Finished' : (result.time || 'DNF'), // Using time to determine status
+        circuit: raceDetails.circuit || 'Unknown Circuit',
+        date: raceDetails.date || 'Unknown Date',
+        raceName: `Round ${round}` // We can add this if needed
+      };
+    });
   } catch (error) {
     console.error(`Error fetching race results for ${year} round ${round}:`, error);
     return [];

@@ -6,15 +6,15 @@ import useLocalStorage from '../hooks/useLocalStorage';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [token, setToken] = useLocalStorage<string | null>(STORAGE_KEYS.AUTH_TOKEN, null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    // Check if user is logged in on initial load
-    if (token) {
+    // Only fetch profile if we have a token but no user data
+    if (token && !user) {
       getUserProfile(token)
         .then(data => {
           setUser(data.user);
@@ -29,7 +29,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } else {
       setIsLoading(false);
     }
-  }, [token, setToken]);
+  }, [token, setToken, user]);
   
   const login = async (email: string, password: string) => {
     setIsLoading(true);
@@ -85,7 +85,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-export const useAuth = (): AuthContextType => {
+// Use function declaration for better Fast Refresh support
+function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   
   if (context === undefined) {
@@ -93,4 +94,6 @@ export const useAuth = (): AuthContextType => {
   }
   
   return context;
-};
+}
+
+export { AuthProvider, useAuth };

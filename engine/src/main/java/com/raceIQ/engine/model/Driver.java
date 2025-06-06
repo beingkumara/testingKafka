@@ -30,7 +30,7 @@ public class Driver {
     // Race statistics
     private Integer wins;
     private Integer podiums;
-    private Integer points;
+    private double points;
     private Integer poles;
     private Integer fastestLaps;
     private Integer totalRaces;
@@ -137,11 +137,11 @@ public class Driver {
         this.podiums = podiums;
     }
 
-    public Integer getPoints() {
+    public double getPoints() {
         return points;
     }
 
-    public void setPoints(Integer points) {
+    public void setPoints(double points) {
         this.points = points;
     }
 

@@ -13,10 +13,10 @@ public class Constructor {
     private String nationality;
     private Integer wins;
     private Integer podiums;
-    private Integer points;
+    private double points;
     private Integer polePositions;
     private Integer fastestLaps;
-    private Integer totalPoints;
+    private double totalPoints;
     private Integer totalRaces;
     private Integer sprintWins;
     private Integer sprintPodiums;
@@ -59,10 +59,10 @@ public class Constructor {
     public void setPodiums(Integer podiums) {
         this.podiums = podiums;
     }
-    public Integer getPoints() {
+    public double getPoints() {
         return points;
     }
-    public void setPoints(Integer points) {
+    public void setPoints(double points) {
         this.points = points;
     }
     public Integer getPolePositions() {
@@ -77,10 +77,10 @@ public class Constructor {
     public void setFastestLaps(Integer fastestLaps) {
         this.fastestLaps = fastestLaps;
     }
-    public Integer getTotalPoints() {
+    public double getTotalPoints() {
         return totalPoints;
     }
-    public void setTotalPoints(Integer totalPoints) {
+    public void setTotalPoints(double totalPoints) {
         this.totalPoints = totalPoints;
     }
 

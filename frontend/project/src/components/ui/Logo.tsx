@@ -8,7 +8,7 @@ const Logo: React.FC<LogoProps> = ({ className = 'h-8 w-auto' }) => {
   return (
     <div className={`relative ${className}`}>
       <motion.svg
-        viewBox="0 0 120 40"
+        viewBox="0 0 180 40"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="h-full w-auto"
@@ -16,70 +16,110 @@ const Logo: React.FC<LogoProps> = ({ className = 'h-8 w-auto' }) => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Infinity shape */}
+        {/* F1 Racing Flag Background */}
+        <motion.rect
+          x="0" 
+          y="5" 
+          width="180" 
+          height="30" 
+          rx="4"
+          fill="#15151E"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          style={{ transformOrigin: 'left center' }}
+        />
+        
+        {/* Red accent bar */}
+        <motion.rect
+          x="0" 
+          y="5" 
+          width="8" 
+          height="30" 
+          fill="#E10600"
+          initial={{ scaleY: 0 }}
+          animate={{ scaleY: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          style={{ transformOrigin: 'center bottom' }}
+        />
+        
+        {/* F1 */}
         <motion.path
-          d="M65 13C61.5 9.5 56 9.5 52.5 13L50 15.5C49.5 16 49.5 16.5 50 17C50.5 17.5 51 17.5 51.5 17L54 14.5C56.5 12 61 12 63.5 14.5C66 17 66 21.5 63.5 24L61 26.5C58.5 29 54 29 51.5 26.5L49 24C48.5 23.5 48 23.5 47.5 24C47 24.5 47 25 47.5 25.5L50 28C53.5 31.5 59 31.5 62.5 28L65 25.5C68.5 22 68.5 16.5 65 13Z"
+          d="M20 10H40V16H28V19H38V25H28V30H20V10Z"
           fill="#E10600"
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
-          transition={{ duration: 1, delay: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
         />
         
-        {/* F1 Car */}
         <motion.path
-          d="M33 24H28L32 20H22V22H26L22 26H33V24Z"
-          fill="white"
-          initial={{ x: -10, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
+          d="M45 10H53V30H45V10Z"
+          fill="#E10600"
+          initial={{ scaleY: 0 }}
+          animate={{ scaleY: 1 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          style={{ transformOrigin: 'center top' }}
         />
         
-        {/* 1 */}
+        {/* Checkered flag pattern */}
         <motion.path
-          d="M39 20V30H41V20H39Z"
-          fill="white"
-          initial={{ y: -5, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
+          d="M60 15H64V19H60V15ZM64 19H68V23H64V19ZM68 15H72V19H68V15ZM72 19H76V23H72V19ZM76 15H80V19H76V15ZM60 23H64V27H60V23ZM68 23H72V27H68V23ZM76 23H80V27H76V23Z"
+          fill="#FFFFFF"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
         />
         
         {/* nity */}
         <motion.path
-          d="M72 20V30H74V22H75L80 30H82V20H80V28H79L74 20H72Z"
-          fill="white"
+          d="M85 15V30H90V18H91L98 30H103V15H98V27H97L90 15H85Z"
+          fill="#FFFFFF"
           initial={{ x: 10, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.9 }}
         />
         
         <motion.path
-          d="M85 20V30H87V20H85Z"
-          fill="white"
+          d="M108 15V30H113V15H108Z"
+          fill="#FFFFFF"
           initial={{ x: 10, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 1.0 }}
         />
         
         <motion.path
-          d="M93 25V20H91V30H93V28L95 25L98 30H100L96 24L100 20H98L93 25Z"
-          fill="white"
+          d="M118 22.5V15H113V30H118V25L122 22L128 30H134L125 19L134 15H128L118 22.5Z"
+          fill="#FFFFFF"
           initial={{ x: 10, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 1.1 }}
         />
         
         <motion.path
-          d="M101 20V30H103V20H101Z"
-          fill="white"
+          d="M138 15V30H143V15H138Z"
+          fill="#FFFFFF"
           initial={{ x: 10, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 1.2 }}
+        />
+        
+        {/* Racing line accent */}
+        <motion.rect
+          x="0" 
+          y="35" 
+          width="180" 
+          height="2" 
+          fill="#E10600"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 1, delay: 1.3 }}
+          style={{ transformOrigin: 'left center' }}
         />
       </motion.svg>
       
       {/* Motion blur effect behind logo */}
       <motion.div 
-        className="absolute inset-0 -z-10 opacity-40 blur-md"
+        className="absolute inset-0 -z-10 opacity-60 blur-md"
         style={{ 
           background: 'linear-gradient(90deg, transparent, #E10600, transparent)',
           width: '150%',
@@ -89,10 +129,30 @@ const Logo: React.FC<LogoProps> = ({ className = 'h-8 w-auto' }) => {
           x: ['0%', '100%', '0%'],
         }}
         transition={{
-          duration: 3,
+          duration: 2.5,
           repeat: Infinity,
           repeatType: 'loop',
-          ease: 'easeInOut',
+          ease: "easeInOut",
+        }}
+      />
+      
+      {/* Racing speed lines */}
+      <motion.div 
+        className="absolute inset-0 -z-20 opacity-30"
+        style={{ 
+          background: 'linear-gradient(90deg, transparent 50%, rgba(255,255,255,0.1) 60%, transparent 70%)',
+          backgroundSize: '200% 100%',
+          width: '200%',
+          left: '-50%'
+        }}
+        animate={{
+          x: ['-100%', '100%'],
+        }}
+        transition={{
+          duration: 1.2,
+          repeat: Infinity,
+          repeatType: 'loop',
+          ease: "linear",
         }}
       />
     </div>

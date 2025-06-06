@@ -1123,6 +1123,39 @@ public class FastF1 {
                 System.out.println("Saving race entry with results for season " + year + ", round " + latestRound);
                 raceRepo.save(latestRace);
             }
+            if(latestRace != null){
+                List<Result> results = latestRace.getResults();
+                Map<String, Driver> updateDriverStats = new HashMap<>();
+                Map<String, Constructor> updateConstructorStats = new HashMap<>();
+                for(Result result : results){
+                    Integer points = Integer.parseInt(result.getPoints());
+                    Integer position = Integer.parseInt(result.getPosition());
+                    String driverId = result.getDriver().getDriverId();
+                    String constructorId = result.getConstructor().getConstructorId();
+                    Driver driver = driverRepo.findById(driverId).orElse(null);
+                    Constructor constructor = constructorRepo.findById(constructorId).orElse(null);
+                    if(driver != null){
+                        driver.setPoints(driver.getPoints() + points);
+                        driver.setTotalRaces(driver.getTotalRaces() + 1);
+                    }
+                    if(constructor != null){
+                        constructor.setPoints(constructor.getPoints() + points);
+                        constructor.setTotalRaces(constructor.getTotalRaces() + 1);
+                    }
+                    if(position == 1){
+                        driver.setWins(driver.getWins() + 1);
+                        constructor.setWins(constructor.getWins() + 1);
+                    }
+                    if(position <= 3){
+                        driver.setPodiums(driver.getPodiums() + 1);
+                        constructor.setPodiums(constructor.getPodiums() + 1);
+                    }
+                    
+                }
+                
+                driverRepo.saveAll(updateDriverStats.values());
+                constructorRepo.saveAll(updateConstructorStats.values());
+            }
             
             
             return latestRace != null ? latestRace.getResults() : null;

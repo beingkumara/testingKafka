@@ -5,16 +5,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
 import com.raceIQ.engine.impl.FastF1;
@@ -42,15 +41,6 @@ public class RaceDataScheduler {
     private TaskScheduler taskScheduler;
     
     private ScheduledFuture<?> scheduledTask;
-    
-    @Bean
-    public TaskScheduler taskScheduler() {
-        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(2);
-        scheduler.setThreadNamePrefix("race-scheduler-");
-        scheduler.initialize();
-        return scheduler;
-    }
     
     @PostConstruct
     public void scheduleRaceResultsUpdate() {
@@ -100,7 +90,7 @@ public class RaceDataScheduler {
     
     /**
      * Calculates when the next execution should happen based on race dates
-     * Returns a date that is 3 hours after the most recent race
+     * Returns a date that is 3 hours after the next upcoming race
      */
     private Date calculateNextExecutionTime() {
         // Get all races from the repository
@@ -114,46 +104,57 @@ public class RaceDataScheduler {
         }
         
         // Current date and time
-        LocalDateTime now = LocalDateTime.now();
-        LocalDate today = now.toLocalDate();
+        ZonedDateTime nowUtc = ZonedDateTime.now(ZoneId.of("UTC"));
         
-        // Find the most recent race that has already occurred
-        Race mostRecentRace = null;
-        LocalDate mostRecentRaceDate = null;
+        // Find the next upcoming race
+        Race nextRace = null;
+        ZonedDateTime nextRaceDateTime = null;
         
         for (Race race : races) {
-            if (race.getDate() != null) {
-                LocalDate raceDate = LocalDate.parse(race.getDate());
-                
-                // If race date is today or in the past, and it's the most recent one we've found
-                if (!raceDate.isAfter(today) && (mostRecentRaceDate == null || raceDate.isAfter(mostRecentRaceDate))) {
-                    mostRecentRaceDate = raceDate;
-                    mostRecentRace = race;
+            if (race.getDate() != null && race.getTime() != null) {
+                try {
+                    LocalDate raceDate = LocalDate.parse(race.getDate());
+                    // Parse time - remove any trailing 'Z' and parse as LocalTime
+                    String timeStr = race.getTime().replace("Z", "");
+                    LocalTime raceTime = LocalTime.parse(timeStr);
+                    LocalDateTime raceDateTime = LocalDateTime.of(raceDate, raceTime);
+                    
+                    // Convert to UTC for comparison (assuming race times are in UTC)
+                    ZonedDateTime utcRaceDateTime = raceDateTime.atZone(ZoneId.of("UTC"));
+                    
+                    // If race is in the future and it's either the first future race we've found
+                    // or it's earlier than the current next race
+                    if (utcRaceDateTime.isAfter(nowUtc) && 
+                        (nextRaceDateTime == null || utcRaceDateTime.isBefore(nextRaceDateTime))) {
+                        nextRace = race;
+                        nextRaceDateTime = utcRaceDateTime;
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error parsing race date/time: " + race.getDate() + " " + race.getTime());
+                    e.printStackTrace();
                 }
             }
         }
         
-        if (mostRecentRace != null) {
-            // Parse the race date and time
-            LocalDate raceDate = LocalDate.parse(mostRecentRace.getDate());
-            LocalTime raceTime = LocalTime.parse(mostRecentRace.getTime().replace("Z", ""));
-            
-            // Create a LocalDateTime from the race date and time
-            LocalDateTime raceDateTime = LocalDateTime.of(raceDate, raceTime);
-            
+        if (nextRaceDateTime != null) {
             // Add 3 hours to the race time
-            LocalDateTime scheduledTime = raceDateTime.plus(Duration.ofHours(3));
+            ZonedDateTime scheduledTime = nextRaceDateTime.plus(Duration.ofHours(3));
             
-            // If the scheduled time is in the past, schedule for now + 5 minutes
-            if (scheduledTime.isBefore(now)) {
-                scheduledTime = now.plus(Duration.ofMinutes(5));
+            // If for some reason the scheduled time is in the past (shouldn't happen), schedule for now + 5 minutes
+            if (scheduledTime.isBefore(ZonedDateTime.now(ZoneId.of("UTC")))) {
+                scheduledTime = ZonedDateTime.now(ZoneId.of("UTC")).plus(Duration.ofMinutes(5));
             }
             
+            System.out.println("Next race: " + nextRace.getRaceName() + " at " + nextRaceDateTime);
+            System.out.println("Scheduled data fetch for 3 hours after race: " + scheduledTime);
+            
             // Convert to Date
-            return Date.from(scheduledTime.atZone(ZoneId.systemDefault()).toInstant());
+            return Date.from(scheduledTime.toInstant());
         }
         
-        return null;
+        // If no future races found, check again in 24 hours
+        System.out.println("No upcoming races found. Will check again in 24 hours.");
+        return Date.from(ZonedDateTime.now(ZoneId.of("UTC")).plus(Duration.ofHours(24)).toInstant());
     }
     
     /**

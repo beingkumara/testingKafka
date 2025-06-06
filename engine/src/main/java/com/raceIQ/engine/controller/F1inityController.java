@@ -195,4 +195,11 @@ public class F1inityController {
         return f1nityService.getResultsByYearAndByRound(year, round);
     }
 
+    @GetMapping("/updateDriverImages")
+    public void updateDriverImages() {
+        fastf1.updateDriverImages();
+    }
+
+
+
 }

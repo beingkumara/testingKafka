@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { MapPin, Calendar, Clock, ChevronRight } from 'lucide-react';
 import { getRaces } from '../services';
 import LoadingScreen from '../components/ui/LoadingScreen';
+import { Link } from 'react-router-dom';
 
 interface Race {
   id: number;
@@ -165,10 +166,10 @@ const RacesPage: React.FC = () => {
                   </div>
                 </div>
                 
-                <button className="btn btn-primary flex items-center">
+                <Link to={`/races/${race.id}`} className="btn btn-primary flex items-center">
                   {race.completed ? 'View Results' : 'Race Details'}
                   <ChevronRight className="h-4 w-4 ml-1" />
-                </button>
+                </Link>
               </div>
             </div>
           </motion.div>

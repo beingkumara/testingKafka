@@ -16,6 +16,7 @@ const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const DriversPage = lazy(() => import('./pages/DriversPage'));
 const DriverDetailsPage = lazy(() => import('./pages/DriverDetailsPage'));
 const RacesPage = lazy(() => import('./pages/RacesPage'));
+const RaceDetailsPage = lazy(() => import('./pages/RaceDetailsPage'));
 const StandingsPage = lazy(() => import('./pages/StandingsPage'));
 const RaceResultsPage = lazy(() => import('./pages/RaceResults'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
@@ -71,6 +72,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <RacesPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path={ROUTES.RACE_DETAILS}
+                  element={
+                    <ProtectedRoute>
+                      <RaceDetailsPage />
                     </ProtectedRoute>
                   } 
                 />

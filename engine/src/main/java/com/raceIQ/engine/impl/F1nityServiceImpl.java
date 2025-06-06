@@ -68,4 +68,8 @@ public class F1nityServiceImpl {
         return fastF1.getResultsByYearAndByRound(year, round);
     }
 
+    public Race getRaceById(String id){
+        return raceRepo.findById(id).get();
+    }
+
 }

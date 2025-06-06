@@ -208,3 +208,56 @@ export const getRaceResultsByYearAndRound = async (year: number, round: number):
     return [];
   }
 };
+
+/**
+ * Fetches detailed information about a specific race
+ * @param id - Race ID
+ * @returns Promise with race details
+ */
+export const getRaceById = async (id: string): Promise<any> => {
+  try {
+    // Get race data from the backend
+    const data = await f1Api.get<any>(`/races/${id}`);
+    
+    // Check if we received valid data
+    if (!data || Object.keys(data).length === 0) {
+      throw new Error(`No data received for race ID: ${id}`);
+    }
+    
+    // Transform the data to match the expected structure in the frontend
+    return {
+      _id: data.id || id,
+      season: data.season || '',
+      round: data.round || '',
+      url: data.url || '',
+      raceName: data.raceName || `Race ${id}`,
+      date: data.date || '',
+      time: data.time || '',
+      circuit: {
+        circuitId: data.Circuit?.circuitId || '',
+        url: data.Circuit?.url || '',
+        circuitName: data.Circuit?.circuitName || 'Unknown Circuit',
+        location: {
+          lat: data.Circuit?.Location?.lat || '',
+          _long: data.Circuit?.Location?.long || '', // Note: backend uses 'long', frontend expects '_long'
+          locality: data.Circuit?.Location?.locality || '',
+          country: data.Circuit?.Location?.country || ''
+        }
+      },
+      // Map the practice sessions (backend uses capitalized names)
+      firstPractice: data.FirstPractice || { date: '', time: '' },
+      secondPractice: data.SecondPractice || { date: '', time: '' },
+      thirdPractice: data.ThirdPractice || { date: '', time: '' },
+      qualifying: data.Qualifying || { date: '', time: '' },
+      standingsUpdated: data.standingsUpdated || false
+    };
+  } catch (error) {
+    console.error('Error fetching race details:', error);
+    // Provide more context in the error
+    if (error instanceof Error) {
+      throw new Error(`Failed to fetch race details for ID ${id}: ${error.message}`);
+    } else {
+      throw new Error(`Failed to fetch race details for ID ${id}`);
+    }
+  }
+};

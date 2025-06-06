@@ -18,6 +18,8 @@ import com.raceIQ.engine.model.Race;
 import com.raceIQ.engine.model.Result;
 import com.raceIQ.engine.service.F1nityService;
 
+import jakarta.annotation.Generated;
+
 /**
  * REST controller for F1 data operations.
  * Provides endpoints for accessing driver, constructor, race, and standings information.
@@ -198,6 +200,11 @@ public class F1inityController {
     @GetMapping("/updateDriverImages")
     public void updateDriverImages() {
         fastf1.updateDriverImages();
+    }
+
+    @GetMapping("/races/{id}")
+    public Race getRaceById(@PathVariable String id) {
+        return f1nityService.getRaceById(id);
     }
 
 

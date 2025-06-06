@@ -65,4 +65,8 @@ public class F1nityService {
     public List<Map<String,String>> getResultsByYearAndByRound(String year, String round) {
         return f1nityServiceImpl.getResultsByYearAndByRound(year, round);
     }
+
+    public Race getRaceById(String id) {
+        return f1nityServiceImpl.getRaceById(id);
+    }
 }

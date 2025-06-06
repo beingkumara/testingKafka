@@ -263,7 +263,7 @@ const DashboardPage: React.FC = () => {
               
               <div className="mt-6 flex justify-center">
                 <Link 
-                  to="/race-results" 
+                  to={`/race-results?season=${new Date().getFullYear()}&round=1`}
                   className="btn btn-primary btn-sm flex items-center gap-2 px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all"
                 >
                   <Flag className="h-4 w-4" />
@@ -339,7 +339,7 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <Link to="/races" className="btn btn-primary w-full">
+                  <Link to={`/races/${upcomingRaces[0].id}`} className="btn btn-primary w-full">
                     View Race Details
                   </Link>
                 </div>

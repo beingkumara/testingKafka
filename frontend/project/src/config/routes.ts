@@ -9,6 +9,7 @@ const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const DriversPage = lazy(() => import('../pages/DriversPage'));
 const DriverDetailsPage = lazy(() => import('../pages/DriverDetailsPage'));
 const RacesPage = lazy(() => import('../pages/RacesPage'));
+const RaceDetailsPage = lazy(() => import('../pages/RaceDetailsPage'));
 const StandingsPage = lazy(() => import('../pages/StandingsPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
@@ -53,6 +54,12 @@ export const routes = [
   {
     path: ROUTES.RACES,
     component: RacesPage,
+    exact: true,
+    protected: true,
+  },
+  {
+    path: ROUTES.RACE_DETAILS,
+    component: RaceDetailsPage,
     exact: true,
     protected: true,
   },

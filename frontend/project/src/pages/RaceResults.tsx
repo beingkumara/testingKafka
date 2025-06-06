@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getRaceResultsByYearAndRound } from '../services/f1/f1Service';
 import { RaceResult } from '../types/f1.types';
 import LoadingScreen from '../components/ui/LoadingScreen';
@@ -15,19 +15,30 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
-  Medal
+  Medal,
+  Info
 } from 'lucide-react';
 
 const RaceResultsPage: React.FC = () => {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [year, setYear] = useState<number>(new Date().getFullYear());
-  const [round, setRound] = useState<number>(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [year, setYear] = useState<number>(
+    searchParams.get('season') 
+      ? parseInt(searchParams.get('season') as string, 10) 
+      : 2025
+  );
+  const [round, setRound] = useState<number>(
+    searchParams.get('round') 
+      ? parseInt(searchParams.get('round') as string, 10) 
+      : 1
+  );
   const [results, setResults] = useState<RaceResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [raceName, setRaceName] = useState<string>('');
   const [circuit, setCircuit] = useState<string>('');
   const [raceDate, setRaceDate] = useState<string>('');
   const [fastestLap, setFastestLap] = useState<{driver: string, time: string} | null>(null);
+  const [apiCalled, setApiCalled] = useState<boolean>(false);
 
   // Generate year options from 2025 down to 1951
   const years = Array.from({ length: 2025 - 1951 + 1 }, (_, i) => 2025 - i);
@@ -35,43 +46,73 @@ const RaceResultsPage: React.FC = () => {
   // Generate round options from 1 to 24
   const rounds = Array.from({ length: 24 }, (_, i) => i + 1);
 
+  // Update URL when year or round changes
   useEffect(() => {
-    const fetchResults = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getRaceResultsByYearAndRound(year, round);
-        setResults(data);
-        
-        // Assuming the API returns race name or we can set it based on round
-        setRaceName(data.length > 0 && data[0].raceName ? data[0].raceName : `Round ${round}`);
-        setCircuit(data.length > 0 && data[0].circuit ? data[0].circuit : 'Unknown Circuit');
-        
-        // Set mock race date for UI demonstration
-        setRaceDate(data[0].date);     
-        if (data.length > 0) {
-          for(let i = 0; i < data.length; i++) {
-            if(data[i].fastestLap && data[i].fastestLap !== 'N/A') {
-              setFastestLap({
-                driver: data[i].driver,
-                time: data[i].fastestLap,
-              });
-              break;
-            }
-          }
-        } else {
-          setFastestLap(null);
-        }
-      } catch (err) {
-        setError('Failed to load race results. Please try again.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (apiCalled) {
+      setSearchParams({ season: year.toString(), round: round.toString() }, { replace: true });
+    }
+  }, [year, round, apiCalled, setSearchParams]);
 
-    fetchResults();
+  const fetchResults = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getRaceResultsByYearAndRound(year, round);
+      setResults(data);
+      
+      // Assuming the API returns race name or we can set it based on round
+      setRaceName(data.length > 0 && data[0].raceName ? data[0].raceName : `Round ${round}`);
+      setCircuit(data.length > 0 && data[0].circuit ? data[0].circuit : 'Unknown Circuit');
+      
+      // Set mock race date for UI demonstration
+      if (data.length > 0 && data[0].date) {
+        setRaceDate(data[0].date);
+      }
+      
+      if (data.length > 0) {
+        for(let i = 0; i < data.length; i++) {
+          if(data[i].fastestLap && data[i].fastestLap !== 'N/A') {
+            setFastestLap({
+              driver: data[i].driver,
+              time: data[i].fastestLap,
+            });
+            break;
+          }
+        }
+      } else {
+        setFastestLap(null);
+      }
+    } catch (err) {
+      setError('Failed to load race results. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }, [year, round]);
+
+  // Fetch results when the component mounts
+  useEffect(() => {
+    const hasSeason = searchParams.has('season');
+    const hasRound = searchParams.has('round');
+    
+    if (hasSeason && hasRound) {
+      // If URL has parameters, use them
+      setApiCalled(true);
+      fetchResults();
+    } else {
+      // If no URL parameters, automatically load 2025 round 1 results
+      setApiCalled(true);
+      // Use replace: true to avoid adding to browser history
+      setSearchParams({ season: '2025', round: '1' }, { replace: true });
+    }
+  }, [fetchResults, searchParams, setSearchParams]); // Include fetchResults and other dependencies
+  
+  // Handle changes to search params
+  useEffect(() => {
+    if (searchParams.has('season') && searchParams.has('round') && apiCalled) {
+      fetchResults();
+    }
+  }, [searchParams, apiCalled, fetchResults]);
 
   const navigateRound = (direction: 'prev' | 'next') => {
     if (direction === 'prev' && round > 1) {
@@ -84,6 +125,8 @@ const RaceResultsPage: React.FC = () => {
   if (loading) {
     return <LoadingScreen />;
   }
+  
+  // We no longer need to check for URL parameters since we're auto-loading
 
   return (
     <motion.div
@@ -145,6 +188,17 @@ const RaceResultsPage: React.FC = () => {
               </button>
             </div>
           </div>
+          
+          {loading && (
+            <div className="mt-6 bg-primary-500/20 p-4 rounded-lg border border-primary-500/30">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-primary-300 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-white font-medium">Loading race results...</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary-500"></div>
@@ -159,7 +213,9 @@ const RaceResultsPage: React.FC = () => {
               {error}
             </p>
             <button 
-              onClick={() => fetchResults()}
+              onClick={() => {
+                fetchResults();
+              }}
               className="btn btn-primary"
             >
               Try Again

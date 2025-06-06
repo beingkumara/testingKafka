@@ -23,14 +23,37 @@ class ApiClient {
    */
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ 
-        message: response.statusText 
-      }));
+      // First check if there's content to parse
+      const text = await response.text();
+      let errorData;
+      
+      try {
+        // Only try to parse as JSON if there's content
+        errorData = text ? JSON.parse(text) : { message: response.statusText };
+      } catch (e) {
+        // If parsing fails, use the raw text or status text
+        errorData = { 
+          message: text || response.statusText 
+        };
+      }
       
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
     
-    return response.json();
+    // For successful responses, first get the text content
+    const text = await response.text();
+    
+    // If there's no content, return an empty object
+    if (!text) {
+      return {} as T;
+    }
+    
+    // Otherwise parse the JSON
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      throw new Error(`Failed to parse response as JSON: ${e.message}`);
+    }
   }
 
   /**

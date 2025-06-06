@@ -1,9 +1,13 @@
 package com.raceIQ.engine.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class FastestLap {
     private String rank;
     private String lap;
+    @JsonProperty("Time")
     private Time time;
+    @JsonProperty("AverageSpeed")
     private AverageSpeed averageSpeed;
 
     // Getters and Setters
@@ -50,6 +54,11 @@ public class FastestLap {
         public void setTime(String time) {
             this.time = time;
         }
+
+        @Override
+        public String toString() {
+            return "Time [time=" + time + "]";
+        }
     }
 
     // Nested AverageSpeed class
@@ -72,5 +81,15 @@ public class FastestLap {
         public void setSpeed(String speed) {
             this.speed = speed;
         }
+
+        @Override
+        public String toString() {
+            return "AverageSpeed [units=" + units + ", speed=" + speed + "]";
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "FastestLap [rank=" + rank + ", lap=" + lap + ", time=" + time + ", averageSpeed=" + averageSpeed + "]";
     }
 }

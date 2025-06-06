@@ -17,6 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 import com.raceIQ.engine.model.Constructor;
 import com.raceIQ.engine.model.ConstructorStanding;
@@ -32,6 +35,7 @@ import com.raceIQ.engine.model.OpenF1Driver;
 import com.raceIQ.engine.model.Race;
 import com.raceIQ.engine.model.RaceResponse;
 import com.raceIQ.engine.model.Result;
+import com.raceIQ.engine.model.FastestLap;
 import com.raceIQ.engine.repository.ConstructorRepository;
 import com.raceIQ.engine.repository.ConstructorStandingsRepository;
 import com.raceIQ.engine.repository.DriverRepository;
@@ -1341,6 +1345,14 @@ public class FastF1 {
                 String circuitName = races.get(0).getRaceName();
                 List<Result> results = races.get(0).getResults();
                 List<Map<String, String>> updatedResults = new ArrayList<>();
+                Map<String, String> detailsMap = new HashMap<>();
+                LocalDate date = LocalDate.parse(races.get(0).getDate());
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.ENGLISH);
+                String formattedDate = date.format(formatter);
+                detailsMap.put("date", formattedDate);
+                detailsMap.put("circuit",circuitName);
+                updatedResults.add(detailsMap);
+                FastestLap fastestLap = null;
                 for (Result result : results) {
                     Map<String, String> resultMap = new HashMap<>();
                     resultMap.put("position", result.getPosition());
@@ -1348,7 +1360,17 @@ public class FastF1 {
                     resultMap.put("constructor", result.getConstructor().getName());
                     resultMap.put("points", result.getPoints());
                     resultMap.put("time", result.getTime() != null ? result.getTime().getTime() : result.getStatus());
-                    resultMap.put("circuit",circuitName);
+                    if(result.getFastestLap() != null && result.getFastestLap().getRank().equals("1")){
+                        fastestLap = result.getFastestLap();
+                        if (fastestLap.getTime() != null) {
+                            resultMap.put("fastestLap", fastestLap.getTime().getTime());
+                        } else {
+                            resultMap.put("fastestLap", "N/A");
+                        }
+                    } else {
+                        resultMap.put("fastestLap", "N/A");
+                    }
+
                     // String color = colorMap.getOrDefault(constructorName, "#000000"); // Default to black if not found                    
                     updatedResults.add(resultMap);
                 }

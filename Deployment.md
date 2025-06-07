@@ -113,6 +113,8 @@ Update driver names:
 ```javascript
 db.drivers.updateOne({_id: 'antonelli'}, {$set: {fullName: 'KIMI ANTONELLI'}})
 db.drivers.updateOne({_id: 'hulkenberg'}, {$set: {fullName: 'NICO HULKENBERG'}})
+db.drivers.deleteOne({_id: 'nico hulkenberg'})
+db.drivers.deleteOne({_id: 'kimi antonelli'})
 ```
 
 ### Note on Driver ID Issue

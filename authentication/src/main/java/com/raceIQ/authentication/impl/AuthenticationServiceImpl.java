@@ -180,4 +180,30 @@ public class AuthenticationServiceImpl {
             return ResponseEntity.status(500).body("Error retrieving user: " + e.getMessage());
         }
     }
+
+    public ResponseEntity<?> editProfile(User user) {
+        try{
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(401).body("User not authenticated");
+            }
+            
+            String username = authentication.getName();
+            User existingUser = userRepository.findByUsername(username);
+            
+            if (existingUser == null) {
+                return ResponseEntity.status(404).body("User not found");
+            }
+            
+            existingUser.setUsername(user.getUsername());
+            existingUser.setEmail(user.getEmail());
+            existingUser.setFavoriteDriver(user.getFavoriteDriver());
+            existingUser.setFavoriteTeam(user.getFavoriteTeam());
+            existingUser.setProfilePicture(user.getProfilePicture());
+            userRepository.save(existingUser);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error editing user: " + e.getMessage());
+        }
+    }
 }

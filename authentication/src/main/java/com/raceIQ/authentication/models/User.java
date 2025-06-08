@@ -18,6 +18,9 @@ public class User implements UserDetails {
     private Date createdAt;
     private Date updatedAt;
     private String email;
+    private String favoriteDriver;
+    private String favoriteTeam;
+    private String profilePicture;
     public User() {
     }
 
@@ -80,6 +83,33 @@ public class User implements UserDetails {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getFavoriteDriver() {
+        return favoriteDriver;
+    }
+
+    public void setFavoriteDriver(String favoriteDriver) {
+        this.favoriteDriver = favoriteDriver;
+    }
+
+    public String getFavoriteTeam() {
+        return favoriteTeam;
+    }
+
+    public void setFavoriteTeam(String favoriteTeam) {
+        this.favoriteTeam = favoriteTeam;
+    }
+
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
+    }
 
 
 

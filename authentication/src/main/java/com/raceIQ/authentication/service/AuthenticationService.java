@@ -35,4 +35,8 @@ public class AuthenticationService {
     public ResponseEntity<?> getCurrentUser() {
         return authenticationServiceImpl.getCurrentUser();
     }
+
+    public ResponseEntity<?> editProfile(User user) {
+        return authenticationServiceImpl.editProfile(user);
+    }
 }

@@ -102,7 +102,7 @@ const LoginPage: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="input"
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     required
                   />
                 </div>

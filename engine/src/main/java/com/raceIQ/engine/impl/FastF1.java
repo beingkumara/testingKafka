@@ -1059,6 +1059,7 @@ public class FastF1 {
             if (allRaces == null || allRaces.getMrData() == null || 
                 allRaces.getMrData().getRaceTable() == null || 
                 allRaces.getMrData().getRaceTable().getRaces().isEmpty()) {
+                System.out.println("No races found for the current year.");
                 return null;
             }
             
@@ -1086,83 +1087,260 @@ public class FastF1 {
             }
             
             System.out.println("Latest completed race round: " + latestRound);
+            String context = "year " + year + ", round " + latestRound;
             
             // Fetch results for the latest round
             String raceUri = String.format("%d/%s/results.json", year, latestRound);
+            String qualiUri = String.format("%d/%s/qualifying.json", year, latestRound);
+            String sprintUri = String.format("%d/%s/sprint.json", year, latestRound);
+            
+            // Fetch race results
             RaceResponse raceResponse = fetchWithRetry(
                     () -> ergastClient.get().uri(raceUri).retrieve().bodyToMono(RaceResponse.class),
-                    "race results for year " + year + ", round " + latestRound);
+                    "race results for " + context);
             
             if (raceResponse == null || raceResponse.getMrData() == null ||
                 raceResponse.getMrData().getRaceTable() == null ||
                 raceResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
+                System.out.println("No race results found for " + context);
                 return null;
             }
             
             Race latestRace = raceResponse.getMrData().getRaceTable().getRaces().get(0);
+            List<Result> results = latestRace.getResults();
             
-            // First, delete any existing race entries for this season and round
+            if (results == null || results.isEmpty()) {
+                System.out.println("No results in race data for " + context);
+                return null;
+            }
+            
+            // Fetch qualifying results
+            RaceResponse qualiResponse = fetchWithRetry(
+                    () -> ergastClient.get().uri(qualiUri).retrieve().bodyToMono(RaceResponse.class),
+                    "qualifying results for " + context);
+            
+            List<Result> qualiResults = Collections.emptyList();
+            if (qualiResponse != null && qualiResponse.getMrData() != null &&
+                qualiResponse.getMrData().getRaceTable() != null &&
+                !qualiResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
+                Race qualiRace = qualiResponse.getMrData().getRaceTable().getRaces().get(0);
+                if (qualiRace.getQualifyingResults() != null) {
+                    qualiResults = qualiRace.getQualifyingResults();
+                    latestRace.setQualifyingResults(qualiResults);
+                }
+            }
+            
+            // Fetch sprint results
+            RaceResponse sprintResponse = fetchWithRetry(
+                    () -> ergastClient.get().uri(sprintUri).retrieve().bodyToMono(RaceResponse.class),
+                    "sprint results for " + context);
+            
+            List<Result> sprintResults = Collections.emptyList();
+            if (sprintResponse != null && sprintResponse.getMrData() != null &&
+                sprintResponse.getMrData().getRaceTable() != null &&
+                !sprintResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
+                Race sprintRace = sprintResponse.getMrData().getRaceTable().getRaces().get(0);
+                if (sprintRace.getSprintResults() != null) {
+                    sprintResults = sprintRace.getSprintResults();
+                    latestRace.setSprintResults(sprintResults);
+                }
+            }
+            
+            // First, check if we have an existing race entry for this season and round
+            Race existingRace = null;
             List<Race> existingRaces = raceRepo.findAll();
-            Race deletedRace = null;
-            for (Race existingRace : existingRaces) {
-                if (existingRace.getSeason() != null && existingRace.getSeason().equals(year.toString()) &&
-                    existingRace.getRound() != null && existingRace.getRound().equals(latestRound)) {
-                    // Found an existing race for this season and round
-                    System.out.println("Removing existing race entry for season " + year + ", round " + latestRound);
-                    deletedRace = existingRace;
-                    raceRepo.delete(existingRace);
+            for (Race race : existingRaces) {
+                if (race.getSeason() != null && race.getSeason().equals(year.toString()) &&
+                    race.getRound() != null && race.getRound().equals(latestRound)) {
+                    existingRace = race;
                     break;
                 }
             }
-            if(deletedRace != null){
-                latestRace.setQualifying(deletedRace.getQualifying());
-                latestRace.setQualifyingResults(deletedRace.getQualifyingResults());
-                latestRace.setSprint(deletedRace.getSprint());
-                latestRace.setSprintResults(deletedRace.getSprintResults());
-                latestRace.setFirstPractice(deletedRace.getFirstPractice());
-                latestRace.setSecondPractice(deletedRace.getSecondPractice());
-                latestRace.setThirdPractice(deletedRace.getThirdPractice());
-                latestRace.setSprintQualifying(deletedRace.getSprintQualifying());
-                // Save the new race with results to the database
-                System.out.println("Saving race entry with results for season " + year + ", round " + latestRound);
-                raceRepo.save(latestRace);
-            }
-            if(latestRace != null){
-                List<Result> results = latestRace.getResults();
-                Map<String, Driver> updateDriverStats = new HashMap<>();
-                Map<String, Constructor> updateConstructorStats = new HashMap<>();
-                for(Result result : results){
-                    Integer points = Integer.parseInt(result.getPoints());
-                    Integer position = Integer.parseInt(result.getPosition());
-                    String driverId = result.getDriver().getDriverId();
-                    String constructorId = result.getConstructor().getConstructorId();
-                    Driver driver = driverRepo.findById(driverId).orElse(null);
-                    Constructor constructor = constructorRepo.findById(constructorId).orElse(null);
-                    if(driver != null){
-                        driver.setPoints(driver.getPoints() + points);
-                        driver.setTotalRaces(driver.getTotalRaces() + 1);
-                    }
-                    if(constructor != null){
-                        constructor.setPoints(constructor.getPoints() + points);
-                        constructor.setTotalRaces(constructor.getTotalRaces() + 1);
-                    }
-                    if(position == 1){
-                        driver.setWins(driver.getWins() + 1);
-                        constructor.setWins(constructor.getWins() + 1);
-                    }
-                    if(position <= 3){
-                        driver.setPodiums(driver.getPodiums() + 1);
-                        constructor.setPodiums(constructor.getPodiums() + 1);
-                    }
-                    
+            
+            // If we found an existing race, preserve any data that might not be in the new race object
+            if (existingRace != null) {
+                System.out.println("Found existing race entry for season " + year + ", round " + latestRound);
+                
+                // Preserve practice session data
+                latestRace.setFirstPractice(existingRace.getFirstPractice());
+                latestRace.setSecondPractice(existingRace.getSecondPractice());
+                latestRace.setThirdPractice(existingRace.getThirdPractice());
+                latestRace.setSprintQualifying(existingRace.getSprintQualifying());
+                
+                // If we didn't get qualifying or sprint results in this fetch, preserve existing ones
+                if (latestRace.getQualifyingResults() == null || latestRace.getQualifyingResults().isEmpty()) {
+                    latestRace.setQualifyingResults(existingRace.getQualifyingResults());
+                    latestRace.setQualifying(existingRace.getQualifying());
                 }
                 
-                driverRepo.saveAll(updateDriverStats.values());
-                constructorRepo.saveAll(updateConstructorStats.values());
+                if (latestRace.getSprintResults() == null || latestRace.getSprintResults().isEmpty()) {
+                    latestRace.setSprintResults(existingRace.getSprintResults());
+                    latestRace.setSprint(existingRace.getSprint());
+                }
+                
+                // Delete the existing race to avoid duplicates
+                raceRepo.delete(existingRace);
             }
             
+            // Mark the race as having standings updated
+            latestRace.setStandingsUpdated(true);
             
-            return latestRace != null ? latestRace.getResults() : null;
+            // Save the updated race to the database
+            System.out.println("Saving race entry with results for season " + year + ", round " + latestRound);
+            raceRepo.save(latestRace);
+            
+            // Process race results to update driver and constructor statistics
+            Map<String, Driver> updatedDrivers = new HashMap<>();
+            Map<String, Constructor> updatedConstructors = new HashMap<>();
+            Set<String> constructorsProcessedForTotalRaces = new HashSet<>();
+            
+            for (int i = 0; i < results.size(); i++) {
+                Result result = results.get(i);
+                ErgastDriver ergDriver = result.getDriver();
+                ErgastConstructor egConstructor = result.getConstructor();
+                
+                if (ergDriver == null || egConstructor == null) continue;
+                
+                String driverId = ergDriver.getDriverId();
+                String constructorId = egConstructor.getConstructorId();
+                
+                Optional<Driver> driverOpt = driverRepo.findById(driverId);
+                Optional<Constructor> constructorOpt = constructorRepo.findById(constructorId);
+                
+                if (driverOpt.isEmpty()) {
+                    System.out.println("Missing driver: " + driverId + " for " + context);
+                    continue;
+                }
+                if (constructorOpt.isEmpty()) {
+                    System.out.println("Missing constructor: " + constructorId + " for " + context);
+                    continue;
+                }
+                
+                Driver driver = updatedDrivers.computeIfAbsent(driverId, k -> driverOpt.get());
+                Constructor constructor = updatedConstructors.computeIfAbsent(constructorId, k -> constructorOpt.get());
+                
+                if (i == 0) { // Winner
+                    driver.setWins(driver.getWins() + 1);
+                    driver.setPodiums(driver.getPodiums() + 1);
+                    constructor.setWins(constructor.getWins() + 1);
+                    constructor.setPodiums(constructor.getPodiums() + 1);
+                } else if (i < 3) { // Podium
+                    driver.setPodiums(driver.getPodiums() + 1);
+                    constructor.setPodiums(constructor.getPodiums() + 1);
+                }
+                
+                if (result.getPoints() != null && !result.getPoints().isEmpty()) {
+                    try {
+                        double points = Double.parseDouble(result.getPoints());
+                        driver.setPoints(driver.getPoints() + points);
+                        constructor.setPoints(constructor.getPoints() + points);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Could not parse points: " + result.getPoints() + " for driver " + driverId + " in " + context);
+                    }
+                }
+                
+                if (result.getFastestLap() != null && result.getFastestLap().getRank() != null &&
+                    result.getFastestLap().getRank().equals("1")) {
+                    driver.setFastestLaps(driver.getFastestLaps() != null ? driver.getFastestLaps() + 1 : 1);
+                    constructor.setFastestLaps(constructor.getFastestLaps() != null ? constructor.getFastestLaps() + 1 : 1);
+                }
+                
+                driver.setTotalRaces(driver.getTotalRaces() != null ? driver.getTotalRaces() + 1 : 1);
+                if (!constructorsProcessedForTotalRaces.contains(constructorId)) {
+                    constructor.setTotalRaces(constructor.getTotalRaces() != null ? constructor.getTotalRaces() + 1 : 1);
+                    constructorsProcessedForTotalRaces.add(constructorId);
+                }
+            }
+            
+            // Process qualifying results (poles)
+            if (qualiResults != null && !qualiResults.isEmpty()) {
+                Result poleResult = qualiResults.get(0); // Assuming first result is P1
+                if (poleResult.getPosition() != null && poleResult.getPosition().equals("1")) {
+                    ErgastDriver ergDriver = poleResult.getDriver();
+                    ErgastConstructor egConstructor = poleResult.getConstructor();
+                    
+                    if (ergDriver != null && egConstructor != null) {
+                        String driverId = ergDriver.getDriverId();
+                        String constructorId = egConstructor.getConstructorId();
+                        
+                        Driver driver = updatedDrivers.get(driverId);
+                        Constructor constructor = updatedConstructors.get(constructorId);
+                        
+                        // If driver/constructor not in map yet (e.g. only pole, no race result), fetch them
+                        if (driver == null) {
+                            Optional<Driver> dOpt = driverRepo.findById(driverId);
+                            if (dOpt.isPresent()) driver = dOpt.get();
+                        }
+                        if (constructor == null) {
+                            Optional<Constructor> cOpt = constructorRepo.findById(constructorId);
+                            if (cOpt.isPresent()) constructor = cOpt.get();
+                        }
+                        
+                        if (driver != null && constructor != null) {
+                            driver.setPoles(driver.getPoles() + 1);
+                            constructor.setPolePositions(constructor.getPolePositions() + 1);
+                            updatedDrivers.put(driverId, driver); // Ensure they are in map for saving
+                            updatedConstructors.put(constructorId, constructor);
+                        } else {
+                            System.out.println("Pole driver/constructor not found or not in updated map: " + driverId + "/" + constructorId + " for " + context);
+                        }
+                    }
+                }
+            }
+            
+            // Process sprint results if available
+            if (sprintResults != null && !sprintResults.isEmpty()) {
+                for (int i = 0; i < sprintResults.size(); i++) {
+                    Result result = sprintResults.get(i);
+                    ErgastDriver ergDriver = result.getDriver();
+                    ErgastConstructor egConstructor = result.getConstructor();
+                    
+                    if (ergDriver == null || egConstructor == null) continue;
+                    
+                    String driverId = ergDriver.getDriverId();
+                    String constructorId = egConstructor.getConstructorId();
+                    
+                    Driver driver = updatedDrivers.get(driverId);
+                    Constructor constructor = updatedConstructors.get(constructorId);
+                    
+                    // If driver/constructor not in map yet, fetch them
+                    if (driver == null) {
+                        Optional<Driver> dOpt = driverRepo.findById(driverId);
+                        if (dOpt.isPresent()) driver = dOpt.get();
+                        else continue;
+                    }
+                    if (constructor == null) {
+                        Optional<Constructor> cOpt = constructorRepo.findById(constructorId);
+                        if (cOpt.isPresent()) constructor = cOpt.get();
+                        else continue;
+                    }
+                    
+                    // Add sprint points
+                    if (result.getPoints() != null && !result.getPoints().isEmpty()) {
+                        try {
+                            double points = Double.parseDouble(result.getPoints());
+                            driver.setPoints(driver.getPoints() + points);
+                            constructor.setPoints(constructor.getPoints() + points);
+                            updatedDrivers.put(driverId, driver);
+                            updatedConstructors.put(constructorId, constructor);
+                        } catch (NumberFormatException e) {
+                            System.err.println("Could not parse sprint points: " + result.getPoints() + " for driver " + driverId + " in " + context);
+                        }
+                    }
+                }
+            }
+            
+            // Save all updated drivers and constructors
+            if (!updatedDrivers.isEmpty()) {
+                driverRepo.saveAll(updatedDrivers.values());
+                System.out.println("Updated " + updatedDrivers.size() + " drivers for " + context);
+            }
+            if (!updatedConstructors.isEmpty()) {
+                constructorRepo.saveAll(updatedConstructors.values());
+                System.out.println("Updated " + updatedConstructors.size() + " constructors for " + context);
+            }
+            
+            return results;
         } catch (Exception e) {
             System.err.println("Error fetching latest race results: " + e.getMessage());
             e.printStackTrace(); // Print the full stack trace for better debugging
@@ -1170,6 +1348,7 @@ public class FastF1 {
         }
     }
     
+ 
     /**
      * Gets the latest race results from the database.
      * If no results are found, it attempts to fetch them from the API.

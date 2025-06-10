@@ -90,3 +90,43 @@ export const registerUser = async (
     throw error;
   }
 };
+
+/**
+ * Request password reset
+ */
+export const requestPasswordReset = async (email: string): Promise<{ message: string }> => {
+  try {
+    const response = await fetch(`${AUTH_API_URL}/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: email }),
+    });
+    
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Password reset request error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Reset password with token
+ */
+export const resetPassword = async (token: string, newPassword: string): Promise<{ message: string }> => {
+  try {
+    const response = await fetch(`${AUTH_API_URL}/reset-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    
+    return handleApiResponse(response);
+  } catch (error) {
+    console.error('Password reset error:', error);
+    throw error;
+  }
+};

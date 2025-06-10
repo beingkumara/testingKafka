@@ -108,7 +108,8 @@ public class AuthenticationServiceImpl {
     }
 
     public ResponseEntity<?> forgotPassword(String username){
-        User user  = userRepository.findByUsername(username);
+        System.out.println("Forgot password for user: " + username);
+        User user  = userRepository.findByEmail(username);
         
         if(user == null){
             Map<String,Object> response = new HashMap<>();

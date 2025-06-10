@@ -12,6 +12,8 @@ import './App.css';
 const HomePage = lazy(() => import('./pages/HomePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const DriversPage = lazy(() => import('./pages/DriversPage'));
 const DriverDetailsPage = lazy(() => import('./pages/DriverDetailsPage'));
@@ -43,6 +45,8 @@ function App() {
                 <Route index element={<HomePage />} />
                 <Route path={ROUTES.LOGIN} element={<LoginPage />} />
                 <Route path={ROUTES.SIGNUP} element={<SignupPage />} />
+                <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+                <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
                 <Route 
                   path={ROUTES.DASHBOARD}
                   element={

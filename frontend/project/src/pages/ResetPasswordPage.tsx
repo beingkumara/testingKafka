@@ -1,24 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
+import { resetPassword } from '../services';
 
-const SignupPage: React.FC = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+const ResetPasswordPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordFeedback, setPasswordFeedback] = useState('');
-  const [isEmailValid, setIsEmailValid] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const passwordInputRef = React.useRef<HTMLInputElement>(null);
-  const confirmPasswordInputRef = React.useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordInputRef = useRef<HTMLInputElement>(null);
   
-  const { signup } = useAuth();
+  const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   
   // Check if password meets requirements
@@ -58,12 +56,6 @@ const SignupPage: React.FC = () => {
     return Math.min(Math.floor((strength / 6) * 100), 100);
   };
   
-  // Validate email format
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return emailRegex.test(email);
-  };
-
   // Update password strength when password changes
   useEffect(() => {
     const strength = calculatePasswordStrength(password);
@@ -80,27 +72,26 @@ const SignupPage: React.FC = () => {
     }
   }, [password]);
   
-  // Validate email when it changes
+  // Validate token exists
   useEffect(() => {
-    if (email) {
-      setIsEmailValid(validateEmail(email));
-    } else {
-      setIsEmailValid(true); // Don't show error when field is empty
+    if (!token) {
+      setFormError('Invalid or missing reset token. Please request a new password reset link.');
     }
-  }, [email]);
-
+  }, [token]);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
+    setSuccessMessage('');
     
     // Validation
-    if (!name || !email || !password || !confirmPassword) {
-      setFormError('Please fill in all fields');
+    if (!token) {
+      setFormError('Invalid or missing reset token. Please request a new password reset link.');
       return;
     }
     
-    if (!validateEmail(email)) {
-      setFormError('Please enter a valid email address');
+    if (!password || !confirmPassword) {
+      setFormError('Please fill in all fields');
       return;
     }
     
@@ -118,13 +109,18 @@ const SignupPage: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      await signup(name, email, password);
-      navigate('/dashboard');
+      const response = await resetPassword(token, password);
+      setSuccessMessage(response.message || 'Your password has been reset successfully.');
+      
+      // Redirect to login page after 3 seconds
+      setTimeout(() => {
+        navigate('/login');
+      }, 3000);
     } catch (error) {
       if (error instanceof Error) {
         setFormError(error.message);
       } else {
-        setFormError('Failed to sign up. Please try again.');
+        setFormError('Failed to reset password. Please try again or request a new reset link.');
       }
     } finally {
       setIsSubmitting(false);
@@ -143,9 +139,9 @@ const SignupPage: React.FC = () => {
           >
             <div className="p-8">
               <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold">Create Your Account</h1>
+                <h1 className="text-3xl font-bold">Reset Password</h1>
                 <p className="text-secondary-600 dark:text-secondary-300 mt-2">
-                  Join F1nity and elevate your Formula 1 experience
+                  Create a new password for your account
                 </p>
               </div>
               
@@ -155,54 +151,20 @@ const SignupPage: React.FC = () => {
                 </div>
               )}
               
+              {successMessage && (
+                <div className="bg-success-500/10 border border-success-500 text-success-500 p-3 rounded-md mb-6">
+                  {successMessage}
+                  <p className="mt-2 text-sm">Redirecting to login page...</p>
+                </div>
+              )}
+              
               <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label 
-                    htmlFor="name" 
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Full Name
-                  </label>
-                  <input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="input"
-                    placeholder="John Doe"
-                    required
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label 
-                    htmlFor="email" 
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={`input ${email && !isEmailValid ? 'border-error-500' : ''}`}
-                    placeholder="your.email@example.com"
-                    required
-                  />
-                  {email && !isEmailValid && (
-                    <p className="mt-1 text-xs text-error-500">
-                      Please enter a valid email address
-                    </p>
-                  )}
-                </div>
-                
                 <div className="mb-4">
                   <label 
                     htmlFor="password" 
                     className="block text-sm font-medium mb-1"
                   >
-                    Password
+                    New Password
                   </label>
                   <div className="relative">
                     <input
@@ -212,7 +174,7 @@ const SignupPage: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="input pr-10"
-                      placeholder="Enter your password"
+                      placeholder="Enter your new password"
                       required
                       aria-describedby="password-requirements"
                     />
@@ -293,7 +255,7 @@ const SignupPage: React.FC = () => {
                     htmlFor="confirmPassword" 
                     className="block text-sm font-medium mb-1"
                   >
-                    Confirm Password
+                    Confirm New Password
                   </label>
                   <div className="relative">
                     <input
@@ -303,7 +265,7 @@ const SignupPage: React.FC = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="input pr-10"
-                      placeholder="Re-enter your password"
+                      placeholder="Re-enter your new password"
                       required
                     />
                     <button
@@ -347,28 +309,25 @@ const SignupPage: React.FC = () => {
                     className={`btn btn-primary w-full py-3 ${
                       isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
                     }`}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !!successMessage}
                   >
                     {isSubmitting ? (
                       <span className="flex items-center justify-center">
                         <div className="loader h-5 w-5 mr-2"></div>
-                        Creating account...
+                        Resetting password...
                       </span>
                     ) : (
-                      'Sign Up'
+                      'Reset Password'
                     )}
                   </button>
                 </div>
                 
                 <div className="text-center text-sm">
-                  <span className="text-secondary-600 dark:text-secondary-300">
-                    Already have an account?{' '}
-                  </span>
                   <Link 
                     to="/login" 
                     className="text-primary-500 hover:text-primary-600 font-medium"
                   >
-                    Log in
+                    Back to login
                   </Link>
                 </div>
               </form>
@@ -386,4 +345,4 @@ const SignupPage: React.FC = () => {
   );
 };
 
-export default SignupPage;
+export default ResetPasswordPage;

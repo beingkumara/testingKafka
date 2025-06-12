@@ -41,6 +41,20 @@ public class JwtTokenProvider {
                 .signWith(secretKey, SignatureAlgorithm.HS512)
                 .compact();
     }
+    
+    public String generatePasswordResetToken(String username) {
+        Date now = new Date();
+        // Password reset token expires in 15 minutes
+        Date expiryDate = new Date(now.getTime() + 15 * 60 * 1000);
+        
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(secretKey, SignatureAlgorithm.HS512)
+                .claim("type", "password_reset") // Add claim to identify token type
+                .compact();
+    }
 
     public String getUsernameFromToken(String token) {
         return Jwts.parserBuilder()

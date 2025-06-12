@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { resetPassword } from '../services';
+import { resetPassword } from '../services/auth/authService';
 
 const ResetPasswordPage: React.FC = () => {
   const [password, setPassword] = useState('');
@@ -16,8 +16,9 @@ const ResetPasswordPage: React.FC = () => {
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const confirmPasswordInputRef = useRef<HTMLInputElement>(null);
   
-  const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const token = searchParams.get('token');
   
   // Check if password meets requirements
   const validatePassword = (pass: string): { isValid: boolean; message: string } => {
@@ -72,7 +73,7 @@ const ResetPasswordPage: React.FC = () => {
     }
   }, [password]);
   
-  // Validate token exists
+  // Validate token exists and is valid format
   useEffect(() => {
     if (!token) {
       setFormError('Invalid or missing reset token. Please request a new password reset link.');
@@ -112,13 +113,18 @@ const ResetPasswordPage: React.FC = () => {
       const response = await resetPassword(token, password);
       setSuccessMessage(response.message || 'Your password has been reset successfully.');
       
+      // Clear form
+      setPassword('');
+      setConfirmPassword('');
+      
       // Redirect to login page after 3 seconds
       setTimeout(() => {
         navigate('/login');
       }, 3000);
     } catch (error) {
+      console.error('Password reset error:', error);
       if (error instanceof Error) {
-        setFormError(error.message);
+        setFormError(error.message || 'Failed to reset password. The token may be invalid or expired.');
       } else {
         setFormError('Failed to reset password. Please try again or request a new reset link.');
       }

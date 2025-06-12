@@ -54,5 +54,10 @@ public class AuthenticationController {
     public ResponseEntity<?> editProfile(@RequestBody User user) {
         return authenticationService.editProfile(user);
     }
+
+    @GetMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@RequestParam String token){
+        return authenticationService.verifyOtp(token);
+    }
     
 }

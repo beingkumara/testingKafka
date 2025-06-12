@@ -46,7 +46,7 @@ function App() {
                 <Route path={ROUTES.LOGIN} element={<LoginPage />} />
                 <Route path={ROUTES.SIGNUP} element={<SignupPage />} />
                 <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
-                <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route 
                   path={ROUTES.DASHBOARD}
                   element={

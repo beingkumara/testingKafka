@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { requestPasswordReset } from '../services';
+import { requestPasswordReset, verifyOtp } from '../services/auth/authService';
 
 const ForgotPasswordPage: React.FC = () => {
   const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [otp, setOtp] = useState('');
   const [formError, setFormError] = useState('');
-  const [isEmailValid, setIsEmailValid] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOtpField, setShowOtpField] = useState(false);
+  const [isEmailValid, setIsEmailValid] = useState(true);
+  const navigate = useNavigate();
   
   // Validate email format
   const validateEmail = (email: string): boolean => {
@@ -16,7 +19,7 @@ const ForgotPasswordPage: React.FC = () => {
     return emailRegex.test(email);
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
     setSuccessMessage('');
@@ -37,14 +40,78 @@ const ForgotPasswordPage: React.FC = () => {
     
     try {
       const response = await requestPasswordReset(email);
-      setSuccessMessage(response.message || 'Password reset instructions have been sent to your email.');
-      setEmail(''); // Clear the form
+      setSuccessMessage(response.message || 'OTP has been sent to your email.');
+      setShowOtpField(true);
     } catch (error) {
       if (error instanceof Error) {
         setFormError(error.message);
       } else {
-        setFormError('Failed to process your request. Please try again.');
+        setFormError('Failed to send OTP. Please try again.');
       }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Clear previous messages
+    setFormError('');
+    setSuccessMessage('');
+    
+    // Validate OTP format (6 digits)
+    if (!otp || !/^\d{6}$/.test(otp)) {
+      setFormError('Please enter a valid 6-digit OTP');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      console.log('Verifying OTP...');
+      const response = await verifyOtp(otp);
+      console.log('OTP verification response:', response);
+      
+      // If OAuth is required, the verifyOtp function will handle the redirect
+      if (response.requiresOAuth) {
+        setSuccessMessage('Redirecting to OAuth provider...');
+        return;
+      }
+      
+      if (response.token) {
+        // If we get a token in the response, use it for password reset
+        navigate(`/reset-password?token=${encodeURIComponent(response.token)}`);
+      } else {
+        // If no token in response, use the OTP as the token (fallback)
+        navigate(`/reset-password?token=${encodeURIComponent(otp)}`);
+      }
+    } catch (error: unknown) {
+      console.error('OTP verification error:', error);
+      
+      let errorMessage = 'Failed to verify OTP. Please try again.';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message || errorMessage;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // Handle specific error cases
+      if (errorMessage.toLowerCase().includes('network')) {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+      } else if (errorMessage.toLowerCase().includes('expired')) {
+        errorMessage = 'This OTP has expired. Please request a new one.';
+      } else if (errorMessage.toLowerCase().includes('invalid') || errorMessage.toLowerCase().includes('incorrect')) {
+        errorMessage = 'The OTP you entered is incorrect. Please try again.';
+      }
+      
+      setFormError(errorMessage);
+      
+      // Auto-clear error after 5 seconds
+      setTimeout(() => {
+        setFormError('');
+      }, 5000);
     } finally {
       setIsSubmitting(false);
     }
@@ -80,51 +147,113 @@ const ForgotPasswordPage: React.FC = () => {
                 </div>
               )}
               
-              <form onSubmit={handleSubmit}>
-                <div className="mb-6">
-                  <label 
-                    htmlFor="email" 
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setIsEmailValid(true); // Reset validation on change
-                    }}
-                    className={`input ${email && !isEmailValid ? 'border-error-500' : ''}`}
-                    placeholder="your.email@example.com"
-                    required
-                  />
-                  {email && !isEmailValid && (
-                    <p className="mt-1 text-xs text-error-500">
-                      Please enter a valid email address
-                    </p>
-                  )}
-                </div>
-                
-                <div className="mb-6">
-                  <button
-                    type="submit"
-                    className={`btn btn-primary w-full py-3 ${
-                      isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                    }`}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center justify-center">
-                        <div className="loader h-5 w-5 mr-2"></div>
-                        Sending...
-                      </span>
-                    ) : (
-                      'Send Reset Instructions'
-                    )}
-                  </button>
-                </div>
+              <form onSubmit={showOtpField ? handleVerifyOtp : handleSendOtp}>
+                {!showOtpField ? (
+                  <>
+                    <div className="mb-6">
+                      <label 
+                        htmlFor="email" 
+                        className="block text-sm font-medium mb-1"
+                      >
+                        Email
+                      </label>
+                      <input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setIsEmailValid(true);
+                        }}
+                        className={`input ${email && !isEmailValid ? 'border-error-500' : ''}`}
+                        placeholder="your.email@example.com"
+                        required
+                        disabled={isSubmitting}
+                      />
+                      {email && !isEmailValid && (
+                        <p className="mt-1 text-xs text-error-500">
+                          Please enter a valid email address
+                        </p>
+                      )}
+                    </div>
+                    
+                    <div className="mb-6">
+                      <button
+                        type="submit"
+                        className={`btn btn-primary w-full py-3 ${
+                          isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                        }`}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center justify-center">
+                            <div className="loader h-5 w-5 mr-2"></div>
+                            Sending OTP...
+                          </span>
+                        ) : (
+                          'Send OTP'
+                        )}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-6">
+                      <label 
+                        htmlFor="otp" 
+                        className="block text-sm font-medium mb-1"
+                      >
+                        Enter OTP
+                      </label>
+                      <input
+                        id="otp"
+                        type="text"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        className="input"
+                        placeholder="Enter the 6-digit OTP"
+                        required
+                        disabled={isSubmitting}
+                      />
+                      <p className="mt-2 text-xs text-secondary-500">
+                        We've sent a 6-digit OTP to {email}
+                      </p>
+                    </div>
+                    
+                    <div className="mb-6">
+                      <button
+                        type="submit"
+                        className={`btn btn-primary w-full py-3 ${
+                          isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                        }`}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center justify-center">
+                            <div className="loader h-5 w-5 mr-2"></div>
+                            Verifying...
+                          </span>
+                        ) : (
+                          'Verify OTP'
+                        )}
+                      </button>
+                    </div>
+                    
+                    <div className="text-center mb-6">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowOtpField(false);
+                          setFormError('');
+                          setSuccessMessage('');
+                        }}
+                        className="text-sm text-primary-500 hover:text-primary-600 font-medium"
+                      >
+                        Change Email
+                      </button>
+                    </div>
+                  </>
+                )}
                 
                 <div className="text-center text-sm">
                   <span className="text-secondary-600 dark:text-secondary-300">

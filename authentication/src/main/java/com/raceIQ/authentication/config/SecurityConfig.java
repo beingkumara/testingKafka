@@ -33,10 +33,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
-                    .requestMatchers("/api/f1nity/v1/auth/login").permitAll()
-                    .requestMatchers("/api/f1nity/v1/auth/register").permitAll()
-                    .requestMatchers("/api/f1nity/v1/auth/forgot-password").permitAll()
-                    .requestMatchers("/api/f1nity/v1/auth/reset-password").permitAll()
+                    .requestMatchers("/api/f1nity/v1/auth/*").permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                     .anyRequest().authenticated()
                 )

@@ -39,4 +39,8 @@ public class AuthenticationService {
     public ResponseEntity<?> editProfile(User user) {
         return authenticationServiceImpl.editProfile(user);
     }
+
+    public ResponseEntity<?> verifyOtp(String token){
+        return authenticationServiceImpl.verifyOtp(token);
+    }
 }

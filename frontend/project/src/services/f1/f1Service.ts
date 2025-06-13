@@ -13,7 +13,8 @@ import {
   RaceResult,
   RaceResultFromAPI,
   RaceFromAPI,
-  RaceResultForYearAndRound
+  RaceResultForYearAndRound,
+  NewsArticle
 } from '../../types/f1.types';
 
 /**
@@ -117,7 +118,7 @@ export const getDrivers = async (): Promise<Driver[]> => {
       };
     });
   } catch (error) {
-    console.error('Error fetching drivers:', error);
+    console.error('Error in getDrivers function:', error);
     return [];
   }
 };
@@ -259,5 +260,80 @@ export const getRaceById = async (id: string): Promise<any> => {
     } else {
       throw new Error(`Failed to fetch race details for ID ${id}`);
     }
+  }
+};
+
+/**
+ * Fetches F1 news articles with optional filters
+ * @param params - Optional filter parameters
+ * @returns Promise with news articles
+ */
+interface NewsParams {
+  constructorName?: string;  // Changed from 'constructor' to avoid reserved keyword
+  driver?: string;
+  fromDate?: string;
+  toDate?: string;
+}
+
+export const getF1News = async (params: NewsParams = {}): Promise<NewsArticle[]> => {
+  try {
+    await delay(800); // Simulated network delay
+    
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    // Combine constructor and driver into ticket parameter
+    const ticketParts = [];
+    if (params.constructorName) ticketParts.push(`constructor:${params.constructorName}`);
+    if (params.driver) ticketParts.push(`driver:${params.driver}`);
+    if (ticketParts.length > 0) {
+      queryParams.append('ticket', ticketParts.join(','));
+    }
+    if (params.fromDate) queryParams.append('from', params.fromDate);
+    if (params.toDate) queryParams.append('to', params.toDate);
+    
+    // Construct the URL with query parameters
+    const url = `/news/latest${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    try {
+      // Fetch news data
+      const response = await f1Api.get<any[]>(url);
+      
+      // Transform the API response to match NewsArticle type
+      const data: NewsArticle[] = response.map(item => ({
+        title: item.title,
+        description: item.description,
+        url: item.url,
+        urlToImage: item.urlToImage,
+        publishedAt: item.publishedAt,
+        content: item.content || item.description,
+        source: {
+          id: item.source?.id || null,
+          name: item.source?.name || 'Unknown Source'
+        }
+      }));
+      
+      return data;
+    } catch (apiError) {
+      console.error('Error fetching F1 news:', apiError);
+      
+      // Return mock data when API fails
+      return [
+        {
+          id: '1',
+          title: 'F1 News Sample - API Currently Unavailable',
+          summary: 'This is a placeholder while the API connection is being established.',
+          content: 'The F1 news API is currently unavailable. This is sample content to allow the application to function.',
+          publishedDate: new Date().toISOString(),
+          author: 'System',
+          source: 'Local',
+          url: '#',
+          imageUrl: 'https://via.placeholder.com/800x400?text=F1+News',
+          tags: ['api', 'placeholder']
+        }
+      ];
+    }
+  } catch (error) {
+    console.error('Error in getF1News function:', error);
+    return [];
   }
 };

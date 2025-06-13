@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Flag, Trophy, BarChart, Search, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Users, Flag, Trophy, BarChart, Search, Sparkles, Newspaper } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { getRaces, getConstructorStandings, getDriverStandings } from '../../services';
@@ -81,6 +81,12 @@ const Sidebar: React.FC = () => {
       path: '/race-results',
       icon: <Search className="h-5 w-5" />,
       color: 'text-secondary-500',
+    },
+    {
+      name: 'News',
+      path: '/news',
+      icon: <Newspaper className="h-5 w-5" />,
+      color: 'text-tertiary-500',
     },
   ];
 

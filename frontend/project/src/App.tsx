@@ -21,6 +21,7 @@ const RacesPage = lazy(() => import('./pages/RacesPage'));
 const RaceDetailsPage = lazy(() => import('./pages/RaceDetailsPage'));
 const StandingsPage = lazy(() => import('./pages/StandingsPage'));
 const RaceResultsPage = lazy(() => import('./pages/RaceResults'));
+const NewsPage = lazy(() => import('./pages/NewsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function App() {
@@ -100,6 +101,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <RaceResultsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path={ROUTES.NEWS}
+                  element={
+                    <ProtectedRoute>
+                      <NewsPage />
                     </ProtectedRoute>
                   } 
                 />

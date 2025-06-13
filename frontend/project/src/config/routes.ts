@@ -11,6 +11,7 @@ const DriverDetailsPage = lazy(() => import('../pages/DriverDetailsPage'));
 const RacesPage = lazy(() => import('../pages/RacesPage'));
 const RaceDetailsPage = lazy(() => import('../pages/RaceDetailsPage'));
 const StandingsPage = lazy(() => import('../pages/StandingsPage'));
+const NewsPage = lazy(() => import('../pages/NewsPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
 // Route configuration
@@ -66,6 +67,12 @@ export const routes = [
   {
     path: ROUTES.STANDINGS,
     component: StandingsPage,
+    exact: true,
+    protected: true,
+  },
+  {
+    path: ROUTES.NEWS,
+    component: NewsPage,
     exact: true,
     protected: true,
   },

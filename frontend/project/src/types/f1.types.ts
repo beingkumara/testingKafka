@@ -45,6 +45,19 @@ export interface ConstructorStanding {
   podiums: number;
 }
 
+export interface NewsArticle {
+  title: string;
+  description: string;
+  url: string;
+  urlToImage: string;
+  publishedAt: string;
+  content: string;
+  source: {
+    id: string | null;
+    name: string;
+  };
+}
+
 export interface Race {
   id: string;
   name: string;

@@ -85,7 +85,7 @@ public class NewsServiceImpl implements NewsService {
     }
 
     @Override
-    public List<NewsArticle> getNewsFromNewsApi(String ticker, int days) {
+    public List<NewsArticle> getNewsFromNewsApi(String ticker, String fromDate, String toDate) {
         try {
             // Build the query string with keywords and exclusions
             String query = String.format("\"%s\" %s -%s", 
@@ -93,34 +93,44 @@ public class NewsServiceImpl implements NewsService {
                 keywords.replace(",", " OR "),  // Convert commas to OR for multiple keywords
                 exclude.replaceAll("\\s*,\\s*", " -")  // Convert commas to - for exclusions
             );
-
+            
+            UriComponentsBuilder builder = UriComponentsBuilder
+                .fromHttpUrl(apiUrl)
+                .queryParam("q", query)
+                .queryParam("domains", domains)
+                .queryParam("language", language)
+                .queryParam("sortBy", sortBy)
+                .queryParam("pageSize", pageSize)
+                .queryParam("from", fromDate)
+                .queryParam("to", toDate)
+                .queryParam("apiKey", apiKey);
+                
             return webClient.get()
-                    .uri(uriBuilder -> {
-                        UriComponentsBuilder builder = UriComponentsBuilder
-                            .fromHttpUrl(apiUrl)
-                            .queryParam("q", query)
-                            .queryParam("domains", domains)
-                            .queryParam("language", language)
-                            .queryParam("sortBy", sortBy)
-                            .queryParam("pageSize", pageSize)
-                            .queryParam("apiKey", apiKey);
-                        
-                        return builder.build().encode().toUri();
-                    })
+                    .uri(builder.build().toUri())
                     .retrieve()
                     .onStatus(
                             status -> status.is4xxClientError() || status.is5xxServerError(),
                             clientResponse -> clientResponse.bodyToMono(String.class)
-                                    .flatMap(error -> Mono.error(new ResponseStatusException(
-                                            clientResponse.statusCode(),
-                                            "Error from NewsAPI: " + error)
-                                    ))
+                                    .flatMap(error -> {
+                                        System.err.println("Error response from NewsAPI (" + clientResponse.statusCode() + "): " + error);
+                                        return Mono.error(new ResponseStatusException(
+                                                clientResponse.statusCode(),
+                                                "Error from NewsAPI: " + error)
+                                        );
+                                    })
                     )
                     .bodyToMono(NewsApiResponse.class)
+                    .doOnNext(response -> {
+                        if (response.getArticles() != null) {
+                            System.out.println("Number of articles: " + response.getArticles().size());
+                        } else {
+                            System.out.println("No articles in response");
+                        }
+                    })
                     .map(NewsApiResponse::getArticles)
                     .block();
         } catch (Exception e) {
-            System.err.println("Error fetching news: " + e.getMessage());
+            System.err.println("Error in getNewsFromNewsApi: " + e.getMessage());
             e.printStackTrace();
             return Collections.emptyList();
         }

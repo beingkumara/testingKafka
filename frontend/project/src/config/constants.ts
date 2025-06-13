@@ -25,6 +25,7 @@ export const ROUTES = {
   RACE_DETAILS: '/races/:id',
   STANDINGS: '/standings',
   RACE_RESULTS: '/race-results',
+  NEWS: '/news',
 };
 
 // App settings

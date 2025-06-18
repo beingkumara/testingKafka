@@ -24,7 +24,7 @@ public class NewsController {
             @RequestParam("to") String toDate,
             @RequestParam("page") int page,
             @RequestParam("pageSize") int pageSize){
-        List<NewsArticle> news = newsService.getNewsFromNewsApi(ticker, fromDate, toDate, page, pageSize);
+        List<NewsArticle> news = newsService.getNews(ticker, fromDate, toDate, page, pageSize);
         return news;
     }
 }

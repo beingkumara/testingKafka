@@ -266,16 +266,24 @@ export const getRaceById = async (id: string): Promise<any> => {
 /**
  * Fetches F1 news articles with optional filters
  * @param params - Optional filter parameters
- * @returns Promise with news articles
+ * @returns Promise with news articles and total count
  */
 interface NewsParams {
   constructorName?: string;  // Changed from 'constructor' to avoid reserved keyword
   driver?: string;
   fromDate?: string;
   toDate?: string;
+  page?: number;
+  pageSize?: number;
 }
 
-export const getF1News = async (params: NewsParams = {}): Promise<NewsArticle[]> => {
+export interface NewsResponse {
+  articles: NewsArticle[];
+  totalCount: number;
+  hasMore: boolean;
+}
+
+export const getF1News = async (params: NewsParams = {}): Promise<NewsResponse> => {
   try {
     await delay(800); // Simulated network delay
     
@@ -290,6 +298,12 @@ export const getF1News = async (params: NewsParams = {}): Promise<NewsArticle[]>
     }
     if (params.fromDate) queryParams.append('from', params.fromDate);
     if (params.toDate) queryParams.append('to', params.toDate);
+    
+    // Add pagination parameters
+    const page = params.page || 1;
+    const pageSize = params.pageSize || 10;
+    queryParams.append('page', page.toString());
+    queryParams.append('pageSize', pageSize.toString());
     
     // Construct the URL with query parameters
     const url = `/news/latest${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
@@ -312,28 +326,43 @@ export const getF1News = async (params: NewsParams = {}): Promise<NewsArticle[]>
         }
       }));
       
-      return data;
+      // Determine if there are more articles
+      const hasMore = data.length === pageSize;
+      
+      return {
+        articles: data,
+        totalCount: data.length + (hasMore ? (page * pageSize) : 0),
+        hasMore
+      };
     } catch (apiError) {
       console.error('Error fetching F1 news:', apiError);
       
       // Return mock data when API fails
-      return [
-        {
-          id: '1',
-          title: 'F1 News Sample - API Currently Unavailable',
-          summary: 'This is a placeholder while the API connection is being established.',
-          content: 'The F1 news API is currently unavailable. This is sample content to allow the application to function.',
-          publishedDate: new Date().toISOString(),
-          author: 'System',
-          source: 'Local',
-          url: '#',
-          imageUrl: 'https://via.placeholder.com/800x400?text=F1+News',
-          tags: ['api', 'placeholder']
-        }
-      ];
+      return {
+        articles: [
+          {
+            title: 'F1 News Sample - API Currently Unavailable',
+            description: 'This is a placeholder while the API connection is being established.',
+            content: 'The F1 news API is currently unavailable. This is sample content to allow the application to function.',
+            publishedAt: new Date().toISOString(),
+            url: '#',
+            urlToImage: 'https://via.placeholder.com/800x400?text=F1+News',
+            source: {
+              id: null,
+              name: 'System'
+            }
+          }
+        ],
+        totalCount: 1,
+        hasMore: false
+      };
     }
   } catch (error) {
     console.error('Error in getF1News function:', error);
-    return [];
+    return {
+      articles: [],
+      totalCount: 0,
+      hasMore: false
+    };
   }
 };

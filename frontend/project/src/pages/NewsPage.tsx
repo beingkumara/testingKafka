@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, ExternalLink, Filter, Search, RefreshCw } from 'lucide-react';
-import { getF1News, getDrivers, getConstructorStandings } from '../services';
+import { Calendar, Clock, ExternalLink, Filter, Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getF1News, getDrivers, getConstructorStandings, NewsResponse } from '../services';
 import { NewsArticle, Driver, ConstructorStanding } from '../types/f1.types';
 import LoadingScreen from '../components/ui/LoadingScreen';
 
+const ARTICLES_PER_PAGE = 10;
 
 const NewsPage: React.FC = () => {
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMorePages, setHasMorePages] = useState(false);
+  const [totalArticles, setTotalArticles] = useState(0);
   
   // Filter states
   const [selectedDriver, setSelectedDriver] = useState<string>('');
@@ -19,19 +25,45 @@ const NewsPage: React.FC = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [constructors, setConstructors] = useState<ConstructorStanding[]>([]);
 
+  const fetchNews = async (page: number = 1, filters: Record<string, any> = {}) => {
+    try {
+      setIsFiltering(true);
+      
+      // Add pagination parameters
+      const params = {
+        ...filters,
+        page,
+        pageSize: ARTICLES_PER_PAGE
+      };
+      
+      const response: NewsResponse = await getF1News(params);
+      
+      setNews(response.articles);
+      setHasMorePages(response.hasMore);
+      setTotalArticles(response.totalCount);
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Error fetching news:', error);
+    } finally {
+      setIsFiltering(false);
+    }
+  };
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
         setIsLoading(true);
         
         // Fetch data in parallel
-        const [newsData, driversData, constructorsData] = await Promise.all([
-          getF1News(),
+        const [newsResponse, driversData, constructorsData] = await Promise.all([
+          getF1News({ page: 1, pageSize: ARTICLES_PER_PAGE }),
           getDrivers(),
           getConstructorStandings()
         ]);
         
-        setNews(newsData);
+        setNews(newsResponse.articles);
+        setHasMorePages(newsResponse.hasMore);
+        setTotalArticles(newsResponse.totalCount);
         setDrivers(driversData);
         setConstructors(constructorsData);
       } catch (error) {
@@ -44,12 +76,32 @@ const NewsPage: React.FC = () => {
     fetchInitialData();
   }, []);
   
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1) return;
+    
+    // Create filter object with the current filters
+    const filters: Record<string, any> = {};
+    if (selectedDriver) filters.driver = selectedDriver;
+    if (selectedConstructor) filters.constructorName = selectedConstructor;
+    
+    // Format dates
+    if (fromDate) {
+      const fromDateObj = new Date(fromDate);
+      filters.fromDate = fromDateObj.toISOString().split('T')[0];
+    }
+    if (toDate) {
+      const toDateObj = new Date(toDate);
+      toDateObj.setHours(23, 59, 59, 999);
+      filters.toDate = toDateObj.toISOString().split('T')[0];
+    }
+    
+    fetchNews(newPage, filters);
+  };
+  
   const handleFilterApply = async () => {
     try {
-      setIsFiltering(true);
-      
       // Create filter object with the correct property names and format dates
-      const filters: Record<string, string> = {};
+      const filters: Record<string, any> = {};
       if (selectedDriver) filters.driver = selectedDriver;
       if (selectedConstructor) filters.constructorName = selectedConstructor;
       
@@ -64,13 +116,11 @@ const NewsPage: React.FC = () => {
         toDateObj.setHours(23, 59, 59, 999);
         filters.toDate = toDateObj.toISOString().split('T')[0];
       }
-      console.log(filters);
-      const newsData = await getF1News(filters as any);
-      setNews(newsData);
+      
+      // Reset to first page when applying new filters
+      fetchNews(1, filters);
     } catch (error) {
       console.error('Error applying filters:', error);
-    } finally {
-      setIsFiltering(false);
     }
   };
   
@@ -80,15 +130,8 @@ const NewsPage: React.FC = () => {
     setFromDate('');
     setToDate('');
     
-    try {
-      setIsFiltering(true);
-      const newsData = await getF1News();
-      setNews(newsData);
-    } catch (error) {
-      console.error('Error clearing filters:', error);
-    } finally {
-      setIsFiltering(false);
-    }
+    // Reset to first page and clear filters
+    fetchNews(1);
   };
   
   // Handle manual date input changes
@@ -244,66 +287,103 @@ const NewsPage: React.FC = () => {
         
         <div className="space-y-6">
           {news.length > 0 ? (
-            news.map((article, index) => (
-              <motion.div
-                key={index}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-                className="card overflow-hidden"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-3">
-                  <div className="h-48 md:h-auto bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center relative">
-                    {article.urlToImage ? (
-                      <img
-                        src={article.urlToImage}
-                        alt={article.title}
-                        className="object-cover h-full w-full"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full w-full text-secondary-400">
-                        No image available
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="p-6 md:col-span-2">
-                    <div className="flex flex-col mb-4">
-                      <h2 className="text-2xl font-bold mb-2">{article.title}</h2>
-                      <p className="text-secondary-600 dark:text-secondary-300 mb-4">
-                        {article.description}
-                      </p>
-                      
-                      <div className="flex flex-wrap items-center text-sm text-secondary-500 dark:text-secondary-400 mb-4">
-                        <span className="inline-block bg-secondary-100 dark:bg-secondary-700 px-2 py-1 rounded-md mr-3 mb-2">
-                          {article.source.name}
-                        </span>
+            <>
+              {news.map((article, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  className="card overflow-hidden"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-3">
+                    <div className="h-48 md:h-auto bg-secondary-100 dark:bg-secondary-800 flex items-center justify-center relative">
+                      {article.urlToImage ? (
+                        <img
+                          src={article.urlToImage}
+                          alt={article.title}
+                          className="object-cover h-full w-full"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full w-full text-secondary-400">
+                          No image available
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-6 md:col-span-2">
+                      <div className="flex flex-col mb-4">
+                        <h2 className="text-2xl font-bold mb-2">{article.title}</h2>
+                        <p className="text-secondary-600 dark:text-secondary-300 mb-4">
+                          {article.description}
+                        </p>
                         
-                        <div className="flex items-center mr-4 mb-2">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {formatDate(article.publishedAt)}
+                        <div className="flex flex-wrap items-center text-sm text-secondary-500 dark:text-secondary-400 mb-4">
+                          <span className="inline-block bg-secondary-100 dark:bg-secondary-700 px-2 py-1 rounded-md mr-3 mb-2">
+                            {article.source.name}
+                          </span>
+                          
+                          <div className="flex items-center mr-4 mb-2">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            {formatDate(article.publishedAt)}
+                          </div>
+                          
+                          <div className="flex items-center mb-2">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {formatTime(article.publishedAt)}
+                          </div>
                         </div>
                         
-                        <div className="flex items-center mb-2">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {formatTime(article.publishedAt)}
-                        </div>
+                        <a 
+                          href={article.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="btn btn-primary flex items-center self-start"
+                        >
+                          Read Full Article
+                          <ExternalLink className="h-4 w-4 ml-2" />
+                        </a>
                       </div>
-                      
-                      <a 
-                        href={article.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="btn btn-primary flex items-center self-start"
-                      >
-                        Read Full Article
-                        <ExternalLink className="h-4 w-4 ml-2" />
-                      </a>
                     </div>
                   </div>
+                </motion.div>
+              ))}
+              
+              {/* Pagination Controls */}
+              <div className="flex justify-center items-center mt-8 mb-4">
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1 || isFiltering}
+                    className={`flex items-center justify-center w-10 h-10 rounded-md border ${
+                      currentPage === 1
+                        ? 'border-dark-200 dark:border-dark-700 text-dark-400 dark:text-dark-500 cursor-not-allowed'
+                        : 'border-dark-200 dark:border-dark-600 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
+                    }`}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  
+                  <div className="flex items-center justify-center min-w-10 h-10 px-3 rounded-md bg-primary-500 text-white font-medium">
+                    {currentPage}
+                  </div>
+                  
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={!hasMorePages || isFiltering}
+                    className={`flex items-center justify-center w-10 h-10 rounded-md border ${
+                      !hasMorePages
+                        ? 'border-dark-200 dark:border-dark-700 text-dark-400 dark:text-dark-500 cursor-not-allowed'
+                        : 'border-dark-200 dark:border-dark-600 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
+                    }`}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
                 </div>
-              </motion.div>
-            ))
+              </div>
+            </>
           ) : (
             <div className="card p-12 text-center">
               <div className="flex flex-col items-center">
@@ -329,4 +409,4 @@ const NewsPage: React.FC = () => {
   );
 };
 
-export default NewsPage;
+export default NewsPage;  

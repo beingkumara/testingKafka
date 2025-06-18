@@ -19,6 +19,8 @@ public interface NewsApiClient {
     List<NewsArticle> getF1News(
         @RequestParam("ticker") String ticker, 
         @RequestParam("from") String fromDate, 
-        @RequestParam("to") String toDate
+        @RequestParam("to") String toDate,
+        @RequestParam("page") int page,
+        @RequestParam("pageSize") int pageSize
     );
 }

@@ -4,5 +4,5 @@ import com.f1nity.news.dto.NewsArticle;
 import java.util.List;
 
 public interface NewsService {
-    List<NewsArticle> getNewsFromNewsApi(String ticker, String fromDate, String toDate);
+    List<NewsArticle> getNewsFromNewsApi(String ticker, String fromDate, String toDate, int page, int pageSize);
 }

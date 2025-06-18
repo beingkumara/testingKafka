@@ -28,13 +28,15 @@ public class NewsController {
     public List<NewsArticle> getLatestF1News(
             @RequestParam(required = false) String ticket,
             @RequestParam(required = false) String from,
-            @RequestParam(required = false) String to) {
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) int page,
+            @RequestParam(required  = false) int pageSize) {
         
         // Set default values if not provided
         String query = ticket != null ? ticket : "F1";
         String fromDate = from != null ? from : LocalDate.now().minusDays(7).format(dateFormatter);
         String toDate = to != null ? to : LocalDate.now().format(dateFormatter);
         
-        return newsService.getLatestF1News(query, fromDate, toDate);
+        return newsService.getLatestF1News(query, fromDate, toDate, page, pageSize);
     }
 }

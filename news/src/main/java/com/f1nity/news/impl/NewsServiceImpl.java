@@ -85,7 +85,7 @@ public class NewsServiceImpl implements NewsService {
     }
 
     @Override
-    public List<NewsArticle> getNewsFromNewsApi(String ticker, String fromDate, String toDate) {
+    public List<NewsArticle> getNewsFromNewsApi(String ticker, String fromDate, String toDate, int page, int pageSize) {
         try {
             // Build the query string with keywords and exclusions
             String query = String.format("\"%s\" %s -%s", 
@@ -101,6 +101,7 @@ public class NewsServiceImpl implements NewsService {
                 .queryParam("language", language)
                 .queryParam("sortBy", sortBy)
                 .queryParam("pageSize", pageSize)
+                .queryParam("page", page)
                 .queryParam("from", fromDate)
                 .queryParam("to", toDate)
                 .queryParam("apiKey", apiKey);

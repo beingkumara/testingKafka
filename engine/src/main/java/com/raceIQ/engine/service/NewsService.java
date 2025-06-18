@@ -17,7 +17,7 @@ public class NewsService {
         this.newsApiClient = newsApiClient;
     }
 
-    public List<NewsArticle> getLatestF1News(String ticket, String fromDate, String toDate) {
-        return newsApiClient.getF1News(ticket, fromDate, toDate);
+    public List<NewsArticle> getLatestF1News(String ticket, String fromDate, String toDate, int page, int pageSize) {
+        return newsApiClient.getF1News(ticket, fromDate, toDate, page, pageSize);
     }
 }

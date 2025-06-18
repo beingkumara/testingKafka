@@ -109,6 +109,7 @@ export default {
         'speed-line': 'speed-line 1.5s linear infinite',
         'checkered-flag': 'checkered-flag 2s ease-in-out infinite',
         'tire-spin': 'tire-spin 0.8s linear infinite',
+        'spin-slow': 'spin 8s linear infinite',
       },
       keyframes: {
         float: {

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, ExternalLink, Filter, Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getF1News, getDrivers, getConstructorStandings, NewsResponse } from '../services';
-import { NewsArticle, Driver, ConstructorStanding } from '../types/f1.types';
+import { getF1News, NewsResponse } from '../services';
+import { NewsArticle } from '../types/f1.types';
 import LoadingScreen from '../components/ui/LoadingScreen';
 
 const ARTICLES_PER_PAGE = 10;
@@ -18,12 +18,8 @@ const NewsPage: React.FC = () => {
   const [totalArticles, setTotalArticles] = useState(0);
   
   // Filter states
-  const [selectedDriver, setSelectedDriver] = useState<string>('');
-  const [selectedConstructor, setSelectedConstructor] = useState<string>('');
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [constructors, setConstructors] = useState<ConstructorStanding[]>([]);
 
   const fetchNews = async (page: number = 1, filters: Record<string, any> = {}) => {
     try {
@@ -54,18 +50,12 @@ const NewsPage: React.FC = () => {
       try {
         setIsLoading(true);
         
-        // Fetch data in parallel
-        const [newsResponse, driversData, constructorsData] = await Promise.all([
-          getF1News({ page: 1, pageSize: ARTICLES_PER_PAGE }),
-          getDrivers(),
-          getConstructorStandings()
-        ]);
+        // Fetch news data
+        const newsResponse = await getF1News({ page: 1, pageSize: ARTICLES_PER_PAGE });
         
         setNews(newsResponse.articles);
         setHasMorePages(newsResponse.hasMore);
         setTotalArticles(newsResponse.totalCount);
-        setDrivers(driversData);
-        setConstructors(constructorsData);
       } catch (error) {
         console.error('Error fetching initial data:', error);
       } finally {
@@ -81,8 +71,6 @@ const NewsPage: React.FC = () => {
     
     // Create filter object with the current filters
     const filters: Record<string, any> = {};
-    if (selectedDriver) filters.driver = selectedDriver;
-    if (selectedConstructor) filters.constructorName = selectedConstructor;
     
     // Format dates
     if (fromDate) {
@@ -102,8 +90,6 @@ const NewsPage: React.FC = () => {
     try {
       // Create filter object with the correct property names and format dates
       const filters: Record<string, any> = {};
-      if (selectedDriver) filters.driver = selectedDriver;
-      if (selectedConstructor) filters.constructorName = selectedConstructor;
       
       // Format dates to YYYY-MM-DD format expected by the API
       if (fromDate) {
@@ -125,8 +111,6 @@ const NewsPage: React.FC = () => {
   };
   
   const handleClearFilters = async () => {
-    setSelectedDriver('');
-    setSelectedConstructor('');
     setFromDate('');
     setToDate('');
     
@@ -185,53 +169,7 @@ const NewsPage: React.FC = () => {
               Filter News
             </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-dark-600 dark:text-dark-300">Driver</label>
-                <div className="relative">
-                  <select
-                    className="w-full px-3 py-2 text-sm rounded-md bg-white dark:bg-dark-700 border border-dark-200 dark:border-dark-600 focus:outline-none focus:ring-1 focus:ring-primary-500 transition-all duration-200 shadow-sm appearance-none text-dark-800 dark:text-white"
-                    value={selectedDriver}
-                    onChange={(e) => setSelectedDriver(e.target.value)}
-                  >
-                    <option value="">All Drivers</option>
-                    {drivers.map((driver) => (
-                      <option key={driver.id} value={driver.id}>
-                        {driver.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="h-4 w-4 text-dark-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1.5 text-dark-600 dark:text-dark-300">Constructor</label>
-                <div className="relative">
-                  <select
-                    className="w-full px-3 py-2 text-sm rounded-md bg-white dark:bg-dark-700 border border-dark-200 dark:border-dark-600 focus:outline-none focus:ring-1 focus:ring-primary-500 transition-all duration-200 shadow-sm appearance-none text-dark-800 dark:text-white"
-                    value={selectedConstructor}
-                    onChange={(e) => setSelectedConstructor(e.target.value)}
-                  >
-                    <option value="">All Constructors</option>
-                    {constructors.map((constructor) => (
-                      <option key={constructor.id} value={constructor.id}>
-                        {constructor.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg className="h-4 w-4 text-dark-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5 text-dark-600 dark:text-dark-300">From Date</label>
                 <div className="relative">
@@ -365,8 +303,15 @@ const NewsPage: React.FC = () => {
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                   
-                  <div className="flex items-center justify-center min-w-10 h-10 px-3 rounded-md bg-primary-500 text-white font-medium">
-                    {currentPage}
+                  {/* Wheel-like page number indicator */}
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full border-4 border-primary-500 flex items-center justify-center bg-white dark:bg-dark-800 shadow-md">
+                      <div className="text-primary-600 dark:text-primary-400 font-bold">
+                        {currentPage}
+                      </div>
+                    </div>
+                    {/* Decorative wheel spokes */}
+                    <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-primary-500 border-dashed opacity-30 animate-spin-slow"></div>
                   </div>
                   
                   <button

@@ -42,4 +42,7 @@ token:
   cleanup:
     interval: 3600000 # 1 hour in milliseconds
 
+f1engine:
+  url: http://localhost:8080/api/v1
+
 

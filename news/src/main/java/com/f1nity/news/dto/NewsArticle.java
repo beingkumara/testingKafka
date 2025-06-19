@@ -46,4 +46,9 @@ public class NewsArticle {
         public String getName() { return name; }
         public void setName(String name) { this.name = name; }
     }
+
+    @Override
+    public String toString() {
+        return "NewsArticle [title=" + title + ", description=" + description + ", url=" + url + ", urlToImage=" + urlToImage + ", publishedAt=" + publishedAt + ", content=" + content + ", source=" + source + "]";
+    }
 }

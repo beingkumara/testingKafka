@@ -6,7 +6,7 @@ spring:
 news:
   api: 67812bd06ac34a7f90694607da85dcb5
   url: https://newsapi.org/v2/everything
-  domains: autosport.com
+  domains: motorsport.com
   language: en
   sortBy: publishedAt
   pageSize: 10

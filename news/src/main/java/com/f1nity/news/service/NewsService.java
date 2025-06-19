@@ -5,4 +5,5 @@ import java.util.List;
 
 public interface NewsService {
     List<NewsArticle> getNews(String ticker, String fromDate, String toDate, int page, int pageSize);
+    void clearCache();
 }

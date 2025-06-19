@@ -4,3 +4,11 @@ spring:
             host: localhost
             port: 27017
             database: f1nity
+
+feign:
+  client:
+    config:
+      newsApiClient:
+        connectTimeout: 5000   # 5 seconds
+        readTimeout: 10000     # 10 seconds
+        loggerLevel: full

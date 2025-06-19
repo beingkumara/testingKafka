@@ -18,7 +18,6 @@ public class NewsController {
 
     private final NewsService newsService;
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
-
     @Autowired
     public NewsController(NewsService newsService) {
         this.newsService = newsService;

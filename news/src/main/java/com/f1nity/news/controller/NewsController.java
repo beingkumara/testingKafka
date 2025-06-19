@@ -27,4 +27,9 @@ public class NewsController {
         List<NewsArticle> news = newsService.getNews(ticker, fromDate, toDate, page, pageSize);
         return news;
     }
+
+    @GetMapping("/clear-cache")
+    public void clearCache(){
+        newsService.clearCache();
+    }
 }

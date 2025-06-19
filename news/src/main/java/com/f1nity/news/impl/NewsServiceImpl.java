@@ -1,3 +1,5 @@
+package com.f1nity.news.impl;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.f1nity.news.dto.NewsArticle;
 import com.f1nity.news.service.NewsService;
@@ -9,13 +11,14 @@ import reactor.core.publisher.Mono;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -23,6 +26,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Comparator;
+import java.time.LocalDate;
+import org.springframework.scheduling.annotation.Scheduled;
+import com.f1nity.news.utils.OffsetDateTimeAdapter;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class NewsApiResponse {
@@ -45,6 +52,9 @@ class NewsApiResponse {
 
 @Service
 public class NewsServiceImpl implements NewsService {
+
+    // Add a scheduled method to update the news cache daily
+   
     @Value("${news.api}")
     private String apiKey;
 
@@ -78,16 +88,43 @@ public class NewsServiceImpl implements NewsService {
     @Value("${redis.ttl}")
     private int redisTtl;
     
-    private final WebClient webClient;
-    private final JedisPool jedisPool;
+    private WebClient webClient;
+    private JedisPool jedisPool;
+    private final WebClient.Builder webClientBuilder;
+    private final Gson gson;
     private static final String KEY_PREFIX = "f1nity:news:";
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
-    public NewsServiceImpl(WebClient.Builder webClientBuilder, JedisPool jedisPool) {
+    public NewsServiceImpl(WebClient.Builder webClientBuilder) {
+        this.webClientBuilder = webClientBuilder;
+        this.gson = new GsonBuilder()
+            .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
+            .create();
+    }
+    
+    @jakarta.annotation.PostConstruct
+    public void init() {
         this.webClient = webClientBuilder.baseUrl(apiUrl).build();
         this.jedisPool = new JedisPool(redisServer, redisPort);
+        System.out.println("Initialized Redis connection to " + redisServer + ":" + redisPort);
     }
 
+    @Scheduled(cron = "0 0 */4 * * *") // every 4 hours, adjust as needed
+    public void updateLatestNewsCache() {
+        try {
+            String defaultTicker = "F1";
+            // Today and yesterday
+            java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Kolkata"));
+            java.time.LocalDate yesterday = today.minusDays(1);
+            String fromDate = yesterday.toString();
+            String toDate = today.toString();
+            System.out.println("[Scheduler] Updating news cache from " + fromDate + " to " + toDate);
+            getNewsFromNewsApi(defaultTicker, fromDate, toDate, 0, pageSize);
+        } catch (Exception e) {
+            System.err.println("[Scheduler] Error updating news cache: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
     private String createRedisKey(String date) {
         return KEY_PREFIX + date;
     }
@@ -100,18 +137,24 @@ public class NewsServiceImpl implements NewsService {
 
     private void saveNewsToCache(String fromDate, String toDate, List<NewsArticle> news) {
         try (Jedis jedis = jedisPool.getResource()) {
-            for (Date currentDate = parseDate(fromDate); currentDate.before(parseDate(toDate)); currentDate = DateUtils.addDays(currentDate, 1)) {
+            for (Date currentDate = parseDate(fromDate); !currentDate.after(parseDate(toDate)); currentDate = DateUtils.addDays(currentDate, 1)) {
                 final Date loopDate = new Date(currentDate.getTime()); // Create a final copy for the lambda
                 List<NewsArticle> newsForDate = news.stream()
-                    .filter(newsArticle -> 
-                        newsArticle.getPublishedAt().toInstant()
+                    .filter(newsArticle -> {
+                        // Align publishedAt to system default zone and extract only the date
+                        LocalDate articleDate = newsArticle.getPublishedAt()
+                            .atZoneSameInstant(ZoneId.systemDefault())
+                            .toLocalDate();
+                        LocalDate loopLocalDate = loopDate.toInstant()
                             .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                            .equals(loopDate.toInstant()
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()))
+                            .toLocalDate();
+                        return articleDate.equals(loopLocalDate);
+                    })
                     .collect(Collectors.toList());
-                jedis.setex(createRedisKey(DATE_FORMAT.format(loopDate)), redisTtl, new Gson().toJson(newsForDate));
+                System.out.println("Saving news to Redis key: " + createRedisKey(DATE_FORMAT.format(loopDate)));
+                System.out.println("Saving " + newsForDate.size() + " news articles for date " + DATE_FORMAT.format(loopDate));
+
+                jedis.setex(createRedisKey(DATE_FORMAT.format(loopDate)), redisTtl, gson.toJson(newsForDate));
             }
         }
     }
@@ -135,7 +178,7 @@ public class NewsServiceImpl implements NewsService {
                 String redisKey = createRedisKey(DATE_FORMAT.format(currentDate));
                 if (jedis.exists(redisKey)) {
                     String json = jedis.get(redisKey);
-                    List<NewsArticle> newsForDate = new Gson().fromJson(json, listType);
+                    List<NewsArticle> newsForDate = gson.fromJson(json, listType);
                     if (newsForDate != null) {
                         allNews.addAll(newsForDate);
                     }
@@ -146,13 +189,17 @@ public class NewsServiceImpl implements NewsService {
             }
         }
 
+        // Sort the news articles by published date in descending order
+        allNews.sort(Comparator.comparing(NewsArticle::getPublishedAt, Comparator.reverseOrder()));
+
         // Apply pagination
         int startIndex = (page - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, allNews.size());
         if (startIndex >= allNews.size()) {
             return Collections.emptyList();
         }
-        return allNews.subList(startIndex, endIndex);
+        List<NewsArticle> pagedNews = allNews.subList(startIndex, endIndex);
+        return pagedNews;
     }
 
     public List<NewsArticle> getNewsFromNewsApi(String ticker, String fromDate, String toDate, int page, int pageSize) {
@@ -224,8 +271,14 @@ public class NewsServiceImpl implements NewsService {
             return getNewsFromCache(ticker, fromDate, toDate, page, pageSize);
         } else {
             System.out.println("Not all dates cached. So fetching from API and caching");
-            List<NewsArticle> news = getNewsFromNewsApi(ticker, fromDate, toDate, page, pageSize);
-            return getNewsFromCache(ticker, fromDate, toDate, page, pageSize);
+            return getNewsFromNewsApi(ticker, fromDate, toDate, page, pageSize);
+        }
+    }
+
+    @Override
+    public void clearCache() {
+        try (Jedis jedis = jedisPool.getResource()) {
+            jedis.flushDB();
         }
     }
 }

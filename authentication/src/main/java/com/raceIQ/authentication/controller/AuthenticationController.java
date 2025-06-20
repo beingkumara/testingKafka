@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 import com.raceIQ.authentication.service.AuthenticationService;
-import com.raceIQ.authentication.models.AuthRequest;
-import com.raceIQ.authentication.models.User;
+import com.f1nity.library.models.authentication.AuthRequest;
+import com.f1nity.library.models.authentication.User;
 
 @RequestMapping("/api/f1nity/v1/auth")
 @RestController

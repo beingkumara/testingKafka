@@ -16,9 +16,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 
 import com.raceIQ.engine.impl.FastF1;
-import com.raceIQ.engine.model.Race;
-import com.raceIQ.engine.model.Result;
-import com.raceIQ.engine.repository.RaceRepository;
+import com.f1nity.library.models.engine.Race;
+import com.f1nity.library.models.engine.Result;
+import com.f1nity.library.repository.engine.RaceRepository;
 
 import jakarta.annotation.PostConstruct;
 

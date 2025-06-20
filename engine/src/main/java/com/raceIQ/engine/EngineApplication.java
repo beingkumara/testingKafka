@@ -4,6 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 /**
  * Main application class for the F1 data engine.
@@ -12,6 +13,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @EnableFeignClients(basePackages = "com.raceIQ.engine.client")
+@EnableMongoRepositories(basePackages = {"com.f1nity.library.repository"})
+
 public class EngineApplication {
 
     public static void main(String[] args) {

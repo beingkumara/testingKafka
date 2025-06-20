@@ -10,12 +10,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.raceIQ.engine.impl.FastF1;
-import com.raceIQ.engine.model.Constructor;
-import com.raceIQ.engine.model.ConstructorStanding;
-import com.raceIQ.engine.model.Driver;
-import com.raceIQ.engine.model.DriverStanding;
-import com.raceIQ.engine.model.Race;
-import com.raceIQ.engine.model.Result;
+import com.f1nity.library.models.engine.Constructor;
+import com.f1nity.library.models.engine.ConstructorStanding;
+import com.f1nity.library.models.engine.Driver;
+import com.f1nity.library.models.engine.DriverStanding;
+import com.f1nity.library.models.engine.Race;
+import com.f1nity.library.models.engine.Result;
 import com.raceIQ.engine.service.F1nityService;
 
 import jakarta.annotation.Generated;

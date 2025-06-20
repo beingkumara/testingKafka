@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.f1nity.news.service.NewsService;
-import com.f1nity.library.news.NewsArticle;
+import com.f1nity.library.models.news.NewsArticle;
 import java.util.List;
 
 @RestController

@@ -1,7 +1,7 @@
 package com.raceIQ.engine.client;
 
 import com.raceIQ.engine.config.FeignConfig;
-import com.raceIQ.engine.model.NewsArticle;
+import com.f1nity.library.models.news.NewsArticle;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;

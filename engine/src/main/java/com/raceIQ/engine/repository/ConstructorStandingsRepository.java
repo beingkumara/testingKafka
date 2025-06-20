@@ -2,7 +2,7 @@ package com.raceIQ.engine.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import com.raceIQ.engine.model.ConstructorStanding;
+import com.f1nity.library.models.engine.ConstructorStanding;
 
 /**
  * Repository interface for ConstructorStanding entity operations.

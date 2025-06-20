@@ -9,7 +9,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.raceIQ.authentication.repository.UserRepository;
+import com.f1nity.library.repository.authentication.UserRepository;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -22,7 +22,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException{
-        com.raceIQ.authentication.models.User user =  userRepository.findByUsername(username);
+        com.f1nity.library.models.authentication.User user =  userRepository.findByUsername(username);
         try{
             if(user != null){
                 return new User(user.getUsername(),user.getPassword(),Collections.emptyList());

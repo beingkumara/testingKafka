@@ -7,10 +7,10 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.raceIQ.engine.model.Driver;
-import com.raceIQ.engine.model.Race;
-import com.raceIQ.engine.repository.DriverRepository;
-import com.raceIQ.engine.repository.RaceRepository;
+import com.f1nity.library.models.engine.Driver;
+import com.f1nity.library.models.engine.Race;
+import com.f1nity.library.repository.engine.DriverRepository;
+import com.f1nity.library.repository.engine.RaceRepository;
 
 /**
  * Implementation of F1 data service operations.

@@ -2,7 +2,7 @@ package com.raceIQ.engine.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import com.raceIQ.engine.model.DriverStanding;
+import com.f1nity.library.models.engine.DriverStanding;
 
 /**
  * Repository interface for DriverStanding entity operations.

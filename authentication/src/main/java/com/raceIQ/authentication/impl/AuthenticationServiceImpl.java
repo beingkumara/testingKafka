@@ -2,11 +2,11 @@ package com.raceIQ.authentication.impl;
 
 import org.springframework.stereotype.Service;
 
-import com.raceIQ.authentication.models.AuthRequest;
-import com.raceIQ.authentication.models.PasswordResetToken;
-import com.raceIQ.authentication.models.User;
-import com.raceIQ.authentication.repository.PasswordResetTokenRepository;
-import com.raceIQ.authentication.repository.UserRepository;
+import com.f1nity.library.models.authentication.AuthRequest;
+import com.f1nity.library.models.authentication.PasswordResetToken;
+import com.f1nity.library.models.authentication.User;
+import com.f1nity.library.repository.authentication.PasswordResetTokenRepository;
+import com.f1nity.library.repository.authentication.UserRepository;
 import com.raceIQ.authentication.security.JwtTokenProvider;
 import com.raceIQ.authentication.utils.AuthenticationUtil;
 import com.raceIQ.authentication.utils.SecureOTPGenerator;

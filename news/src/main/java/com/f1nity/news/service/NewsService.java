@@ -1,6 +1,6 @@
 package com.f1nity.news.service;
 
-import com.f1nity.library.news.NewsArticle;
+import com.f1nity.library.models.news.NewsArticle;
 import java.util.List;
 
 public interface NewsService {

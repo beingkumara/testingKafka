@@ -4,8 +4,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.raceIQ.authentication.impl.AuthenticationServiceImpl;
-import com.raceIQ.authentication.models.AuthRequest;
-import com.raceIQ.authentication.models.User;
+import com.f1nity.library.models.authentication.AuthRequest;
+import com.f1nity.library.models.authentication.User;
 
 @Service
 public class AuthenticationService {

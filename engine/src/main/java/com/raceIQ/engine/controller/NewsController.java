@@ -1,6 +1,6 @@
 package com.raceIQ.engine.controller;
 
-import com.raceIQ.engine.model.NewsArticle;
+import com.f1nity.library.models.news.NewsArticle;
 import com.raceIQ.engine.service.NewsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;

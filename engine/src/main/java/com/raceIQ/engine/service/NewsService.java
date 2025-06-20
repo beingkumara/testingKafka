@@ -1,8 +1,7 @@
 package com.raceIQ.engine.service;
 
 import com.raceIQ.engine.client.NewsApiClient;
-import com.raceIQ.engine.model.NewsArticle;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.f1nity.library.models.news.NewsArticle;
 import org.springframework.stereotype.Service;
     
 import java.util.List;
@@ -12,7 +11,6 @@ public class NewsService {
 
     private final NewsApiClient newsApiClient;
 
-    @Autowired
     public NewsService(NewsApiClient newsApiClient) {
         this.newsApiClient = newsApiClient;
     }

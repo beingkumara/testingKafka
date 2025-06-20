@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import com.raceIQ.engine.model.Driver;
+import com.f1nity.library.models.engine.Driver;
 
 /**
  * Repository interface for Driver entity operations.

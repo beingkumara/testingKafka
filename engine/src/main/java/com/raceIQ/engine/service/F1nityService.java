@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 
 import com.raceIQ.engine.impl.F1nityServiceImpl;
 import com.raceIQ.engine.impl.FastF1;
-import com.raceIQ.engine.model.Driver;
-import com.raceIQ.engine.model.Race;
+import com.f1nity.library.models.engine.Driver;
+import com.f1nity.library.models.engine.Race;
 
 /**
  * Service interface for F1 data operations.

@@ -1,7 +1,7 @@
 package com.f1nity.news.impl;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.f1nity.library.news.NewsArticle;
+import com.f1nity.library.models.news.NewsArticle;
 import com.f1nity.news.service.NewsService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

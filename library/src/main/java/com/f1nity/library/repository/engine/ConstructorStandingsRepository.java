@@ -1,0 +1,13 @@
+package com.f1nity.library.repository.engine;
+
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import com.f1nity.library.models.engine.ConstructorStanding;
+
+/**
+ * Repository interface for ConstructorStanding entity operations.
+ * Provides methods for querying constructor standings data from MongoDB.
+ */
+public interface ConstructorStandingsRepository extends MongoRepository<ConstructorStanding, String> {
+    // Default methods from MongoRepository are sufficient for current needs
+}

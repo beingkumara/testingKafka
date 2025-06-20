@@ -45,4 +45,11 @@ token:
 f1engine:
   url: http://localhost:8080/api/v1
 
+hystrix:
+  shareSecurityContext: true
+
+feign:
+  hystrix:
+    enabled: false
+
 

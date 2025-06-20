@@ -76,10 +76,12 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
+			<!-- Disable Spring Boot's repackaging for this library -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<skip>true</skip>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>
@@ -90,5 +92,6 @@
 			</plugin>
 		</plugins>
 	</build>
+	<packaging>jar</packaging>
 
 </project>

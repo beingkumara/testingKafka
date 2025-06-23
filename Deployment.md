@@ -33,7 +33,19 @@ git pull origin <branch-name>
 
 ## 3. Build the Project
 
-### a. F1nity Frontend
+### a. Library Project (Models and Repositories)
+
+Navigate to the library project directory:
+```bash
+cd library
+```
+
+Build the library project:
+```bash
+mvn clean install
+```
+
+### b. F1nity Frontend
 
 Navigate to the frontend directory:
 ```bash
@@ -50,7 +62,7 @@ Build the frontend:
 npm run build
 ```
 
-### b. F1nity Backend
+### c. F1nity Backend
 
 #### i. Authentication
 

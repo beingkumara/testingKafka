@@ -21,6 +21,24 @@ class ApiClient {
   /**
    * Handle API response
    */
+  private logRequest(method: string, url: string, headers: HeadersInit, data?: any) {
+    console.group('API Request');
+    console.log(`%c${method} ${url}`, 'color: #4CAF50; font-weight: bold');
+    console.log('Headers:', headers);
+    if (data) {
+      console.log('Request Data:', data);
+    }
+    console.groupEnd();
+  }
+
+  private logResponse(response: Response, data: any) {
+    console.group('API Response');
+    console.log(`%c${response.status} ${response.statusText}`, 
+      `color: ${response.ok ? '#4CAF50' : '#F44336'}; font-weight: bold`);
+    console.log('Response Data:', data);
+    console.groupEnd();
+  }
+
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       // First check if there's content to parse
@@ -65,7 +83,10 @@ class ApiClient {
       ...(requiresAuth ? this.getAuthHeader() : {}),
     };
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const url = `${this.baseUrl}${endpoint}`;
+    this.logRequest('GET', url, headers);
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers,
     });
@@ -82,7 +103,10 @@ class ApiClient {
       ...(requiresAuth ? this.getAuthHeader() : {}),
     };
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const url = `${this.baseUrl}${endpoint}`;
+    this.logRequest('POST', url, headers, data);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
@@ -100,7 +124,10 @@ class ApiClient {
       ...(requiresAuth ? this.getAuthHeader() : {}),
     };
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const url = `${this.baseUrl}${endpoint}`;
+    this.logRequest('PUT', url, headers, data);
+    
+    const response = await fetch(url, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
@@ -118,7 +145,10 @@ class ApiClient {
       ...(requiresAuth ? this.getAuthHeader() : {}),
     };
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const url = `${this.baseUrl}${endpoint}`;
+    this.logRequest('DELETE', url, headers);
+    
+    const response = await fetch(url, {
       method: 'DELETE',
       headers,
     });

@@ -7,7 +7,6 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 @SpringBootApplication
 @EnableScheduling
-@EnableFeignClients(basePackages = "com.raceIQ.authentication.client")
 @EnableMongoRepositories(basePackages = {"com.f1nity.library.repository.authentication"})
 public class AuthenticationApplication {
 

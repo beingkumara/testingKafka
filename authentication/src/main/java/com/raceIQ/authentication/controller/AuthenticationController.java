@@ -25,7 +25,7 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
         // Frontend sends email as username for login
-        User user = new User(request.getUsername(), request.getPassword());
+        User user = new User(request.getEmail(), request.getPassword());
         return authenticationService.login(user);
     }
 

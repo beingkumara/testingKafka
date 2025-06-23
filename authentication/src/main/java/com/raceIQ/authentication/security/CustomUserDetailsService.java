@@ -21,13 +21,13 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException{
-        com.f1nity.library.models.authentication.User user =  userRepository.findByUsername(username);
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException{
+        com.f1nity.library.models.authentication.User user =  userRepository.findByEmail(email);
         try{
             if(user != null){
-                return new User(user.getUsername(),user.getPassword(),Collections.emptyList());
+                return new User(user.getEmail(),user.getPassword(),Collections.emptyList());
             }
-            throw new UsernameNotFoundException("User name not found with username: " + username);
+            throw new UsernameNotFoundException("User name not found with email: " + email);
         } catch(Exception ex){
             System.out.println(ex.getMessage());
         }

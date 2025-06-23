@@ -41,14 +41,16 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expirationTime);
 
+        // Using email as the subject in JWT token
+        String email = user.getUsername(); // In our implementation, username is the email
         String token = Jwts.builder()
-                .setSubject(user.getUsername())
+                .setSubject(email)  // Explicitly using email as subject
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(secretKey, SignatureAlgorithm.HS512)
                 .compact();
         
-        System.out.println("Generated JWT token for user: " + user.getUsername());
+        System.out.println("Generated JWT token for email: " + email);
         System.out.println("Token prefix: " + (token.length() > 20 ? token.substring(0, 20) + "..." : token));
         System.out.println("Secret key used (first 20 chars): " + secretKeyRaw.substring(0, Math.min(20, secretKeyRaw.length())) + "...");
         

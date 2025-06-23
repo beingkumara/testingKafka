@@ -48,7 +48,7 @@ export const loginUser = async (email: string, password: string): Promise<AuthRe
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username: email, password }),
+      body: JSON.stringify({ email, password }),
     });
 
     const loginApiData: LoginApiResponse = await handleApiResponse(response);

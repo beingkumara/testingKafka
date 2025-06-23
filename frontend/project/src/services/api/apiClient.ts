@@ -11,33 +11,15 @@ class ApiClient {
   }
 
   /**
-   * Get the authorization header if a token exists
+   * Get the authorization header if a token exists 
    */
   private getAuthHeader(): HeadersInit {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
+    if (!token) return {};
+    const cleanToken = token.replace(/^"(.*)"$/, '$1'); // Remove surrounding quotes if they exist
+    return { 'Authorization': `Bearer ${cleanToken}` };
   }
 
-  /**
-   * Handle API response
-   */
-  private logRequest(method: string, url: string, headers: HeadersInit, data?: any) {
-    console.group('API Request');
-    console.log(`%c${method} ${url}`, 'color: #4CAF50; font-weight: bold');
-    console.log('Headers:', headers);
-    if (data) {
-      console.log('Request Data:', data);
-    }
-    console.groupEnd();
-  }
-
-  private logResponse(response: Response, data: any) {
-    console.group('API Response');
-    console.log(`%c${response.status} ${response.statusText}`, 
-      `color: ${response.ok ? '#4CAF50' : '#F44336'}; font-weight: bold`);
-    console.log('Response Data:', data);
-    console.groupEnd();
-  }
 
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
@@ -84,7 +66,6 @@ class ApiClient {
     };
 
     const url = `${this.baseUrl}${endpoint}`;
-    this.logRequest('GET', url, headers);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -104,7 +85,6 @@ class ApiClient {
     };
 
     const url = `${this.baseUrl}${endpoint}`;
-    this.logRequest('POST', url, headers, data);
     
     const response = await fetch(url, {
       method: 'POST',
@@ -125,7 +105,6 @@ class ApiClient {
     };
 
     const url = `${this.baseUrl}${endpoint}`;
-    this.logRequest('PUT', url, headers, data);
     
     const response = await fetch(url, {
       method: 'PUT',
@@ -146,7 +125,6 @@ class ApiClient {
     };
 
     const url = `${this.baseUrl}${endpoint}`;
-    this.logRequest('DELETE', url, headers);
     
     const response = await fetch(url, {
       method: 'DELETE',

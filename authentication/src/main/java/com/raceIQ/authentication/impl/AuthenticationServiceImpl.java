@@ -57,19 +57,22 @@ public class AuthenticationServiceImpl {
     
     public ResponseEntity<?> login(User user) {
         try{
-            // Try to authenticate with username first
+            // Try to authenticate with email first
             Authentication auth;
-            try {
+            User userByEmail = userRepository.findByEmail(user.getUsername());
+            
+            if (userByEmail != null) {
+                // If email is found, authenticate with username from the found user
                 auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
-            } catch (Exception e) {
-                // If username authentication fails, try with email
-                User userByEmail = userRepository.findByEmail(user.getUsername());
-                if (userByEmail == null) {
-                    throw new Exception("Invalid username/email or password");
+                    new UsernamePasswordAuthenticationToken(userByEmail.getEmail(), user.getPassword()));
+            } else {
+                // If email not found, try with username
+                try {
+                    auth = authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
+                } catch (Exception e) {
+                    throw new Exception("Invalid email/username or password");
                 }
-                auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(userByEmail.getUsername(), user.getPassword()));
             }
             
             UserDetails userDetails = (UserDetails) auth.getPrincipal();
@@ -307,8 +310,8 @@ public class AuthenticationServiceImpl {
                 return ResponseEntity.status(401).body("User not authenticated");
             }
             
-            String username = authentication.getName();
-            User user = userRepository.findByUsername(username);
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email);
             
             if (user == null) {
                 return ResponseEntity.status(404).body("User not found");

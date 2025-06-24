@@ -79,10 +79,10 @@ Please refer to the `F1nityController.java` source code for the exact endpoint d
 ## Project Structure
 
 *   `src/main/java`: Contains the main Java source code.
-    *   `com.raceIQ.engine.controller`: Contains Spring MVC controllers defining API endpoints.
-    *   `com.raceIQ.engine.service`: Contains business logic and service layer components.
-    *   `com.raceIQ.engine.impl`: Contains implementations for services, including `FastF1.java` which handles data fetching from external APIs.
-    *   `com.raceIQ.engine.model`: Contains data model/entity classes.
-    *   `com.raceIQ.engine.repository`: Contains Spring Data repository interfaces for database interaction.
+    *   `com.f1nity.engine.controller`: Contains Spring MVC controllers defining API endpoints.
+    *   `com.f1nity.engine.service`: Contains business logic and service layer components.
+    *   `com.f1nity.engine.impl`: Contains implementations for services, including `FastF1.java` which handles data fetching from external APIs.
+    *   `com.f1nity.engine.model`: Contains data model/entity classes.
+    *   `com.f1nity.engine.repository`: Contains Spring Data repository interfaces for database interaction.
 *   `src/main/resources`: Contains application configuration files (e.g., `application.properties`).
 *   `pom.xml`: Maven project object model file, defining project dependencies and build settings.

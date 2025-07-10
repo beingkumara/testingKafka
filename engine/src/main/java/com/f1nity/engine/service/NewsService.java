@@ -1,21 +1,12 @@
 package com.f1nity.engine.service;
 
-import com.f1nity.engine.client.NewsApiClient;
 import com.f1nity.library.models.news.NewsArticle;
 import org.springframework.stereotype.Service;
     
 import java.util.List;
 
-@Service
-public class NewsService {
-
-    private final NewsApiClient newsApiClient;
-
-    public NewsService(NewsApiClient newsApiClient) {
-        this.newsApiClient = newsApiClient;
-    }
-
-    public List<NewsArticle> getLatestF1News(String ticket, String fromDate, String toDate, int page, int pageSize) {
-        return newsApiClient.getF1News(ticket, fromDate, toDate, page, pageSize);
-    }
+public interface NewsService {
+    List<NewsArticle> getNews(String ticket, String fromDate, String toDate, int page, int pageSize);
+    void clearAllNews();
 }
+    

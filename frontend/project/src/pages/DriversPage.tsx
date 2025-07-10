@@ -175,14 +175,8 @@ const DriversPage: React.FC = () => {
               </div>
 
               <button 
-                onClick={() => {
-                  // For debugging
-                  console.log('Driver data:', driver);
-                  
-                  // Use driver name as fallback if id is undefined
-                  const driverId = driver.id || driver.name.toLowerCase().replace(' ', '-');
-                  console.log('Navigating to driver profile:', driverId);
-                  
+                onClick={() => {                  
+                  const driverId = driver.id || driver.name.toLowerCase().replace(' ', '-');                  
                   navigate(`/drivers/${driverId}`);
                 }}
                 className="btn btn-outline w-full mt-4"

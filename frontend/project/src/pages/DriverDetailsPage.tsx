@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, Flag, Trophy, Award, Star, Activity } from 'lucide-react';
-import { API_BASE_URL } from '../config/constants';
+import { f1Api } from '../services/api';
 import LoadingScreen from '../components/ui/LoadingScreen';
 
 interface DriverDetails {
@@ -12,7 +12,7 @@ interface DriverDetails {
   lastName: string;
   teamName: string;
   fullName: string;
-  driverImageUrl: string;
+  headshot_url: string;
   nationality: string;
   dateOfBirth: string;
   isActive: boolean;
@@ -38,39 +38,8 @@ const DriverDetailsPage: React.FC = () => {
     const fetchDriverDetails = async () => {
       try {
         setIsLoading(true);
-        console.log('Fetching driver with ID:', id);
-        
-        const response = await fetch(`${API_BASE_URL}/drivers/${id}`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch driver details: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('Driver data:', data);
-        
-        // Map API response to our component's expected format
-        setDriver({
-          _id: data.driverId,
-          driverNumber: data.driverNumber,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          teamName: data.teamName,
-          fullName: data.fullName,
-          driverImageUrl: data.headshot_url,
-          nationality: data.nationality,
-          dateOfBirth: data.dateOfBirth,
-          isActive: data.active,
-          wins: data.wins,
-          podiums: data.podiums,
-          points: data.points,
-          poles: data.poles,
-          fastestLaps: data.fastestLaps || 0,
-          totalRaces: data.totalRaces,
-          sprintWins: data.sprintWins || 0,
-          sprintPodiums: data.sprintPodiums || 0,
-          sprintRaces: data.sprintRaces || 0
-        });
+        const data = await f1Api.get<DriverDetails>(`/drivers/${id}`);
+        setDriver(data);
       } catch (err) {
         console.error('Error fetching driver details:', err);
         setError('Failed to load driver details. Please try again later.');
@@ -165,7 +134,7 @@ const DriverDetailsPage: React.FC = () => {
           <div className="md:col-span-1">
             <div className="aspect-[2/3] overflow-hidden rounded-lg mb-6">
               <img
-                src={driver.driverImageUrl}
+                src={driver.headshot_url}
                 alt={driver.fullName}
                 className="w-full h-full object-cover object-[center_top]"
                 onError={(e) => {

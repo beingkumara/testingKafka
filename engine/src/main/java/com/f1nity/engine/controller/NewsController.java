@@ -36,6 +36,12 @@ public class NewsController {
         String fromDate = from != null ? from : LocalDate.now().minusDays(7).format(dateFormatter);
         String toDate = to != null ? to : LocalDate.now().format(dateFormatter);
         
-        return newsService.getLatestF1News(query, fromDate, toDate, page, pageSize);
+        return newsService.getNews(query, fromDate, toDate, page, pageSize);
+    }
+
+    @GetMapping("/clear-all")
+    public String clearAllNews() {
+        newsService.clearAllNews();
+        return "All news cleared";
     }
 }

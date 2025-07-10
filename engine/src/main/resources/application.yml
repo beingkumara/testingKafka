@@ -11,3 +11,19 @@ auth:
     port: 27017
     database: authentication
     authentication-database: admin
+
+
+news:
+  api: 67812bd06ac34a7f90694607da85dcb5
+  url: https://newsapi.org/v2/everything
+  domains: motorsport.com
+  language: en
+  sortBy: publishedAt
+  pageSize: 10
+  query:
+    exclude: speed, technology, business, health, science
+    keywords: Formula 1,racing,Grand Prix
+redis:
+  server: localhost
+  port: 6379
+  ttl: 86400

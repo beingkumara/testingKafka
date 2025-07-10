@@ -79,6 +79,7 @@ export const getLastRaceResults = async (): Promise<RaceResult[]> => {
   try {
     await delay(800); // Simulated network delay
     const data = await f1Api.get<RaceResultFromAPI[]>('/latest-race-results');
+    console.log('[getLastRaceResults] API response:', data);
     
     return data.map((result: RaceResultFromAPI) => ({
       position: parseInt(result.position, 10),
@@ -130,7 +131,7 @@ export const getDrivers = async (): Promise<Driver[]> => {
  */
 export const getDriverById = async (id: string): Promise<any> => {
   try {
-    return await f1Api.get<any>(`/drivers/${id}`);
+    return await f1Api.get<any>(`/drivers/${id}`, true);
   } catch (error) {
     console.error('Error fetching driver details:', error);
     throw error;

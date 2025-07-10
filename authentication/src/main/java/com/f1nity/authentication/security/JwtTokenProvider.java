@@ -89,7 +89,7 @@ public class JwtTokenProvider {
             
             System.out.println("Validating JWT token...");
             System.out.println("Original token prefix: " + (token.length() > 20 ? token.substring(0, 20) + "..." : token));
-            System.out.println("Cleaned token prefix: " + (cleanToken.length() > 20 ? cleanToken.substring(0, 20) + "..." : cleanToken));
+            System.out.println("Cleaned token: " + cleanToken);
             System.out.println("Secret key for validation (first 20 chars): " + secretKeyRaw.substring(0, Math.min(20, secretKeyRaw.length())) + "...");
             
             Jwts.parserBuilder()

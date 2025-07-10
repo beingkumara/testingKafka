@@ -18,7 +18,6 @@ import com.f1nity.library.models.engine.Race;
 import com.f1nity.library.models.engine.Result;
 import com.f1nity.engine.service.F1nityService;
 
-import jakarta.annotation.Generated;
 
 /**
  * REST controller for F1 data operations.
@@ -137,10 +136,10 @@ public class F1inityController {
      * 
      * @return The latest race with results
      */
-    @GetMapping("/update-latest-race-results")
-    public List<Result> updateLatestRaceResults() {
-        return fastf1.fetchAndStoreLatestRaceResults();
-    }
+    // @GetMapping("/update-latest-race-results")
+    // public List<Result> updateLatestRaceResults() {
+    //     return fastf1.fetchAndStoreLatestRaceResults();
+    // }
 
     // Statistics and standings endpoints
     

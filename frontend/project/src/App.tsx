@@ -23,6 +23,7 @@ const StandingsPage = lazy(() => import('./pages/StandingsPage'));
 const RaceResultsPage = lazy(() => import('./pages/RaceResults'));
 const NewsPage = lazy(() => import('./pages/NewsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 
 function App() {
   useEffect(() => {
@@ -53,6 +54,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <DashboardPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path={ROUTES.PROFILE}
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
                     </ProtectedRoute>
                   } 
                 />

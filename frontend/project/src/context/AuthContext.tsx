@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { loginUser, registerUser, getUserProfile } from '../services';
-import { User, AuthContextType } from '../types/auth.types';
+import { loginUser, registerUser } from '../services';
+import { fetchUserProfile, updateUserProfile } from '../services/auth/profileService';
+import { User, AuthContextType, ProfileUpdateRequest } from '../types/auth.types';
 import { STORAGE_KEYS } from '../config/constants';
 import useLocalStorage from '../hooks/useLocalStorage';
 
@@ -14,13 +15,14 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   
   useEffect(() => {
     // Only fetch profile if we have a token but no user data
-    if (token && !user) {
-      getUserProfile(token)
+    // For this app, we assume the email is stored in the token or localStorage, or you can store it separately
+    const email = user?.email || null;
+    if (token && email && !user) {
+      fetchUserProfile(token, email)
         .then(data => {
-          setUser(data.user);
+          setUser(data);
         })
         .catch(() => {
-          // If token is invalid, clear it
           setToken(null);
         })
         .finally(() => {
@@ -68,6 +70,30 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     setUser(null);
   };
   
+  const updateProfile = async (data: ProfileUpdateRequest): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      if (!user?.email) {
+        throw new Error('User email required');
+      }
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+      console.log("user",user);
+      data.email = user.email; // Ensure email is set from the current user
+      console.log("data",data);
+      const response = await updateUserProfile(token, data);
+      setUser(response.user);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update profile');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  
   return (
     <AuthContext.Provider
       value={{
@@ -77,6 +103,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         login,
         signup,
         logout,
+        updateProfile,
         error
       }}
     >

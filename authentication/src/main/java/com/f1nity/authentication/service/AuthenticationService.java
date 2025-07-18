@@ -43,4 +43,14 @@ public class AuthenticationService {
     public ResponseEntity<?> verifyOtp(String token){
         return authenticationServiceImpl.verifyOtp(token);
     }
+
+    public User getUserByEmail(String emailId){
+        return authenticationServiceImpl.getUserByEmail(emailId);
+    }
+
+    public User updateUser(User user){
+        return authenticationServiceImpl.updateUser(user);
+    }
+
+
 }

@@ -354,4 +354,58 @@ public class AuthenticationServiceImpl {
             return ResponseEntity.status(500).body("Error editing user: " + e.getMessage());
         }
     }
+
+    public User getUserByEmail(String emailId) {
+        System.out.println("Getting user by email: " + emailId);
+
+        System.out.println("User found: " + userRepository.findByEmail(emailId));
+        return userRepository.findByEmail(emailId);
+    }
+
+    public User updateUser(User user) {
+        if (user.getId() == null && user.getEmail() == null) {
+            throw new IllegalArgumentException("Either ID or Email is required for user update");
+        }
+
+        User userDB = null;
+        
+        // Try to find user by ID first (if ID is provided)
+        if (user.getId() != null) {
+            userDB = userRepository.findById(user.getId()).orElse(null);
+        }
+        
+        // If not found by ID but has email, try to find by email
+        if (userDB == null && user.getEmail() != null) {
+            userDB = userRepository.findByEmail(user.getEmail());
+        }
+
+        // If still not found, it's a new user (but we need at least an email)
+        if (userDB == null) {
+            if (user.getEmail() == null) {
+                throw new IllegalArgumentException("Email is required to create a new user");
+            }
+            user.setCreatedAt(new Date());
+            user.setUpdatedAt(new Date());
+            return userRepository.save(user);
+        }
+
+        // Update fields if they're not null
+        if (user.getFavoriteDriver() != null) {
+            userDB.setFavoriteDriver(user.getFavoriteDriver());
+        }
+        if (user.getFavoriteTeam() != null) {
+            userDB.setFavoriteTeam(user.getFavoriteTeam());
+        }
+        if (user.getProfilePicture() != null) {
+            userDB.setProfilePicture(user.getProfilePicture());
+        }
+        if (user.getUsername() != null) {
+            userDB.setUsername(user.getUsername());
+        }
+        
+        // Update the timestamp
+        userDB.setUpdatedAt(new Date());
+        
+        return userRepository.save(userDB);
+    }
 }

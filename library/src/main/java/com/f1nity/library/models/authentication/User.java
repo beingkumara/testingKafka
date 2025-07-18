@@ -7,6 +7,7 @@ import java.util.Date;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -18,6 +19,8 @@ public class User implements UserDetails {
     private String password;
     private Date createdAt;
     private Date updatedAt;
+
+    @Indexed(unique = true)
     private String email;
     private String favoriteDriver;
     private String favoriteTeam;

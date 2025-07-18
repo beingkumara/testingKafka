@@ -10,7 +10,7 @@ import com.f1nity.engine.impl.F1nityServiceImpl;
 import com.f1nity.engine.impl.FastF1;
 import com.f1nity.library.models.engine.Driver;
 import com.f1nity.library.models.engine.Race;
-
+import com.f1nity.library.models.authentication.User;
 /**
  * Service interface for F1 data operations.
  * Delegates to implementation classes for actual functionality.

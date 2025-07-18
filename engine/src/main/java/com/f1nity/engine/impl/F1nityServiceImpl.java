@@ -8,9 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.f1nity.library.models.engine.Driver;
+import com.f1nity.library.models.authentication.User;
 import com.f1nity.library.models.engine.Race;
 import com.f1nity.library.repository.engine.DriverRepository;
 import com.f1nity.library.repository.engine.RaceRepository;
+import com.f1nity.library.repository.authentication.UserRepository;
 
 /**
  * Implementation of F1 data service operations.
@@ -24,6 +26,9 @@ public class F1nityServiceImpl {
 
     @Autowired
     private RaceRepository raceRepo;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private FastF1 fastF1;

@@ -6,6 +6,8 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,7 +19,7 @@ import com.f1nity.library.models.engine.DriverStanding;
 import com.f1nity.library.models.engine.Race;
 import com.f1nity.library.models.engine.Result;
 import com.f1nity.engine.service.F1nityService;
-
+import com.f1nity.library.models.authentication.User;
 
 /**
  * REST controller for F1 data operations.
@@ -205,7 +207,5 @@ public class F1inityController {
     public Race getRaceById(@PathVariable String id) {
         return f1nityService.getRaceById(id);
     }
-
-
 
 }

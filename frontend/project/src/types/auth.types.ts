@@ -4,9 +4,14 @@
 
 export interface User {
   id: string;
-  name: string;
+  username: string;
+  password?: string;
   email: string;
-  avatar?: string;
+  favoriteDriver?: string;
+  favoriteTeam?: string;
+  profilePicture?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {
@@ -33,6 +38,19 @@ export interface PasswordResetResponse {
   message: string;
 }
 
+export interface ProfileUpdateRequest {
+  username?: string;
+  email?: string;
+  favoriteDriver?: string;
+  favoriteTeam?: string;
+  profilePicture?: string | File;
+}
+
+export interface ProfileUpdateResponse {
+  user: User;
+  message: string;
+}
+
 export interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -40,5 +58,6 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateProfile: (data: ProfileUpdateRequest) => Promise<void>;
   error: string | null;
 }

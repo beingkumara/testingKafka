@@ -19,6 +19,7 @@ export const ROUTES = {
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/reset-password/:token',
   DASHBOARD: '/dashboard',
+  PROFILE: '/profile',
   DRIVERS: '/drivers',
   DRIVER_DETAILS: '/drivers/:id',
   RACES: '/races',

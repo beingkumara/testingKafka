@@ -1,462 +1,403 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  User, 
-  Camera, 
-  Save, 
-  Edit3, 
-  Trophy, 
-  Flag, 
-  Calendar,
-  Mail,
-  UserCheck,
-  Heart,
-  Star,
-  Upload
-} from 'lucide-react';
+import { User, Save, Upload, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getDrivers, getConstructorStandings } from '../services';
-import LoadingScreen from '../components/ui/LoadingScreen';
-import { Driver, ConstructorStanding } from '../types/f1.types';
-import { ProfileUpdateData } from '../types/auth.types';
+import { ProfileUpdateRequest } from '../types/auth.types';
+import { fetchUserProfile } from '../services/auth/profileService';
 
 const ProfilePage: React.FC = () => {
-  const { user, updateProfile, isLoading: authLoading } = useAuth();
+  const { user, updateProfile, isLoading } = useAuth();
+  const token = localStorage.getItem('authToken') || '';
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [constructors, setConstructors] = useState<ConstructorStanding[]>([]);
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    bio: user?.bio || '',
-    favoriteDriver: user?.favoriteDriver || '',
-    favoriteConstructor: user?.favoriteConstructor || '',
-  });
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [driversData, constructorsData] = await Promise.all([
-          getDrivers(),
-          getConstructorStandings()
-        ]);
-        setDrivers(driversData);
-        setConstructors(constructorsData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
+  const [username, setUsername] = useState(user?.username || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [favoriteDriver, setFavoriteDriver] = useState(user?.favoriteDriver || '');
+  const [favoriteTeam, setFavoriteTeam] = useState(user?.favoriteTeam || '');
+  const [profilePicture, setProfilePicture] = useState<string | null>(user?.profilePicture || null);
+  
+  // Sync local state with user context when it changes
   useEffect(() => {
     if (user) {
-      setFormData({
-        name: user.name || '',
-        bio: user.bio || '',
-        favoriteDriver: user.favoriteDriver || '',
-        favoriteConstructor: user.favoriteConstructor || '',
-      });
+      setUsername(user.username || '');
+      setEmail(user.email || '');
+      setFavoriteDriver(user.favoriteDriver || '');
+      setFavoriteTeam(user.favoriteTeam || '');
+      setProfilePicture(user.profilePicture || null);
     }
   }, [user]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const convertImageToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          resolve(reader.result);
-        } else {
-          reject(new Error('Failed to convert image to base64'));
+  // Initial load of profile data
+  useEffect(() => {
+    async function loadProfile() {
+      if (user?.email) {
+        try {
+          const profile = await fetchUserProfile(token,user.email);
+          setUsername(profile.username || '');
+          setEmail(profile.email || '');
+          setFavoriteDriver(profile.favoriteDriver || '');
+          setFavoriteTeam(profile.favoriteTeam || '');
+          setProfilePicture(profile.profilePicture || null);
+        } catch (e) {
+          console.error('Error loading profile:', e);
         }
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
+      }
+    }
+    
+    // Always load profile when component mounts or user email changes
+    loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.email]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Default profile picture if none is set
+  const defaultProfilePicture = 'https://via.placeholder.com/150?text=User';
+
+  const handleEditToggle = () => {
+    if (isEditing) {
+      // If canceling edit, reload fields from backend
+      if (user?.email) {
+        fetchUserProfile(token, user.email).then(profile => {
+          setUsername(profile.username || '');
+          setEmail(profile.email || '');
+          setFavoriteDriver(profile.favoriteDriver || '');
+          setFavoriteTeam(profile.favoriteTeam || '');
+          setProfilePicture(profile.profilePicture || null);
+        }).catch(err => {
+          console.error('Error fetching profile on cancel:', err);
+          // Fallback to user context data if fetch fails
+          if (user) {
+            setUsername(user.username || '');
+            setEmail(user.email || '');
+            setFavoriteDriver(user.favoriteDriver || '');
+            setFavoriteTeam(user.favoriteTeam || '');
+            setProfilePicture(user.profilePicture || null);
+          }
+        });
+      } else if (user) {
+        // If no email but we have user data, use that
+        setUsername(user.username || '');
+        setEmail(user.email || '');
+        setFavoriteDriver(user.favoriteDriver || '');
+        setFavoriteTeam(user.favoriteTeam || '');
+        setProfilePicture(user.profilePicture || null);
+      }
+      setPreviewImage(null);
+      setSelectedFile(null);
+    }
+    setIsEditing(!isEditing);
+    setError(null);
+  };
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setError('Please select a valid image file (JPEG, PNG, GIF, WEBP)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size should be less than 5MB');
+      return;
+    }
+
+    setSelectedFile(file);
+    setError(null);
+
+    // Create a preview URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
-    setIsLoading(true);
-    setSaveError(null);
-    setSaveSuccess(false);
-    
     try {
-      const updateData: ProfileUpdateData = {
-        name: formData.name,
-        bio: formData.bio,
-        favoriteDriver: formData.favoriteDriver,
-        favoriteConstructor: formData.favoriteConstructor,
-      };
+      setError(null);
+      setSuccessMessage(null);
 
-      // Handle image upload
-      if (selectedImage) {
-        // Convert image to base64 for backend storage
-        const base64Image = await convertImageToBase64(selectedImage);
-        updateData.avatar = base64Image;
+      // Validate inputs
+      if (!username.trim()) {
+        setError('Username is required');
+        return;
+      }
+      
+      // Update profile through AuthContext which will update the user context
+      await updateProfile({
+        username: username.trim(),
+        favoriteDriver: favoriteDriver.trim(),
+        favoriteTeam: favoriteTeam.trim(),
+        // Include profile picture update if there's a selected file
+        ...(selectedFile && { profilePicture: URL.createObjectURL(selectedFile) })
+      });
+      
+      // Show success message
+      setSuccessMessage('Profile updated successfully!');
+      
+      // Reset file selection and preview
+      setSelectedFile(null);
+      setPreviewImage(null);
+      
+      // Exit edit mode after a short delay
+      setTimeout(() => {
+        setIsEditing(false);
+      }, 1500);
+
+      if (!email.trim()) {
+        setError('Email is required');
+        return;
       }
 
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError('Please enter a valid email address');
+        return;
+      }
+      const updateData: ProfileUpdateRequest = {
+        username,
+        email,
+        favoriteDriver,
+        favoriteTeam,
+        profilePicture: selectedFile || profilePicture || undefined,
+      };
       await updateProfile(updateData);
+      setSuccessMessage('Profile updated successfully!');
       setIsEditing(false);
-      setSelectedImage(null);
-      setPreviewUrl(null);
-      setSaveSuccess(true);
-      
-      // Hide success message after 3 seconds
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      setSaveError(error instanceof Error ? error.message : 'Failed to update profile. Please try again.');
-    } finally {
-      setIsLoading(false);
+      // After update, reload from backend
+      if (user?.email) {
+        const profile = await fetchUserProfile(token,user.email);
+        setUsername(profile.username || '');
+        setEmail(profile.email || '');
+        setFavoriteDriver(profile.favoriteDriver || '');
+        setFavoriteTeam(profile.favoriteTeam || '');
+        setProfilePicture(profile.profilePicture || null);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to update profile');
     }
   };
 
-  const handleCancel = () => {
-    setIsEditing(false);
-    setFormData({
-      name: user?.name || '',
-      bio: user?.bio || '',
-      favoriteDriver: user?.favoriteDriver || '',
-      favoriteConstructor: user?.favoriteConstructor || '',
-    });
-    setSelectedImage(null);
-    setPreviewUrl(null);
-    setSaveError(null);
-    setSaveSuccess(false);
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
-  const getFavoriteDriverName = () => {
-    const driver = drivers.find(d => d.id === user?.favoriteDriver);
-    return driver?.name || 'Not selected';
-  };
-
-  const getFavoriteConstructorName = () => {
-    const constructor = constructors.find(c => c.id === user?.favoriteConstructor);
-    return constructor?.name || 'Not selected';
-  };
-
-  const getJoinedDate = () => {
-    if (user?.joinedDate) {
-      return new Date(user.joinedDate).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+  const removePreviewImage = () => {
+    setPreviewImage(null);
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
-    return 'Recently joined';
   };
 
-  if (authLoading) {
-    return <LoadingScreen />;
-  }
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-secondary-800 dark:text-white mb-4">
-            Please log in to view your profile
-          </h2>
-        </div>
-      </div>
-    );
-  }
+  // Display image based on priority: preview > user profile picture > default
+  const displayImage = previewImage || profilePicture || defaultProfilePicture;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="pb-12"
-    >
-      {/* Header */}
-      <div className="relative mb-12 bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl overflow-hidden">
-        <div className="absolute inset-0 bg-opacity-50 bg-black"></div>
-        <div className="relative z-10 px-6 py-12 md:py-16 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">My Profile</h1>
-              <p className="text-xl text-primary-200 max-w-2xl">
-                Manage your account settings and F1 preferences
-              </p>
-            </div>
-            {!isEditing && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsEditing(true)}
-                className="btn btn-secondary flex items-center gap-2"
+    <div className="container mx-auto px-4 py-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-2xl mx-auto"
+      >
+        <div className="glass p-6 rounded-lg shadow-f1-card">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold flex items-center">
+              <User className="mr-2 text-primary-500" />
+              User Profile
+            </h1>
+            {!isEditing ? (
+              <button
+                onClick={handleEditToggle}
+                className="f1-button bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-md transition-all duration-300"
               >
-                <Edit3 className="h-4 w-4" />
                 Edit Profile
-              </motion.button>
+              </button>
+            ) : (
+              <button
+                onClick={handleEditToggle}
+                className="f1-button bg-dark-500 hover:bg-dark-600 text-white px-4 py-2 rounded-md transition-all duration-300"
+              >
+                Cancel
+              </button>
             )}
           </div>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary-400"></div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Profile Card */}
-        <div className="lg:col-span-1">
-          <div className="card p-6">
-            <div className="text-center">
-              {/* Avatar */}
-              <div className="relative inline-block mb-6">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
-                  {previewUrl || user.avatar ? (
-                    <img
-                      src={previewUrl || user.avatar}
-                      alt="Profile"
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    user.name.charAt(0).toUpperCase()
-                  )}
-                </div>
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500 rounded-md text-red-500">
+              {error}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-500/10 border border-green-500 rounded-md text-green-500">
+              {successMessage}
+            </div>
+          )}
+
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Profile Picture Section */}
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <img
+                  src={displayImage}
+                  alt="Profile"
+                  className="w-32 h-32 rounded-full object-cover border-2 border-primary-500"
+                />
                 {isEditing && (
-                  <label className="absolute bottom-0 right-0 bg-primary-500 hover:bg-primary-600 text-white p-2 rounded-full cursor-pointer transition-colors shadow-lg">
-                    <Camera className="h-4 w-4" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <button
+                      onClick={triggerFileInput}
+                      className="bg-dark-800/70 hover:bg-dark-800/90 text-white p-2 rounded-full transition-all duration-300"
+                    >
+                      <Upload size={20} />
+                    </button>
                     <input
                       type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
                       accept="image/*"
-                      onChange={handleImageChange}
                       className="hidden"
                     />
-                  </label>
+                  </div>
+                )}
+                {isEditing && previewImage && (
+                  <button
+                    onClick={removePreviewImage}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-all duration-300"
+                  >
+                    <X size={16} />
+                  </button>
                 )}
               </div>
-
-              {/* Name */}
-              <h2 className="text-2xl font-bold text-secondary-800 dark:text-white mb-2">
-                {user.name}
-              </h2>
-
-              {/* Email */}
-              <div className="flex items-center justify-center gap-2 text-secondary-600 dark:text-secondary-300 mb-4">
-                <Mail className="h-4 w-4" />
-                <span>{user.email}</span>
-              </div>
-
-              {/* Join Date */}
-              <div className="flex items-center justify-center gap-2 text-secondary-500 dark:text-secondary-400 text-sm">
-                <Calendar className="h-4 w-4" />
-                <span>Joined {getJoinedDate()}</span>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="mt-8 pt-6 border-t dark:border-secondary-700">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div className="p-3 bg-secondary-50 dark:bg-secondary-800/50 rounded-lg">
-                  <div className="flex items-center justify-center gap-1 text-primary-500 mb-1">
-                    <Trophy className="h-4 w-4" />
-                    <span className="text-xs font-medium">Favorite Driver</span>
-                  </div>
-                  <div className="text-sm font-semibold text-secondary-800 dark:text-white">
-                    {getFavoriteDriverName()}
-                  </div>
-                </div>
-                <div className="p-3 bg-secondary-50 dark:bg-secondary-800/50 rounded-lg">
-                  <div className="flex items-center justify-center gap-1 text-accent-500 mb-1">
-                    <Flag className="h-4 w-4" />
-                    <span className="text-xs font-medium">Favorite Team</span>
-                  </div>
-                  <div className="text-sm font-semibold text-secondary-800 dark:text-white">
-                    {getFavoriteConstructorName()}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Profile Details */}
-        <div className="lg:col-span-2">
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-secondary-800 dark:text-white flex items-center gap-2">
-                <UserCheck className="h-5 w-5 text-primary-500" />
-                Profile Information
-              </h3>
               {isEditing && (
-                <div className="flex gap-2">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleCancel}
-                    className="btn btn-outline-secondary"
-                    disabled={isLoading}
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleSave}
-                    className="btn btn-primary flex items-center gap-2"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    Save Changes
-                  </motion.button>
-                </div>
+                <p className="text-sm text-gray-500 mt-2 text-center">
+                  Click to upload a new profile picture
+                </p>
               )}
             </div>
 
-            {/* Success/Error Messages */}
-            {saveSuccess && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
-              >
-                <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
-                  <UserCheck className="h-5 w-5" />
-                  <span className="font-medium">Profile updated successfully!</span>
-                </div>
-              </motion.div>
-            )}
-
-            {saveError && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
-              >
-                <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
-                  <span className="font-medium">Error: {saveError}</span>
-                </div>
-              </motion.div>
-            )}
-
-            <div className="space-y-6">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-                  Display Name
-                </label>
+            {/* Profile Details Section */}
+            <div className="flex-1">
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Username</label>
                 {isEditing ? (
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
-                    placeholder="Enter your display name"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full p-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-dark-700"
                   />
                 ) : (
-                  <div className="px-4 py-3 bg-secondary-50 dark:bg-secondary-800/50 rounded-lg text-secondary-800 dark:text-white">
-                    {user.name}
-                  </div>
+                  <p className="p-2 bg-dark-100/30 dark:bg-dark-700/30 rounded-md">
+                    {username || 'Not set'}
+                  </p>
                 )}
               </div>
 
-              {/* Bio */}
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2">
-                  Bio
-                </label>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Email</label>
                 {isEditing ? (
-                  <textarea
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white resize-none"
-                    placeholder="Tell us about yourself and your F1 passion..."
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-dark-700"
                   />
                 ) : (
-                  <div className="px-4 py-3 bg-secondary-50 dark:bg-secondary-800/50 rounded-lg text-secondary-800 dark:text-white min-h-[100px]">
-                    {user.bio || 'No bio added yet. Share your F1 story!'}
-                  </div>
+                  <p className="p-2 bg-dark-100/30 dark:bg-dark-700/30 rounded-md">
+                    {email || 'Not set'}
+                  </p>
                 )}
               </div>
 
-              {/* Favorite Driver */}
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2 flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-primary-500" />
-                  Favorite Driver
-                </label>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Favorite Driver</label>
                 {isEditing ? (
-                  <select
-                    name="favoriteDriver"
-                    value={formData.favoriteDriver}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
-                  >
-                    <option value="">Select a driver</option>
-                    {drivers.map((driver) => (
-                      <option key={driver.id} value={driver.id}>
-                        {driver.name} ({driver.team})
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    value={favoriteDriver}
+                    onChange={(e) => setFavoriteDriver(e.target.value)}
+                    className="w-full p-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-dark-700"
+                  />
                 ) : (
-                  <div className="px-4 py-3 bg-secondary-50 dark:bg-secondary-800/50 rounded-lg text-secondary-800 dark:text-white">
-                    {getFavoriteDriverName()}
-                  </div>
+                  <p className="p-2 bg-dark-100/30 dark:bg-dark-700/30 rounded-md">
+                    {favoriteDriver || 'Not set'}
+                  </p>
                 )}
               </div>
 
-              {/* Favorite Constructor */}
-              <div>
-                <label className="block text-sm font-medium text-secondary-700 dark:text-secondary-300 mb-2 flex items-center gap-2">
-                  <Star className="h-4 w-4 text-accent-500" />
-                  Favorite Constructor
-                </label>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Favorite Team</label>
                 {isEditing ? (
-                  <select
-                    name="favoriteConstructor"
-                    value={formData.favoriteConstructor}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-secondary-300 dark:border-secondary-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-secondary-800 text-secondary-900 dark:text-white"
-                  >
-                    <option value="">Select a constructor</option>
-                    {constructors.map((constructor) => (
-                      <option key={constructor.id} value={constructor.id}>
-                        {constructor.name}
-                      </option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    value={favoriteTeam}
+                    onChange={(e) => setFavoriteTeam(e.target.value)}
+                    className="w-full p-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-dark-700"
+                  />
                 ) : (
-                  <div className="px-4 py-3 bg-secondary-50 dark:bg-secondary-800/50 rounded-lg text-secondary-800 dark:text-white">
-                    {getFavoriteConstructorName()}
-                  </div>
+                  <p className="p-2 bg-dark-100/30 dark:bg-dark-700/30 rounded-md">
+                    {favoriteTeam || 'Not set'}
+                  </p>
                 )}
               </div>
+
+              {isEditing && (
+                <div className="mt-6">
+                  <button
+                    onClick={handleSave}
+                    disabled={isLoading}
+                    className="f1-button bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-md transition-all duration-300 flex items-center"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Saving...
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <Save className="mr-2" size={18} />
+                        Save Changes
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 };
 

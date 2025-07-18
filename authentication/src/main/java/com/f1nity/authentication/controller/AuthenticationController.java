@@ -1,17 +1,12 @@
 package com.f1nity.authentication.controller;
 
+import com.f1nity.library.models.authentication.User;
+import com.f1nity.authentication.service.AuthenticationService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
-import com.f1nity.authentication.service.AuthenticationService;
 import com.f1nity.library.models.authentication.AuthRequest;
-import com.f1nity.library.models.authentication.User;
 
 @RequestMapping("/api/f1nity/v1/auth")
 @RestController
@@ -51,14 +46,23 @@ public class AuthenticationController {
         return authenticationService.getCurrentUser();
     }
 
-    @GetMapping("/edit-profile")
-    public ResponseEntity<?> editProfile(@RequestBody User user) {
-        return authenticationService.editProfile(user);
-    }
-
     @GetMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestParam String token){
         return authenticationService.verifyOtp(token);
+    }
+
+    @GetMapping("/user/{emailId}")
+    public User getUserByEmail(@PathVariable String emailId) {
+        User user = authenticationService.getUserByEmail(emailId);
+        if (user == null) {
+            return null;
+        }
+        return user;
+    }
+
+    @PutMapping("/user/{emailId}")
+    public User updateUser(@RequestBody User user){
+        return authenticationService.updateUser(user);
     }
     
 }

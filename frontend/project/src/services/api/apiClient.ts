@@ -79,17 +79,23 @@ class ApiClient {
    * Make a POST request
    */
   async post<T>(endpoint: string, data: any, requiresAuth = true): Promise<T> {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...(requiresAuth ? this.getAuthHeader() : {}),
-    };
+    const headers: HeadersInit = requiresAuth ? this.getAuthHeader() : {};
+    let body: BodyInit;
+
+    if (data instanceof FormData) {
+      // Let the browser set the 'Content-Type' to 'multipart/form-data' with the correct boundary
+      body = data;
+    } else {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(data);
+    }
 
     const url = `${this.baseUrl}${endpoint}`;
     
     const response = await fetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify(data),
+      body,
     });
 
     return this.handleResponse<T>(response);

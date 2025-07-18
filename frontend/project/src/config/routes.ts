@@ -6,6 +6,7 @@ const HomePage = lazy(() => import('../pages/HomePage'));
 const LoginPage = lazy(() => import('../pages/LoginPage'));
 const SignupPage = lazy(() => import('../pages/SignupPage'));
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
+const ProfilePage = lazy(() => import('../pages/ProfilePage'));
 const DriversPage = lazy(() => import('../pages/DriversPage'));
 const DriverDetailsPage = lazy(() => import('../pages/DriverDetailsPage'));
 const RacesPage = lazy(() => import('../pages/RacesPage'));
@@ -37,6 +38,12 @@ export const routes = [
   {
     path: ROUTES.DASHBOARD,
     component: DashboardPage,
+    exact: true,
+    protected: true,
+  },
+  {
+    path: ROUTES.PROFILE,
+    component: ProfilePage,
     exact: true,
     protected: true,
   },

@@ -121,13 +121,31 @@ const Header: React.FC = () => {
                 </Link>
                 
                 <div className="relative group ml-2">
-                  <button className="f1-button flex items-center space-x-1 bg-dark-500 text-white px-3 py-1.5 rounded-md group">
+                  <button className="f1-button flex items-center space-x-2 bg-dark-500 text-white px-3 py-1.5 rounded-md group">
+                    {user?.profilePicture || user?.avatar ? (
+                      <img 
+                        src={user.profilePicture || user.avatar} 
+                        alt={user.name}
+                        className="w-6 h-6 rounded-full object-cover border border-primary-500"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">
+                        {user?.name?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <span className="relative z-10 font-medium">{user?.name}</span>
                     <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
                   </button>
                   
                   <div className="absolute right-0 mt-2 w-48 glass rounded-md shadow-f1-card overflow-hidden z-50 opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 origin-top-right transition-all duration-200 border-l-2 border-primary-500">
                     <div className="py-1">
+                      <Link 
+                        to="/profile"
+                        className="w-full text-left px-4 py-2 text-sm hover:bg-primary-500/10 flex items-center"
+                      >
+                        <User className="h-4 w-4 mr-2 text-primary-500" /> 
+                        <span>Profile</span>
+                      </Link>
                       <button 
                         onClick={handleLogout}
                         className="w-full text-left px-4 py-2 text-sm hover:bg-primary-500/10 flex items-center"
@@ -259,11 +277,28 @@ const Header: React.FC = () => {
                   
                   <div className="border-t border-dark-200/30 dark:border-dark-600/30 my-2 pt-2">
                     <div className="px-3 py-2 flex items-center">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-dark-500 text-white mr-2">
-                        {user?.name?.charAt(0).toUpperCase()}
-                      </div>
+                      {user?.profilePicture || user?.avatar ? (
+                        <img 
+                          src={user.profilePicture || user.avatar} 
+                          alt={user.name}
+                          className="w-8 h-8 rounded-full object-cover border border-primary-500 mr-2"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-dark-500 text-white mr-2">
+                          {user?.name?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <span className="font-medium">{user?.name}</span>
                     </div>
+                    
+                    <Link 
+                      to="/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full text-left px-3 py-2 text-base font-medium hover:bg-primary-500/10 transition-all duration-300 flex items-center rounded-md"
+                    >
+                      <User className="h-5 w-5 mr-2 text-primary-500" /> 
+                      Profile
+                    </Link>
                     
                     <button 
                       onClick={handleLogout}

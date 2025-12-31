@@ -2,28 +2,41 @@ package com.f1nity.engine.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
+import jakarta.annotation.PostConstruct;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret}")
-    private String secret;
-    
+    @Value("${jwt.public-key}")
+    private String publicKeyRaw;
 
+    private PublicKey publicKey;
 
-    @Value("${jwt.expiration:86400000}") // Default 24 hours
-    private long expirationTime;
+    @PostConstruct
+    public void init() {
+        try {
+            String sanitizedKey = publicKeyRaw.replace("-----BEGIN PUBLIC KEY-----", "")
+                    .replace("-----END PUBLIC KEY-----", "")
+                    .replaceAll("\\s", "");
+            byte[] keyBytes = Base64.getDecoder().decode(sanitizedKey);
+            X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            this.publicKey = kf.generatePublic(spec);
+            System.out.println("JWT RSA public key initialized successfully");
+        } catch (Exception e) {
+            throw new RuntimeException("Could not initialize JWT public key", e);
+        }
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -41,7 +54,7 @@ public class JwtUtil {
     private Claims extractAllClaims(String token) {
         try {
             return Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
+                    .setSigningKey(publicKey)
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
@@ -51,7 +64,7 @@ public class JwtUtil {
         }
     }
 
-    private Boolean isTokenExpired(String token) {
+    public Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
@@ -60,8 +73,7 @@ public class JwtUtil {
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
-    private Key getSigningKey() {
-        byte[] keyBytes = java.util.Base64.getDecoder().decode(secret);
-        return Keys.hmacShaKeyFor(keyBytes);
+    public Boolean validateToken(String token) {
+        return !isTokenExpired(token);
     }
 }

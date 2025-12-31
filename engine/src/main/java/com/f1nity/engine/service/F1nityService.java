@@ -7,10 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.f1nity.engine.impl.F1nityServiceImpl;
-import com.f1nity.engine.impl.FastF1;
 import com.f1nity.library.models.engine.Driver;
 import com.f1nity.library.models.engine.Race;
-import com.f1nity.library.models.authentication.User;
+import com.f1nity.library.models.engine.DriverStanding;
+import com.f1nity.library.models.engine.ConstructorStanding;
+
 /**
  * Service interface for F1 data operations.
  * Delegates to implementation classes for actual functionality.
@@ -18,14 +19,11 @@ import com.f1nity.library.models.authentication.User;
 @Service
 public class F1nityService {
 
-    private final FastF1 fastF1;
-    
+    @Autowired
+    private DataIngestionService dataIngestionService;
+
     @Autowired
     private F1nityServiceImpl f1nityServiceImpl;
-
-    F1nityService(FastF1 fastF1) {
-        this.fastF1 = fastF1;
-    }
 
     /**
      * Retrieves current season drivers.
@@ -44,12 +42,12 @@ public class F1nityService {
     public List<Race> getRacesOfCurrentYear() {
         return f1nityServiceImpl.getRacesOfCurrentYear();
     }
-    
+
     /**
      * Updates the circuit URLs for all races in the repository.
      */
     public void updateCircuitUrls() {
-        fastF1.updateCircuitUrls();
+        dataIngestionService.updateCircuitUrls();
     }
 
     /**
@@ -62,11 +60,19 @@ public class F1nityService {
         return f1nityServiceImpl.getDriverById(driverId);
     }
 
-    public List<Map<String,String>> getResultsByYearAndByRound(String year, String round) {
+    public List<Map<String, String>> getResultsByYearAndByRound(String year, String round) {
         return f1nityServiceImpl.getResultsByYearAndByRound(year, round);
     }
 
     public Race getRaceById(String id) {
         return f1nityServiceImpl.getRaceById(id);
+    }
+
+    public List<DriverStanding> getDriverStandings() {
+        return f1nityServiceImpl.getDriverStandings();
+    }
+
+    public List<ConstructorStanding> getConstructorStandings() {
+        return f1nityServiceImpl.getConstructorStandings();
     }
 }

@@ -15,7 +15,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 
-import com.f1nity.engine.impl.FastF1;
+import com.f1nity.engine.service.DataIngestionService;
 import com.f1nity.library.models.engine.Race;
 import com.f1nity.library.models.engine.Result;
 import com.f1nity.library.repository.engine.RaceRepository;
@@ -31,22 +31,22 @@ import jakarta.annotation.PostConstruct;
 public class RaceDataScheduler {
 
     @Autowired
-    private FastF1 fastF1;
-    
+    private DataIngestionService dataIngestionService;
+
     @Autowired
     private RaceRepository raceRepository;
-    
+
     @Autowired
     private TaskScheduler taskScheduler;
-    
+
     private ScheduledFuture<?> scheduledTask;
-    
+
     @PostConstruct
     public void scheduleRaceResultsUpdate() {
         // Initial scheduling
         scheduleNextRaceUpdate();
     }
-    
+
     /**
      * Schedules the next race update based on race dates
      */
@@ -60,20 +60,18 @@ public class RaceDataScheduler {
         if (nextInfo != null && nextInfo.nextExecution != null) {
             // Schedule the task to run at the calculated time
             scheduledTask = taskScheduler.schedule(
-                () -> executeRaceResultsUpdate(nextInfo.nextRound),
-                nextInfo.nextExecution
-            );
+                    () -> executeRaceResultsUpdate(nextInfo.nextRound),
+                    nextInfo.nextExecution);
             System.out.println("Next race results update scheduled for: " + nextInfo.nextExecution);
         } else {
             // If no specific race date is found, schedule a default check in 24 hours
             scheduledTask = taskScheduler.schedule(
-                this::scheduleNextRaceUpdate,
-                new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)
-            );
+                    this::scheduleNextRaceUpdate,
+                    new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000));
             System.out.println("No upcoming races found. Will check again in 24 hours.");
         }
     }
-    
+
     /**
      * Executes the race results update and schedules the next update
      */
@@ -82,40 +80,41 @@ public class RaceDataScheduler {
         // After execution, schedule the next update
         scheduleNextRaceUpdate();
     }
-    
+
     /**
      * Calculates when the next execution should happen based on race dates
      * Returns a date that is 3 hours after the next upcoming race
      */
-private static class NextRaceInfo {
-    public final Date nextExecution;
-    public final String nextRound;
-    public NextRaceInfo(Date nextExecution, String nextRound) {
-        this.nextExecution = nextExecution;
-        this.nextRound = nextRound;
-    }
-}
+    private static class NextRaceInfo {
+        public final Date nextExecution;
+        public final String nextRound;
 
-private NextRaceInfo calculateNextExecutionTime() {
+        public NextRaceInfo(Date nextExecution, String nextRound) {
+            this.nextExecution = nextExecution;
+            this.nextRound = nextRound;
+        }
+    }
+
+    private NextRaceInfo calculateNextExecutionTime() {
         // Get all races from the repository
         List<Race> races = raceRepository.findAll();
         if (races.isEmpty()) {
             // If no races in database, fetch them
-            races = fastF1.accumulateRaces();
+            races = dataIngestionService.accumulateRaces();
             if (races == null || races.isEmpty()) {
                 return null;
             }
         }
-        
+
         // Current date and time
         ZonedDateTime nowUtc = ZonedDateTime.now(ZoneId.of("UTC"));
-        
+
         // Find the next upcoming race
         Race nextRace = null;
         ZonedDateTime nextRaceDateTime = null;
-        
+
         String nextRound = null;
-    for (Race race : races) {
+        for (Race race : races) {
             if (race.getDate() != null && race.getTime() != null) {
                 try {
                     LocalDate raceDate = LocalDate.parse(race.getDate());
@@ -123,14 +122,14 @@ private NextRaceInfo calculateNextExecutionTime() {
                     String timeStr = race.getTime().replace("Z", "");
                     LocalTime raceTime = LocalTime.parse(timeStr);
                     LocalDateTime raceDateTime = LocalDateTime.of(raceDate, raceTime);
-                    
+
                     // Convert to UTC for comparison (assuming race times are in UTC)
                     ZonedDateTime utcRaceDateTime = raceDateTime.atZone(ZoneId.of("UTC"));
-                    
+
                     // If race is in the future and it's either the first future race we've found
                     // or it's earlier than the current next race
-                    if (utcRaceDateTime.isAfter(nowUtc) && 
-                        (nextRaceDateTime == null || utcRaceDateTime.isBefore(nextRaceDateTime))) {
+                    if (utcRaceDateTime.isAfter(nowUtc) &&
+                            (nextRaceDateTime == null || utcRaceDateTime.isBefore(nextRaceDateTime))) {
                         nextRace = race;
                         nextRaceDateTime = utcRaceDateTime;
                         nextRound = race.getRound();
@@ -141,11 +140,12 @@ private NextRaceInfo calculateNextExecutionTime() {
                 }
             }
         }
-        
+
         if (nextRaceDateTime != null) {
             // Add 7 hours to the race time
             ZonedDateTime scheduledTime = nextRaceDateTime.plus(Duration.ofHours(7));
-            // If for some reason the scheduled time is in the past (shouldn't happen), schedule for now + 30 minutes
+            // If for some reason the scheduled time is in the past (shouldn't happen),
+            // schedule for now + 30 minutes
             if (scheduledTime.isBefore(ZonedDateTime.now(ZoneId.of("UTC")))) {
                 scheduledTime = ZonedDateTime.now(ZoneId.of("UTC")).plus(Duration.ofMinutes(30));
             }
@@ -155,25 +155,29 @@ private NextRaceInfo calculateNextExecutionTime() {
         }
         // If no future races found, check again in 24 hours
         System.out.println("No upcoming races found. Will check again in 24 hours.");
-        return new NextRaceInfo(Date.from(ZonedDateTime.now(ZoneId.of("UTC")).plus(Duration.ofHours(24)).toInstant()), null);
+        return new NextRaceInfo(Date.from(ZonedDateTime.now(ZoneId.of("UTC")).plus(Duration.ofHours(24)).toInstant()),
+                null);
     }
-    
+
     /**
      * Updates the latest race results and standings.
-     * This ensures that the data is always up-to-date without requiring API calls on every user request.
+     * This ensures that the data is always up-to-date without requiring API calls
+     * on every user request.
      * 
-     * Note: This will replace any existing race entries for the latest race with updated entries
-     * containing results. This is particularly important for race entries that were initially
+     * Note: This will replace any existing race entries for the latest race with
+     * updated entries
+     * containing results. This is particularly important for race entries that were
+     * initially
      * stored without results (e.g., before the race was completed).
      */
     public void updateLatestRaceResults(String nextRound) {
         System.out.println("Scheduled task: Updating latest race results for round: " + nextRound);
-        List<Result> latestRace = fastF1.fetchAndStoreLatestRaceResults(nextRound);
+        List<Result> latestRace = dataIngestionService.fetchAndStoreLatestRaceResults(nextRound);
         if (latestRace != null) {
             System.out.println("Updated latest race results for: " + latestRace);
             // Update standings after race results are updated
             System.out.println("Updating driver and constructor standings...");
-            String result = fastF1.updateStandings();
+            String result = dataIngestionService.updateStandings();
             System.out.println("Standings update result: " + result);
         } else {
             System.out.println("Failed to update latest race results or no new results available.");

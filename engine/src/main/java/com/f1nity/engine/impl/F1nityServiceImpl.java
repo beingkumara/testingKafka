@@ -1,18 +1,34 @@
 package com.f1nity.engine.impl;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.f1nity.engine.client.ErgastClient;
+import com.f1nity.engine.service.DataIngestionService;
 import com.f1nity.library.models.engine.Driver;
-import com.f1nity.library.models.authentication.User;
+import com.f1nity.library.models.engine.FastestLap;
 import com.f1nity.library.models.engine.Race;
+import com.f1nity.library.models.engine.RaceResponse;
+import com.f1nity.library.models.engine.Result;
+import com.f1nity.library.repository.authentication.UserRepository;
 import com.f1nity.library.repository.engine.DriverRepository;
 import com.f1nity.library.repository.engine.RaceRepository;
-import com.f1nity.library.repository.authentication.UserRepository;
+import com.f1nity.library.repository.engine.DriverStandingsRepository;
+import com.f1nity.library.repository.engine.ConstructorStandingsRepository;
+import com.f1nity.library.models.engine.DriverStanding;
+import com.f1nity.library.models.engine.ConstructorStanding;
+import org.springframework.data.domain.Sort;
+
+import reactor.core.publisher.Mono;
 
 /**
  * Implementation of F1 data service operations.
@@ -28,10 +44,16 @@ public class F1nityServiceImpl {
     private RaceRepository raceRepo;
 
     @Autowired
-    private UserRepository userRepository;
+    private DataIngestionService dataIngestionService;
 
     @Autowired
-    private FastF1 fastF1;
+    private ErgastClient ergastClient;
+
+    @Autowired
+    private DriverStandingsRepository driverStandingsRepo;
+
+    @Autowired
+    private ConstructorStandingsRepository constructorStandingsRepo;
 
     /**
      * Retrieves the current drivers for the season.
@@ -39,12 +61,14 @@ public class F1nityServiceImpl {
      * @return List of current drivers
      */
     public List<Driver> getCurrentDrivers() {
-        Map<String, String> driverMap = fastF1.getCurrentDriversId();
+        Map<String, String> driverMap = dataIngestionService.getCurrentDriversId();
         List<Driver> drivers = new ArrayList<>();
         for (String driverNumber : driverMap.keySet()) {
             String fullName = driverMap.get(driverNumber);
             Driver driver = driverRepo.findDriverByDriverNumberAndFullName(driverNumber, fullName);
-            drivers.add(driver);
+            if (driver != null) {
+                drivers.add(driver);
+            }
         }
         return drivers;
     }
@@ -68,13 +92,62 @@ public class F1nityServiceImpl {
         return driverRepo.findById(driverId).orElse(null);
     }
 
-
     public List<Map<String, String>> getResultsByYearAndByRound(String year, String round) {
-        return fastF1.getResultsByYearAndByRound(year, round);
+        // Copied logic from FastF1
+        Mono<RaceResponse> response = ergastClient.getRaceResultsMono(year, round);
+        RaceResponse raceResponse = response.block();
+
+        if (raceResponse != null && raceResponse.getMrData() != null
+                && raceResponse.getMrData().getRaceTable() != null) {
+            List<Race> races = raceResponse.getMrData().getRaceTable().getRaces();
+            if (races != null && !races.isEmpty()) {
+                String circuitName = races.get(0).getRaceName();
+                List<Result> results = races.get(0).getResults();
+                List<Map<String, String>> updatedResults = new ArrayList<>();
+                Map<String, String> detailsMap = new HashMap<>();
+                LocalDate date = LocalDate.parse(races.get(0).getDate());
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.ENGLISH);
+                String formattedDate = date.format(formatter);
+                detailsMap.put("date", formattedDate);
+                detailsMap.put("circuit", circuitName);
+                updatedResults.add(detailsMap);
+                FastestLap fastestLap = null;
+                for (Result result : results) {
+                    Map<String, String> resultMap = new HashMap<>();
+                    resultMap.put("position", result.getPosition());
+                    resultMap.put("driver",
+                            result.getDriver().getGivenName() + " " + result.getDriver().getFamilyName());
+                    resultMap.put("constructor", result.getConstructor().getName());
+                    resultMap.put("points", result.getPoints());
+                    resultMap.put("time", result.getTime() != null ? result.getTime().getTime() : result.getStatus());
+                    if (result.getFastestLap() != null && result.getFastestLap().getRank().equals("1")) {
+                        fastestLap = result.getFastestLap();
+                        if (fastestLap.getTime() != null) {
+                            resultMap.put("fastestLap", fastestLap.getTime().getTime());
+                        } else {
+                            resultMap.put("fastestLap", "N/A");
+                        }
+                    } else {
+                        resultMap.put("fastestLap", "N/A");
+                    }
+
+                    updatedResults.add(resultMap);
+                }
+                return updatedResults;
+            }
+        }
+        return Collections.emptyList();
     }
 
-    public Race getRaceById(String id){
-        return raceRepo.findById(id).get();
+    public Race getRaceById(String id) {
+        return raceRepo.findById(id).orElse(null);
     }
 
+    public List<DriverStanding> getDriverStandings() {
+        return driverStandingsRepo.findAll(Sort.by(Sort.Order.asc("position")));
+    }
+
+    public List<ConstructorStanding> getConstructorStandings() {
+        return constructorStandingsRepo.findAll(Sort.by(Sort.Order.asc("position")));
+    }
 }

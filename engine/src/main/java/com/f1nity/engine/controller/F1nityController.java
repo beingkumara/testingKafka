@@ -6,37 +6,35 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.f1nity.engine.impl.FastF1;
+import com.f1nity.engine.service.DataIngestionService;
+import com.f1nity.engine.service.F1nityService;
 import com.f1nity.library.models.engine.Constructor;
 import com.f1nity.library.models.engine.ConstructorStanding;
 import com.f1nity.library.models.engine.Driver;
 import com.f1nity.library.models.engine.DriverStanding;
 import com.f1nity.library.models.engine.Race;
 import com.f1nity.library.models.engine.Result;
-import com.f1nity.engine.service.F1nityService;
-import com.f1nity.library.models.authentication.User;
 
 /**
  * REST controller for F1 data operations.
- * Provides endpoints for accessing driver, constructor, race, and standings information.
+ * Provides endpoints for accessing driver, constructor, race, and standings
+ * information.
  */
 @RestController
 @RequestMapping(value = "/api/v1")
-public class F1inityController {
-    
+public class F1nityController {
+
     @Autowired
-    private FastF1 fastf1;
+    private DataIngestionService dataIngestionService;
 
     @Autowired
     private F1nityService f1nityService;
 
     // Driver related endpoints
-    
+
     /**
      * Retrieves all drivers from the database.
      * 
@@ -44,9 +42,9 @@ public class F1inityController {
      */
     @GetMapping("/drivers")
     public List<Driver> getAllDrivers() {
-        return fastf1.getAllDrivers();
+        return dataIngestionService.syncAllDrivers();
     }
-    
+
     /**
      * Retrieves current season drivers.
      * 
@@ -56,7 +54,7 @@ public class F1inityController {
     public List<Driver> getCurrentDrivers() {
         return f1nityService.getCurrentDrivers();
     }
-    
+
     /**
      * Retrieves a specific driver by ID.
      * 
@@ -69,7 +67,7 @@ public class F1inityController {
     }
 
     // Constructor related endpoints
-    
+
     /**
      * Retrieves all constructors from the database.
      * 
@@ -77,11 +75,11 @@ public class F1inityController {
      */
     @GetMapping("/constructors")
     public List<Constructor> getAllConstructors() {
-        return fastf1.getAllConstructors();
+        return dataIngestionService.syncAllConstructors();
     }
 
     // Race related endpoints
-    
+
     /**
      * Retrieves all races for the current year.
      * 
@@ -91,7 +89,7 @@ public class F1inityController {
     public List<Race> getAllRaces() {
         return f1nityService.getRacesOfCurrentYear();
     }
-    
+
     /**
      * Accumulates race data from the API.
      * 
@@ -99,60 +97,47 @@ public class F1inityController {
      */
     @GetMapping("/accumulateRaces")
     public List<Race> accumulateRaces() {
-        return fastf1.accumulateRaces();
+        return dataIngestionService.accumulateRaces();
     }
-    
+
     /**
      * Updates circuit image URLs for races.
      */
     @GetMapping("/updateImagesForRaces")
     public void updateImagesForRaces() {
-        fastf1.updateCircuitUrls();
+        dataIngestionService.updateCircuitUrls();
     }
 
     // Results related endpoints
-    
+
     /**
      * Gets the latest race results from the database.
      * If no results are found in the database, it will fetch them from the API.
      * This approach prevents making API calls on every request.
      * 
-     * Note: The latest race is determined by the most recent race date that has occurred,
-     * not by the highest round number. For example, if only 9 out of 24 races have been
+     * Note: The latest race is determined by the most recent race date that has
+     * occurred,
+     * not by the highest round number. For example, if only 9 out of 24 races have
+     * been
      * completed in the season, this will return the 9th race, not the 24th.
      * 
      * @return The latest race with results
      */
     @GetMapping("/latest-race-results")
     public List<Result> getLatestRaceResults() {
-        return fastf1.getLatestRaceResults();
+        return dataIngestionService.getLatestRaceResults();
     }
-    
-    /**
-     * Force fetches the latest race results from the API and updates the database.
-     * This endpoint should be called periodically (e.g., via a scheduled task) to keep the data up-to-date.
-     * 
-     * Note: If a race entry already exists in the database for the latest race, it will be
-     * replaced with the updated entry containing the results. This ensures that race entries
-     * that were initially stored without results are properly updated once results are available.
-     * 
-     * @return The latest race with results
-     */
-    // @GetMapping("/update-latest-race-results")
-    // public List<Result> updateLatestRaceResults() {
-    //     return fastf1.fetchAndStoreLatestRaceResults();
-    // }
 
     // Statistics and standings endpoints
-    
+
     /**
      * Updates podium statistics.
      */
     @GetMapping("/podiums")
     public void getPodiums() {
-        fastf1.updateStatistics();
+        dataIngestionService.updateStatistics();
     }
-    
+
     /**
      * Retrieves sprint race statistics.
      * 
@@ -160,19 +145,20 @@ public class F1inityController {
      */
     @GetMapping("/sprints")
     public String getSprintStatistics() {
-        return fastf1.getSprintStatistics();
+        return dataIngestionService.getSprintStatistics();
     }
-    
+
     /**
      * Updates standings data.
      * this is to update the db. not used by the application
+     * 
      * @return Status message
      */
     @GetMapping("/standings")
     public String getStandings() {
-        return fastf1.updateStandings();
+        return dataIngestionService.updateStandings();
     }
-    
+
     /**
      * Retrieves current driver standings.
      * 
@@ -180,9 +166,9 @@ public class F1inityController {
      */
     @GetMapping("/driver-standings")
     public List<DriverStanding> getDriverStandings() {
-        return fastf1.getDriverStandings();
+        return f1nityService.getDriverStandings();
     }
-    
+
     /**
      * Retrieves current constructor standings.
      * 
@@ -190,7 +176,7 @@ public class F1inityController {
      */
     @GetMapping("/constructor-standings")
     public List<ConstructorStanding> getConstructorStandings() {
-        return fastf1.getConstructorStandings();
+        return f1nityService.getConstructorStandings();
     }
 
     @GetMapping("/results/{year}/{round}")
@@ -200,7 +186,7 @@ public class F1inityController {
 
     @GetMapping("/updateDriverImages")
     public void updateDriverImages() {
-        fastf1.updateDriverImages();
+        dataIngestionService.updateDriverImages();
     }
 
     @GetMapping("/races/{id}")

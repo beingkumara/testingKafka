@@ -65,6 +65,19 @@ export const fetchUserProfile = async (_token: string, email: string): Promise<U
 };
 
 /**
+ * Fetch current user profile using the token
+ * @returns Promise with user data
+ */
+export const getCurrentUser = async (): Promise<User> => {
+  try {
+    return await authApi.get<User>('/user');
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    throw error;
+  }
+};
+
+/**
  * Update user profile by email
  * @param _token - Authentication token (not needed as it's handled by authApi)
  * @param email - User email address

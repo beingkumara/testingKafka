@@ -8,7 +8,7 @@ import java.util.Map;
 
 import com.f1nity.library.models.authentication.AuthRequest;
 
-@RequestMapping("/api/f1nity/v1/auth")
+@RequestMapping("/api/fanf1x/v1/auth")
 @RestController
 public class AuthenticationController {
 
@@ -26,19 +26,19 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody AuthRequest request){
+    public ResponseEntity<?> register(@RequestBody AuthRequest request) {
         return authenticationService.register(request);
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request){
-       return authenticationService.forgotPassword(request.get("email"));
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        return authenticationService.forgotPassword(request.get("email"));
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword( @RequestParam String token,
-    @RequestParam String newPassword){
-        return authenticationService.resetPassword(token,newPassword);
+    public ResponseEntity<?> resetPassword(@RequestParam String token,
+            @RequestParam String newPassword) {
+        return authenticationService.resetPassword(token, newPassword);
     }
 
     @GetMapping("/user")
@@ -47,7 +47,7 @@ public class AuthenticationController {
     }
 
     @GetMapping("/verify-otp")
-    public ResponseEntity<?> verifyOtp(@RequestParam String token){
+    public ResponseEntity<?> verifyOtp(@RequestParam String token) {
         return authenticationService.verifyOtp(token);
     }
 
@@ -61,8 +61,8 @@ public class AuthenticationController {
     }
 
     @PutMapping("/user/{emailId}")
-    public User updateUser(@RequestBody User user){
+    public User updateUser(@RequestBody User user) {
         return authenticationService.updateUser(user);
     }
-    
+
 }

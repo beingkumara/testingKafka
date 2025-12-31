@@ -10,6 +10,7 @@ export interface User {
   favoriteDriver?: string;
   favoriteTeam?: string;
   profilePicture?: string;
+  coverPhoto?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -44,6 +45,7 @@ export interface ProfileUpdateRequest {
   favoriteDriver?: string;
   favoriteTeam?: string;
   profilePicture?: string | File;
+  coverPhoto?: string | File;
 }
 
 export interface ProfileUpdateResponse {

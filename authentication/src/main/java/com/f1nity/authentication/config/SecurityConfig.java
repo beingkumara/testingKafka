@@ -25,38 +25,37 @@ public class SecurityConfig {
     SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
     }
-    
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         try {
             http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorize -> authorize
-                    // Public endpoints - no authentication required
-                    .requestMatchers("/api/f1nity/v1/auth/login").permitAll()
-                    .requestMatchers("/api/f1nity/v1/auth/register").permitAll()
-                    .requestMatchers("/api/f1nity/v1/auth/forgot-password").permitAll()
-                    .requestMatchers("/api/f1nity/v1/auth/reset-password").permitAll()
-                    .requestMatchers("/api/f1nity/v1/auth/verify-otp").permitAll()
-                    .requestMatchers("/api/f1nity/v1/auth/user").permitAll()
-                    .requestMatchers("/api/f1nity/v1/auth/user/**").authenticated()
-                    // Allow OPTIONS requests for CORS
-                    .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                    .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-            
+                    .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                    .csrf(AbstractHttpConfigurer::disable)
+                    .authorizeHttpRequests(authorize -> authorize
+                            // Public endpoints - no authentication required
+                            // Public endpoints - no authentication required
+                            .requestMatchers("/api/fanf1x/v1/auth/login").permitAll()
+                            .requestMatchers("/api/fanf1x/v1/auth/register").permitAll()
+                            .requestMatchers("/api/fanf1x/v1/auth/forgot-password").permitAll()
+                            .requestMatchers("/api/fanf1x/v1/auth/reset-password").permitAll()
+                            .requestMatchers("/api/fanf1x/v1/auth/verify-otp").permitAll()
+                            .requestMatchers("/api/fanf1x/v1/auth/user").permitAll()
+                            .requestMatchers("/api/fanf1x/v1/auth/user/**").authenticated()
+                            // Allow OPTIONS requests for CORS
+                            .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                            .anyRequest().authenticated())
+                    .sessionManagement(session -> session
+                            .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
             return http.build();
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
         return null;
     }
-    
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -65,14 +64,15 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
     @Bean
-    public AuthenticationManager authenticationManger(AuthenticationConfiguration authenticationConfiguration) throws Exception{
+    public AuthenticationManager authenticationManger(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
@@ -80,6 +80,5 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
 
 }

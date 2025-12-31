@@ -4,7 +4,7 @@
 
 // API URLs
 export const API_BASE_URL = 'http://localhost:8080/api/v1';
-export const AUTH_API_URL = 'http://localhost:8085/api/f1nity/v1/auth';
+export const AUTH_API_URL = 'http://localhost:8085/api/fanf1x/v1/auth';
 
 // Local storage keys
 export const STORAGE_KEYS = {
@@ -31,6 +31,6 @@ export const ROUTES = {
 
 // App settings
 export const APP_SETTINGS = {
-  APP_NAME: 'F1nity',
+  APP_NAME: 'FanF1x',
   APP_DESCRIPTION: 'Formula 1 Analytics Platform',
 };

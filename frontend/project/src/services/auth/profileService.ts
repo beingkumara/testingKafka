@@ -7,25 +7,51 @@ import { authApi } from '../api';
  * @param data - Profile data to update
  * @returns Promise with updated user data
  */
+const convertFileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 export const updateUserProfile = async (
   _token: string,
   data: ProfileUpdateRequest
 ): Promise<ProfileUpdateResponse> => {
   try {
+    let profilePictureBase64 = data.profilePicture;
+    if (data.profilePicture instanceof File) {
+      profilePictureBase64 = await convertFileToBase64(data.profilePicture);
+    }
+
+    // Handle cover photo if present (even if strictly typed DTO might ignore it, we convert to be safe)
+    let coverPhotoBase64 = (data as any).coverPhoto;
+    if ((data as any).coverPhoto instanceof File) {
+      coverPhotoBase64 = await convertFileToBase64((data as any).coverPhoto);
+    }
+
     // Create JSON payload
     const payload = {
       username: data.username,
       email: data.email,
       favoriteDriver: data.favoriteDriver,
       favoriteTeam: data.favoriteTeam,
-      profilePicture: data.profilePicture // Can be File or string URL
+      profilePicture: profilePictureBase64, // Now guaranteed to be string or undefined
+      // bio: (data as any).bio, // Optional: Include if you want to try sending it
+      // location: (data as any).location,
+      // coverPhoto: coverPhotoBase64 
     };
 
-    // Remove undefined fields from payload
-   
+    // Only add extra fields if they are defined to keep payload clean
+    if ((data as any).bio) (payload as any).bio = (data as any).bio;
+    if ((data as any).location) (payload as any).location = (data as any).location;
+    if (coverPhotoBase64) (payload as any).coverPhoto = coverPhotoBase64;
 
     // Make the API call with JSON payload
-    const user = await authApi.put<User>(`/user/${data.email}`, payload,true);
+    // Note: This relies on the backend accepting a specific encoding or just a long string
+    const user = await authApi.put<User>(`/user/${data.email}`, payload, true);
 
     return {
       user,

@@ -65,12 +65,14 @@ export interface Race {
   time: string;
   country: string;
   circuit: string;
+  round: number;
   completed: boolean;
   image: string;
 }
 
 export interface RaceFromAPI {
   id: string;
+  round: string;
   raceName: string;
   Circuit: Circuit;
   date: string;
@@ -105,6 +107,7 @@ export interface RaceResult {
   circuit: string;
   fastestLap: string;
   date: string;
+  raceName: string;
 }
 
 export interface RaceResultFromAPI {

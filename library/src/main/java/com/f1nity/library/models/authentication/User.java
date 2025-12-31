@@ -1,6 +1,5 @@
 package com.f1nity.library.models.authentication;
 
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -25,6 +24,8 @@ public class User implements UserDetails {
     private String favoriteDriver;
     private String favoriteTeam;
     private String profilePicture;
+    private String coverPhoto;
+
     public User() {
     }
 
@@ -115,7 +116,13 @@ public class User implements UserDetails {
         this.profilePicture = profilePicture;
     }
 
+    public String getCoverPhoto() {
+        return coverPhoto;
+    }
 
+    public void setCoverPhoto(String coverPhoto) {
+        this.coverPhoto = coverPhoto;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -142,8 +149,6 @@ public class User implements UserDetails {
         return true;
     }
 
-
-
     @Override
     public String toString() {
         return "User{" +
@@ -154,5 +159,5 @@ public class User implements UserDetails {
                 ", email='" + email + '\'' +
                 '}';
     }
-    
+
 }

@@ -1,50 +1,42 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { getRaceResultsByYearAndRound } from '../services/f1/f1Service';
 import { RaceResult } from '../types/f1.types';
 import LoadingScreen from '../components/ui/LoadingScreen';
-import { 
-  Activity, 
-  TrendingUp, 
-  Flag, 
-  Trophy, 
-  Clock, 
-  Calendar, 
-  MapPin, 
+import {
+  Flag,
+  Trophy,
+  Calendar,
+  MapPin,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
-  Medal,
-  Info
 } from 'lucide-react';
 
 const RaceResultsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState<boolean>(false);
   const [year, setYear] = useState<number>(
-    searchParams.get('season') 
-      ? parseInt(searchParams.get('season') as string, 10) 
+    searchParams.get('season')
+      ? parseInt(searchParams.get('season') as string, 10)
       : 2025
   );
   const [round, setRound] = useState<number>(
-    searchParams.get('round') 
-      ? parseInt(searchParams.get('round') as string, 10) 
+    searchParams.get('round')
+      ? parseInt(searchParams.get('round') as string, 10)
       : 1
   );
   const [results, setResults] = useState<RaceResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [raceName, setRaceName] = useState<string>('');
   const [circuit, setCircuit] = useState<string>('');
-  const [raceDate, setRaceDate] = useState<string>('');
-  const [fastestLap, setFastestLap] = useState<{driver: string, time: string} | null>(null);
+
+  const [fastestLap, setFastestLap] = useState<{ driver: string, time: string } | null>(null);
   const [apiCalled, setApiCalled] = useState<boolean>(false);
 
   // Generate year options from 2025 down to 1951
   const years = Array.from({ length: 2025 - 1951 + 1 }, (_, i) => 2025 - i);
-  
-  // Generate round options from 1 to 24
-  const rounds = Array.from({ length: 24 }, (_, i) => i + 1);
 
   // Update URL when year or round changes
   useEffect(() => {
@@ -59,19 +51,16 @@ const RaceResultsPage: React.FC = () => {
     try {
       const data = await getRaceResultsByYearAndRound(year, round);
       setResults(data);
-      
+
       // Assuming the API returns race name or we can set it based on round
       setRaceName(data.length > 0 && data[0].raceName ? data[0].raceName : `Round ${round}`);
       setCircuit(data.length > 0 && data[0].circuit ? data[0].circuit : 'Unknown Circuit');
-      
-      // Set mock race date for UI demonstration
-      if (data.length > 0 && data[0].date) {
-        setRaceDate(data[0].date);
-      }
-      
+
+
+
       if (data.length > 0) {
-        for(let i = 0; i < data.length; i++) {
-          if(data[i].fastestLap && data[i].fastestLap !== 'N/A') {
+        for (let i = 0; i < data.length; i++) {
+          if (data[i].fastestLap && data[i].fastestLap !== 'N/A') {
             setFastestLap({
               driver: data[i].driver,
               time: data[i].fastestLap,
@@ -94,19 +83,16 @@ const RaceResultsPage: React.FC = () => {
   useEffect(() => {
     const hasSeason = searchParams.has('season');
     const hasRound = searchParams.has('round');
-    
+
     if (hasSeason && hasRound) {
-      // If URL has parameters, use them
       setApiCalled(true);
       fetchResults();
     } else {
-      // If no URL parameters, automatically load 2025 round 1 results
       setApiCalled(true);
-      // Use replace: true to avoid adding to browser history
       setSearchParams({ season: '2025', round: '1' }, { replace: true });
     }
-  }, [fetchResults, searchParams, setSearchParams]); // Include fetchResults and other dependencies
-  
+  }, [fetchResults, searchParams, setSearchParams]);
+
   // Handle changes to search params
   useEffect(() => {
     if (searchParams.has('season') && searchParams.has('round') && apiCalled) {
@@ -125,8 +111,6 @@ const RaceResultsPage: React.FC = () => {
   if (loading) {
     return <LoadingScreen />;
   }
-  
-  // We no longer need to check for URL parameters since we're auto-loading
 
   return (
     <motion.div
@@ -135,266 +119,122 @@ const RaceResultsPage: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="pb-12"
     >
-      <div className="relative mb-12 bg-gradient-to-r from-secondary-800 to-secondary-900 rounded-xl overflow-hidden">
-        <div className="absolute inset-0 bg-opacity-50 bg-black"></div>
-        <div className="relative z-10 px-6 py-12 md:py-16 text-white">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Race Results</h1>
-          <p className="text-xl text-secondary-200 max-w-2xl">
-            Detailed race results from every Formula 1 Grand Prix.
-          </p>
-          
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-primary-400" />
-              <span className="text-secondary-200">Season:</span>
-            </div>
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              className="bg-secondary-700 border border-secondary-600 text-white rounded-md px-3 py-1.5 focus:ring-primary-500 focus:border-primary-500"
-            >
-              {years.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-            
-            <div className="flex items-center space-x-2 ml-4">
-              <Flag className="h-5 w-5 text-primary-400" />
-              <span className="text-secondary-200">Round:</span>
-            </div>
-            <div className="flex items-center">
-              <button 
-                onClick={() => navigateRound('prev')}
-                disabled={round === 1}
-                className="bg-secondary-700 border border-secondary-600 text-white rounded-l-md px-2 py-1.5 hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
+      {/* Filters Header */}
+      <div className="mb-8 container-f1 flex flex-col lg:flex-row justify-between items-end gap-6 bg-dark-800/50 p-6 rounded-lg border border-white/5">
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-white uppercase italic mb-2">Race <span className="text-primary-500">Results</span></h1>
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-gray-500" />
               <select
-                value={round}
-                onChange={(e) => setRound(Number(e.target.value))}
-                className="bg-secondary-700 border-y border-secondary-600 text-white px-3 py-1.5 focus:ring-primary-500 focus:border-primary-500"
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+                className="bg-transparent text-white font-mono border-b border-white/20 focus:border-primary-500 outline-none pb-1"
               >
-                {rounds.map((r) => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
+                {years.map(y => <option key={y} value={y} className="bg-dark-900">{y}</option>)}
               </select>
-              <button 
-                onClick={() => navigateRound('next')}
-                disabled={round === 24}
-                className="bg-secondary-700 border border-secondary-600 text-white rounded-r-md px-2 py-1.5 hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
             </div>
-          </div>
-          
-          {loading && (
-            <div className="mt-6 bg-primary-500/20 p-4 rounded-lg border border-primary-500/30">
-              <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 text-primary-300 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-white font-medium">Loading race results...</p>
-                </div>
+            <div className="h-4 w-[1px] bg-white/10"></div>
+            <div className="flex items-center gap-2">
+              <Flag className="w-4 h-4 text-gray-500" />
+              <div className="flex items-center gap-2">
+                <button onClick={() => navigateRound('prev')} disabled={round === 1} className="hover:text-primary-500 disabled:opacity-30 disabled:hover:text-gray-500 transition-colors">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="font-mono text-white">Round {round}</span>
+                <button onClick={() => navigateRound('next')} disabled={round === 24} className="hover:text-primary-500 disabled:opacity-30 disabled:hover:text-gray-500 transition-colors">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
-        
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary-500"></div>
+
+        <div className="text-right">
+          <div className="font-heading text-xl text-white font-bold uppercase">{raceName}</div>
+          <div className="text-xs text-gray-500 flex items-center justify-end gap-2 mt-1">
+            <MapPin className="w-3 h-3" /> {circuit}
+          </div>
+        </div>
       </div>
 
       {error ? (
-        <div className="card p-8 text-center">
-          <div className="flex flex-col items-center justify-center">
-            <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-            <h3 className="text-xl font-bold text-red-500 mb-2">Error Loading Results</h3>
-            <p className="text-secondary-600 dark:text-secondary-300 mb-6">
-              {error}
-            </p>
-            <button 
-              onClick={() => {
-                fetchResults();
-              }}
-              className="btn btn-primary"
-            >
-              Try Again
-            </button>
-          </div>
+        <div className="container-f1 flex flex-col items-center justify-center py-20 text-center">
+          <AlertTriangle className="h-12 w-12 text-primary-500 mb-4" />
+          <h3 className="text-xl font-heading text-white uppercase mb-2">Data Unavailable</h3>
+          <p className="text-gray-500 mb-6 max-w-md">{error}</p>
+          <button onClick={() => fetchResults()} className="btn-primary">Retry Telemetry</button>
         </div>
       ) : (
-        <>
-          <div className="card overflow-visible shadow-lg mb-8">
-            <div className="p-6 border-b dark:border-secondary-600 bg-secondary-50 dark:bg-secondary-800/50">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    <Flag className="h-6 w-6 text-primary-500" />
-                    {raceName}
-                  </h2>
-                  <div className="flex items-center gap-4 mt-2 text-secondary-600 dark:text-secondary-300">
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      <span>{circuit}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      <span>{raceDate}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {fastestLap && (
-                  <div className="bg-secondary-100 dark:bg-secondary-700 rounded-lg p-3 flex items-center gap-3">
-                    <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full">
-                      <Clock className="h-5 w-5 text-purple-500" />
-                    </div>
-                    <div>
-                      <div className="text-xs text-secondary-500 dark:text-secondary-400">Fastest Lap</div>
-                      <div className="font-medium">{fastestLap.driver}</div>
-                      <div className="text-sm font-mono text-purple-500">{fastestLap.time}</div>
-                    </div>
-                  </div>
-                )}
+        <div className="container-f1">
+          {/* Summary Stats */}
+          {fastestLap && (
+            <div className="mb-6 flex justify-end">
+              <div className="inline-flex items-center gap-3 bg-purple-900/20 border border-purple-500/30 px-4 py-2 rounded-full">
+                <span className="text-[10px] uppercase font-bold text-purple-400 tracking-widest">Fastest Lap</span>
+                <span className="w-[1px] h-3 bg-purple-500/30"></span>
+                <div className="text-sm text-white font-bold">{fastestLap.driver} <span className="font-mono text-purple-300 ml-1">{fastestLap.time}</span></div>
               </div>
             </div>
-            
-            <div className="p-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left border-b dark:border-secondary-700 bg-secondary-100 dark:bg-secondary-800/30">
-                      <th className="p-3 font-medium">Pos</th>
-                      <th className="p-3 font-medium">Driver</th>
-                      <th className="p-3 font-medium">Team</th>
-                      <th className="p-3 font-medium">Time / Status</th>
-                      <th className="p-3 font-medium text-right">Points</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.length > 0 ? (
-                      results.map((result, index) => (
-                        <motion.tr 
-                          key={index}
-                          initial={{ x: -20, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ duration: 0.3, delay: index * 0.05 }}
-                          className={`border-b dark:border-secondary-700 last:border-0 hover:bg-secondary-50 dark:hover:bg-secondary-700/50 transition-colors ${
-                            index < 3 ? 'bg-secondary-50/50 dark:bg-secondary-800/20' : ''
-                          }`}
-                        >
-                          <td className="p-3">
-                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
-                              result.position === 1 
-                                ? 'bg-primary-500 text-white' 
-                                : result.position === 2
-                                ? 'bg-secondary-300 dark:bg-secondary-600 text-secondary-800 dark:text-white'
-                                : result.position === 3
-                                ? 'bg-accent-400 dark:bg-accent-600 text-secondary-800 dark:text-white'
-                                : 'bg-secondary-100 dark:bg-secondary-700 text-secondary-800 dark:text-white'
-                            }`}>
-                              {result.position}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              {result.position === 1 && <Trophy className="h-4 w-4 text-primary-500" />}
-                              {result.position === 2 && <Medal className="h-4 w-4 text-secondary-400" />}
-                              {result.position === 3 && <Medal className="h-4 w-4 text-accent-500" />}
-                              <span className="font-medium">{result.driver}</span>
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-secondary-100 dark:bg-secondary-700">
-                              {result.team}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <span className={`font-mono text-sm ${!result.time || result.time === 'DNF' ? 'text-red-500' : ''}`}>
-                              {result.time || result.status || 'DNF'}
-                            </span>
-                            {result.status && result.status !== 'Finished' && (
-                              <span className="ml-2 px-2 py-0.5 rounded text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
-                                {result.status}
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-3 text-right">
-                            <span className={`font-mono font-bold text-lg ${
-                              result.points > 0 ? 'text-primary-600 dark:text-primary-400' : 'text-secondary-400'
-                            }`}>
-                              {result.points}
-                            </span>
-                          </td>
-                        </motion.tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="p-8 text-center">
-                          <div className="flex flex-col items-center justify-center">
-                            <Activity className="h-10 w-10 text-secondary-400 mb-3" />
-                            <p className="text-secondary-500 dark:text-secondary-400 text-lg mb-1">
-                              No results found for this race
-                            </p>
-                            <p className="text-secondary-400 text-sm">
-                              Try selecting a different round or season
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+          )}
+
+          <div className="telemetry-card p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-white/5 border-b border-white/10 text-[10px] font-mono text-gray-500 uppercase tracking-wider">
+                    <th className="p-4 w-16 text-center">Pos</th>
+                    <th className="p-4">Driver</th>
+                    <th className="p-4">Team</th>
+                    <th className="p-4 text-right">Time/Gap</th>
+                    <th className="p-4 text-right">Pts</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {results.map((result, index) => (
+                    <motion.tr
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                      className={`hover:bg-white/5 transition-colors ${index < 3 ? 'bg-primary-900/5' : ''}`}
+                    >
+                      <td className="p-4 text-center">
+                        <span className={`font-mono font-bold ${index === 0 ? 'text-primary-500 text-lg' : 'text-white'}`}>
+                          {result.position}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          {index === 0 && <Trophy className="w-4 h-4 text-primary-500" />}
+                          <span className={`font-bold ${index === 0 ? 'text-white' : 'text-gray-300'}`}>{result.driver}</span>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">{result.team}</span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className={`font-mono text-sm ${!result.time || result.time === 'DNF' ? 'text-primary-500' : 'text-gray-300'}`}>
+                          {result.time || result.status || 'DNF'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <span className="font-mono font-bold text-white">{result.points}</span>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            
-            <div className="p-4 border-t dark:border-secondary-700 bg-secondary-50 dark:bg-secondary-800/50">
-              <div className="flex flex-wrap gap-4 justify-center text-sm text-secondary-500 dark:text-secondary-400">
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-primary-500"></div>
-                  <span>1st Place</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-secondary-300 dark:bg-secondary-600"></div>
-                  <span>2nd Place</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-accent-400 dark:bg-accent-600"></div>
-                  <span>3rd Place</span>
-                </div>
+
+            {results.length === 0 && !loading && (
+              <div className="p-12 text-center text-gray-500">
+                <Flag className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                <p className="uppercase tracking-widest text-sm">No timing data available</p>
               </div>
-            </div>
+            )}
           </div>
-          
-          <div className="flex justify-between">
-            <Link 
-              to="/standings" 
-              className="btn btn-outline flex items-center gap-2"
-            >
-              <TrendingUp className="h-4 w-4" />
-              View Standings
-            </Link>
-            
-            <div className="flex gap-2">
-              <button 
-                onClick={() => navigateRound('prev')}
-                disabled={round === 1}
-                className="btn btn-outline flex items-center gap-1 disabled:opacity-50"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Previous Race
-              </button>
-              <button 
-                onClick={() => navigateRound('next')}
-                disabled={round === 24}
-                className="btn btn-outline flex items-center gap-1 disabled:opacity-50"
-              >
-                Next Race
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </>
+        </div>
       )}
     </motion.div>
   );

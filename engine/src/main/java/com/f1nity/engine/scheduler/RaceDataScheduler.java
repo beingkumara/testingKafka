@@ -43,6 +43,9 @@ public class RaceDataScheduler {
 
     @PostConstruct
     public void scheduleRaceResultsUpdate() {
+        // Ensure static data (drivers, constructors) is present
+        dataIngestionService.initializeStaticData();
+
         // Initial scheduling
         scheduleNextRaceUpdate();
     }
@@ -109,25 +112,43 @@ public class RaceDataScheduler {
         // Current date and time
         ZonedDateTime nowUtc = ZonedDateTime.now(ZoneId.of("UTC"));
 
-        // Find the next upcoming race
-        Race nextRace = null;
-        ZonedDateTime nextRaceDateTime = null;
-
-        String nextRound = null;
+        // 1. Check for any PAST races that haven't been updated yet
+        // This handles the case where the application was down, or the season just
+        // ended
         for (Race race : races) {
             if (race.getDate() != null && race.getTime() != null) {
                 try {
-                    LocalDate raceDate = LocalDate.parse(race.getDate());
-                    // Parse time - remove any trailing 'Z' and parse as LocalTime
-                    String timeStr = race.getTime().replace("Z", "");
-                    LocalTime raceTime = LocalTime.parse(timeStr);
-                    LocalDateTime raceDateTime = LocalDateTime.of(raceDate, raceTime);
+                    ZonedDateTime raceDateTime = parseRaceDateTime(race);
 
-                    // Convert to UTC for comparison (assuming race times are in UTC)
-                    ZonedDateTime utcRaceDateTime = raceDateTime.atZone(ZoneId.of("UTC"));
+                    // If race is in the past AND standings haven't been updated
+                    // We add a small buffer (e.g. 2 hours) to ensure we don't try to update
+                    // *during* the race
+                    // before results are likely ready.
+                    if (raceDateTime.isBefore(nowUtc) && !race.getStandingsUpdated()) {
+                        System.out.println(
+                                "Found pending past race: " + race.getRaceName() + " (Round " + race.getRound() + ")");
 
-                    // If race is in the future and it's either the first future race we've found
-                    // or it's earlier than the current next race
+                        // Schedule immediate update (in 10 seconds)
+                        Date executionTime = new Date(System.currentTimeMillis() + 10_000);
+                        return new NextRaceInfo(executionTime, race.getRound());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error checking past race: " + race.getRaceName());
+                }
+            }
+        }
+
+        // 2. Find the next upcoming race (existing logic)
+        Race nextRace = null;
+        ZonedDateTime nextRaceDateTime = null;
+        String nextRound = null;
+
+        for (Race race : races) {
+            if (race.getDate() != null && race.getTime() != null) {
+                try {
+                    ZonedDateTime utcRaceDateTime = parseRaceDateTime(race);
+
+                    // If race is in the future
                     if (utcRaceDateTime.isAfter(nowUtc) &&
                             (nextRaceDateTime == null || utcRaceDateTime.isBefore(nextRaceDateTime))) {
                         nextRace = race;
@@ -142,21 +163,27 @@ public class RaceDataScheduler {
         }
 
         if (nextRaceDateTime != null) {
-            // Add 7 hours to the race time
-            ZonedDateTime scheduledTime = nextRaceDateTime.plus(Duration.ofHours(7));
-            // If for some reason the scheduled time is in the past (shouldn't happen),
-            // schedule for now + 30 minutes
-            if (scheduledTime.isBefore(ZonedDateTime.now(ZoneId.of("UTC")))) {
-                scheduledTime = ZonedDateTime.now(ZoneId.of("UTC")).plus(Duration.ofMinutes(30));
-            }
-            System.out.println("Next race: " + nextRace.getRaceName() + " at " + nextRaceDateTime);
-            System.out.println("Scheduled data fetch for 7 hours after race: " + scheduledTime);
+            // Add 4 hours to the race time
+            ZonedDateTime scheduledTime = nextRaceDateTime.plus(Duration.ofHours(4));
+            System.out.println("Next upcoming race: " + nextRace.getRaceName() + " at " + nextRaceDateTime);
+            System.out.println("Scheduled data fetch for 4 hours after race: " + scheduledTime);
             return new NextRaceInfo(Date.from(scheduledTime.toInstant()), nextRound);
         }
-        // If no future races found, check again in 24 hours
-        System.out.println("No upcoming races found. Will check again in 24 hours.");
+
+        // If no future races found, but we might have missed something or just waiting
+        // for next season
+        System.out.println("No pending past races and no upcoming races found. checking again next day.");
         return new NextRaceInfo(Date.from(ZonedDateTime.now(ZoneId.of("UTC")).plus(Duration.ofHours(24)).toInstant()),
                 null);
+    }
+
+    private ZonedDateTime parseRaceDateTime(Race race) {
+        LocalDate raceDate = LocalDate.parse(race.getDate());
+        // Parse time - remove any trailing 'Z' and parse as LocalTime
+        String timeStr = race.getTime().replace("Z", "");
+        LocalTime raceTime = LocalTime.parse(timeStr);
+        LocalDateTime raceDateTime = LocalDateTime.of(raceDate, raceTime);
+        return raceDateTime.atZone(ZoneId.of("UTC"));
     }
 
     /**

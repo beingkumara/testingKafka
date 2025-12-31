@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Award, TrendingUp } from 'lucide-react';
+import { Trophy, TrendingUp, ChevronRight } from 'lucide-react';
 import { DriverStanding } from '../../types/f1.types';
 
 interface DriverStandingsCardProps {
@@ -13,86 +13,86 @@ const DriverStandingsCard: React.FC<DriverStandingsCardProps> = ({ drivers }) =>
     const topDrivers = drivers.slice(0, 5);
 
     return (
-        <div className="card overflow-visible shadow-md hover:shadow-lg transition-shadow duration-300">
-            <div className="p-6 border-b dark:border-secondary-600 bg-secondary-50 dark:bg-secondary-800/50">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                        <Award className="h-5 w-5 text-primary-500" />
-                        <span>Driver Standings</span>
-                    </h2>
-                    <span className="px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-sm font-medium rounded-full">
-                        {new Date().getFullYear()} Season
-                    </span>
+        <div className="telemetry-card group h-full flex flex-col">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-primary-500" />
+                    <h2 className="font-heading text-lg tracking-widest uppercase text-white">Driver Championships</h2>
                 </div>
+                <span className="font-mono text-xs text-primary-500 border border-primary-500/30 px-2 py-0.5 rounded bg-primary-900/20">
+                    SEASON {new Date().getFullYear()}
+                </span>
             </div>
 
-            <div className="p-6">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="text-left text-sm border-b dark:border-secondary-700 bg-secondary-100 dark:bg-secondary-800/30">
-                                <th className="p-3 font-medium">Pos</th>
-                                <th className="p-3 font-medium">Driver</th>
-                                <th className="p-3 font-medium">Team</th>
-                                <th className="p-3 font-medium text-right">Points</th>
-                                <th className="p-3 font-medium text-center">Wins</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {topDrivers.map((driver, index) => (
-                                <motion.tr
-                                    key={driver.id}
-                                    initial={{ x: -20, opacity: 0 }}
-                                    animate={{ x: 0, opacity: 1 }}
-                                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                                    className={`border-b dark:border-secondary-700 last:border-0 hover:bg-secondary-50 dark:hover:bg-secondary-700/50 transition-colors ${index < 3 ? 'bg-secondary-50/50 dark:bg-secondary-800/20' : ''
-                                        }`}
-                                >
-                                    <td className="p-3">
-                                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${driver.position === 1
-                                                ? 'bg-primary-500 text-white'
-                                                : driver.position === 2
-                                                    ? 'bg-secondary-300 dark:bg-secondary-600 text-secondary-800 dark:text-white'
-                                                    : driver.position === 3
-                                                        ? 'bg-accent-400 dark:bg-accent-600 text-secondary-800 dark:text-white'
-                                                        : 'bg-secondary-100 dark:bg-secondary-700 text-secondary-800 dark:text-white'
-                                            }`}>
-                                            {driver.position}
-                                        </span>
-                                    </td>
-                                    <td className="p-3">
-                                        <Link to={`/drivers/${driver.id}`} className="font-medium hover:text-primary-500 transition-colors flex items-center gap-2">
-                                            {driver.position === 1 && <Award className="h-4 w-4 text-primary-500" />}
-                                            {driver.name}
-                                        </Link>
-                                    </td>
-                                    <td className="p-3">
-                                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-secondary-100 dark:bg-secondary-700">
-                                            {driver.team}
-                                        </span>
-                                    </td>
-                                    <td className="p-3 text-right font-mono font-bold text-lg">{driver.points}</td>
-                                    <td className="p-3 text-center">
-                                        <div className="flex items-center justify-center gap-1">
-                                            <Award className="h-4 w-4 text-primary-500" />
-                                            <span className="font-mono">{driver.wins}</span>
-                                        </div>
-                                    </td>
-                                </motion.tr>
-                            ))}
-                        </tbody>
-                    </table>
+            <div className="flex-1 space-y-2">
+                <div className="grid grid-cols-12 gap-2 text-xs font-mono text-gray-500 uppercase tracking-wider mb-2 px-3">
+                    <div className="col-span-1">Pos</div>
+                    <div className="col-span-6">Driver / Team</div>
+                    <div className="col-span-3 text-right">Points</div>
+                    <div className="col-span-2 text-center">Wins</div>
                 </div>
 
-                <div className="mt-6 flex justify-center">
-                    <Link
-                        to="/standings"
-                        className="btn btn-primary btn-sm flex items-center gap-2 px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all"
+                {topDrivers.map((driver, index) => (
+                    <motion.div
+                        key={driver.id}
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        className={`
+                            grid grid-cols-12 gap-2 items-center p-3 rounded border transition-all duration-300 relative overflow-hidden
+                            ${index === 0
+                                ? 'bg-gradient-to-r from-primary-900/40 to-transparent border-primary-500/50 hover:border-primary-500'
+                                : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20'
+                            }
+                        `}
                     >
-                        <TrendingUp className="h-4 w-4" />
-                        View Complete Standings
-                    </Link>
-                </div>
+                        {/* Position */}
+                        <div className="col-span-1 font-heading text-lg text-white">
+                            {driver.position}
+                        </div>
+
+                        {/* Driver Info */}
+                        <div className="col-span-6">
+                            <Link to={`/drivers/${driver.id}`} className="block group-hover:text-primary-500 transition-colors">
+                                <div className="font-bold text-sm text-white truncate">{driver.name}</div>
+                                <div className="text-xs text-gray-400 truncate">{driver.team}</div>
+                            </Link>
+                        </div>
+
+                        {/* Points */}
+                        <div className="col-span-3 text-right">
+                            <span className="font-mono text-lg font-bold text-white tracking-tight">{driver.points}</span>
+                            <span className="text-[10px] text-gray-500 ml-1">PTS</span>
+                        </div>
+
+                        {/* Wins */}
+                        <div className="col-span-2 flex justify-center">
+                            {driver.wins > 0 ? (
+                                <span className={`flex items-center gap-1 font-bold ${index === 0 ? 'text-primary-500' : 'text-gray-300'}`}>
+                                    <Trophy className="w-3 h-3" />
+                                    {driver.wins}
+                                </span>
+                            ) : (
+                                <span className="text-gray-600">-</span>
+                            )}
+                        </div>
+
+                        {/* Active Indicator Line */}
+                        {index === 0 && (
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500"></div>
+                        )}
+                    </motion.div>
+                ))}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-white/5 flex justify-end">
+                <Link
+                    to="/standings"
+                    className="flex items-center gap-2 text-xs font-heading uppercase tracking-widest text-gray-400 hover:text-white transition-colors group/link"
+                >
+                    Full Standings
+                    <ChevronRight className="w-4 h-4 text-primary-500 transition-transform group-hover/link:translate-x-1" />
+                </Link>
             </div>
         </div>
     );

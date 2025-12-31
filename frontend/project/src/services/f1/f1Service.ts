@@ -4,10 +4,10 @@
  * This service handles all F1-related API calls and data transformations.
  */
 import { f1Api } from '../api';
-import { 
-  Driver, 
-  DriverFromAPI, 
-  DriverStanding, 
+import {
+  Driver,
+  DriverFromAPI,
+  DriverStanding,
   ConstructorStanding,
   Race,
   RaceResult,
@@ -30,7 +30,7 @@ const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(r
 export const getDriverStandings = async (): Promise<DriverStanding[]> => {
   try {
     const data = await f1Api.get<any[]>('/driver-standings');
-    
+
     return data.map((standing: any) => ({
       id: standing.driverId,
       position: standing.position,
@@ -54,7 +54,7 @@ export const getDriverStandings = async (): Promise<DriverStanding[]> => {
 export const getConstructorStandings = async (): Promise<ConstructorStanding[]> => {
   try {
     const data = await f1Api.get<any[]>('/constructor-standings');
-    
+
     return data.map((standing: any) => ({
       id: standing.constructorId,
       position: standing.position,
@@ -80,7 +80,7 @@ export const getLastRaceResults = async (): Promise<RaceResult[]> => {
     await delay(800); // Simulated network delay
     const data = await f1Api.get<RaceResultFromAPI[]>('/latest-race-results');
     console.log('[getLastRaceResults] API response:', data);
-    
+
     return data.map((result: RaceResultFromAPI) => ({
       position: parseInt(result.position, 10),
       driver: result.Driver.givenName,
@@ -101,11 +101,11 @@ export const getLastRaceResults = async (): Promise<RaceResult[]> => {
 export const getDrivers = async (): Promise<Driver[]> => {
   try {
     const data = await f1Api.get<DriverFromAPI[]>('/currentDrivers');
-    
+
     return data.map((driver: DriverFromAPI) => {
       // Use driverId if available, otherwise fallback to _id
       const driverId = driver.driverId || driver._id;
-      
+
       return {
         id: driverId,
         name: driver.fullName,
@@ -145,11 +145,11 @@ export const getDriverById = async (id: string): Promise<any> => {
 export const getRaces = async (): Promise<Race[]> => {
   try {
     const data = await f1Api.get<RaceFromAPI[]>('/races');
-    
-    return data.map((race: RaceFromAPI) => { 
+
+    return data.map((race: RaceFromAPI) => {
       const raceDateTime = new Date(`${race.date}T${race.time}`);
       const now = new Date();
-      
+
       return {
         id: race.id,
         name: race.raceName,
@@ -157,6 +157,7 @@ export const getRaces = async (): Promise<Race[]> => {
         time: race.time,
         country: race.Circuit.Location.country,
         circuit: race.Circuit.circuitName,
+        round: parseInt(race.round),
         completed: now > raceDateTime,
         image: race.Circuit.url,
       };
@@ -179,7 +180,7 @@ export const getRaceResultsByYearAndRound = async (year: number, round: number):
     const data = await f1Api.get<Array<{
       [key: string]: string;
     }>>(`/results/${year}/${round}`);
-    
+
     if (data.length <= 1) { // First item is race details, so we need at least 2 items
       return [];
     }
@@ -188,10 +189,10 @@ export const getRaceResultsByYearAndRound = async (year: number, round: number):
     const results = data.slice(1); // Remaining items are race results
 
     return results.map((result, index) => {
-      const position = result.position && !isNaN(parseInt(result.position, 10)) 
-        ? parseInt(result.position, 10) 
+      const position = result.position && !isNaN(parseInt(result.position, 10))
+        ? parseInt(result.position, 10)
         : index + 1;
-        
+
       return {
         position,
         driver: result.driver || 'Unknown Driver',
@@ -220,12 +221,12 @@ export const getRaceById = async (id: string): Promise<any> => {
   try {
     // Get race data from the backend
     const data = await f1Api.get<any>(`/races/${id}`);
-    
+
     // Check if we received valid data
     if (!data || Object.keys(data).length === 0) {
       throw new Error(`No data received for race ID: ${id}`);
     }
-    
+
     // Transform the data to match the expected structure in the frontend
     return {
       _id: data.id || id,
@@ -287,7 +288,7 @@ export interface NewsResponse {
 export const getF1News = async (params: NewsParams = {}): Promise<NewsResponse> => {
   try {
     await delay(800); // Simulated network delay
-    
+
     // Build query parameters
     const queryParams = new URLSearchParams();
     // Combine constructor and driver into ticket parameter
@@ -299,20 +300,20 @@ export const getF1News = async (params: NewsParams = {}): Promise<NewsResponse> 
     }
     if (params.fromDate) queryParams.append('from', params.fromDate);
     if (params.toDate) queryParams.append('to', params.toDate);
-    
+
     // Add pagination parameters
     const page = params.page || 1;
     const pageSize = params.pageSize || 10;
     queryParams.append('page', page.toString());
     queryParams.append('pageSize', pageSize.toString());
-    
+
     // Construct the URL with query parameters
     const url = `/news/latest${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    
+
     try {
       // Fetch news data
       const response = await f1Api.get<any[]>(url);
-      
+
       // Transform the API response to match NewsArticle type
       const data: NewsArticle[] = response.map(item => ({
         title: item.title,
@@ -326,10 +327,10 @@ export const getF1News = async (params: NewsParams = {}): Promise<NewsResponse> 
           name: item.source?.name || 'Unknown Source'
         }
       }));
-      
+
       // Determine if there are more articles
       const hasMore = data.length === pageSize;
-      
+
       return {
         articles: data,
         totalCount: data.length + (hasMore ? (page * pageSize) : 0),
@@ -337,7 +338,7 @@ export const getF1News = async (params: NewsParams = {}): Promise<NewsResponse> 
       };
     } catch (apiError) {
       console.error('Error fetching F1 news:', apiError);
-      
+
       // Return mock data when API fails
       return {
         articles: [

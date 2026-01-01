@@ -27,9 +27,11 @@ const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(r
  * Fetches current driver standings
  * @returns Promise with driver standings data
  */
-// Helper to bypass CORS/CORP issues using wsrv.nl proxy
+import { API_BASE_URL } from '../../config/constants';
+
+// Helper to bypass CORS/CORP issues using backend proxy
 const proxifyUrl = (url?: string) =>
-  url ? `https://wsrv.nl/?url=${encodeURIComponent(url)}` : '';
+  url ? `${API_BASE_URL}/image-proxy?url=${encodeURIComponent(url)}` : '';
 
 /**
  * Fetches current driver standings

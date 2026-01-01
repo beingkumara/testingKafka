@@ -27,6 +27,14 @@ const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(r
  * Fetches current driver standings
  * @returns Promise with driver standings data
  */
+// Helper to bypass CORS/CORP issues using wsrv.nl proxy
+const proxifyUrl = (url?: string) =>
+  url ? `https://wsrv.nl/?url=${encodeURIComponent(url)}` : '';
+
+/**
+ * Fetches current driver standings
+ * @returns Promise with driver standings data
+ */
 export const getDriverStandings = async (): Promise<DriverStanding[]> => {
   try {
     const data = await f1Api.get<any[]>('/driver-standings');
@@ -155,6 +163,8 @@ export const getRaces = async (): Promise<Race[]> => {
       const raceDateTime = new Date(`${race.date}T${race.time}`);
       const now = new Date();
 
+      const imageUrl = race.circuitImageUrl || race.Circuit.url;
+
       return {
         id: race.id,
         name: race.raceName,
@@ -164,7 +174,7 @@ export const getRaces = async (): Promise<Race[]> => {
         circuit: race.Circuit.circuitName,
         round: parseInt(race.round),
         completed: now > raceDateTime,
-        image: race.circuitImageUrl || race.Circuit.url || '/images/circuits/monaco.png',
+        image: proxifyUrl(imageUrl) || '/images/circuits/monaco.png',
       };
     });
   } catch (error) {
@@ -250,7 +260,7 @@ export const getRaceById = async (id: string): Promise<any> => {
           _long: data.Circuit?.Location?.long || '', // Note: backend uses 'long', frontend expects '_long'
           locality: data.Circuit?.Location?.locality || '',
           country: data.Circuit?.Location?.country || '',
-          image: data.circuitImageUrl || data.Circuit?.url || ''
+          image: proxifyUrl(data.circuitImageUrl || data.Circuit?.url) || ''
         }
       },
       // Map the practice sessions (backend uses capitalized names)

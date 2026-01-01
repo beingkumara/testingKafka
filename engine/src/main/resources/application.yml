@@ -1,12 +1,14 @@
 spring:
     data:
         mongodb:
+            uri: mongodb://localhost:27017/f1nity
             host: localhost
             port: 27017
             database: f1nity
 
 auth:
   mongodb:
+    uri: mongodb://localhost:27017/authentication
     host: localhost
     port: 27017
     database: authentication

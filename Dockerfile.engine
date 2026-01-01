@@ -10,7 +10,7 @@ RUN mvn -f library/pom.xml clean install
 # Copy engine and build it
 COPY engine/pom.xml engine/pom.xml
 COPY engine/src engine/src
-RUN mvn -f engine/pom.xml clean package -DskipTests
+RUN mvn -f engine/pom.xml clean package -Dmaven.test.skip=true
 
 # Run stage
 FROM eclipse-temurin:17-jre-alpine

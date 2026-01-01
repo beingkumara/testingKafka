@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .cors().and()
                 .csrf().disable()
                 .authorizeHttpRequests()
-                .requestMatchers("/api/fanf1x/auth/**", "/api/v1/auth/**", "/error").permitAll()
+                .requestMatchers("/api/fanf1x/auth/**", "/api/v1/auth/**", "/api/v1/**", "/error").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .sessionManagement()

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Activity, Flag, MapPin, Calendar, Clock, ChevronRight } from 'lucide-react';
+import { Flag, Timer, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { RaceResult } from '../../types/f1.types';
 
 interface RaceResultsCardProps {
@@ -9,114 +9,96 @@ interface RaceResultsCardProps {
 }
 
 const RaceResultsCard: React.FC<RaceResultsCardProps> = ({ results }) => {
-    // Take top 10 results
-    const topResults = results.slice(0, 10);
-    // Meta data
-    const raceMeta = results.length > 0 ? results[0] : null;
+    // Show top 5 results
+    const topResults = results.slice(0, 5);
+    const raceName = results.length > 0 ? results[0].raceName : "Recent Race";
+    const raceDate = results.length > 0 ? new Date(results[0].date).toLocaleDateString() : "";
 
     return (
-        <div className="telemetry-card group h-full flex flex-col relative overflow-hidden">
-            {/* Faint grid background */}
-            <div className="absolute inset-0 bg-[url('/images/grid.png')] opacity-5 pointer-events-none"></div>
-
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-white/10 relative z-10">
+        <div className="telemetry-card group h-full flex flex-col">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                    <Activity className="h-5 w-5 text-secondary-500" />
-                    <h2 className="font-heading text-lg tracking-widest uppercase text-white">Race Classification</h2>
+                    <Flag className="h-5 w-5 text-primary-500" />
+                    <div className="flex flex-col">
+                        <h2 className="font-heading text-lg tracking-widest uppercase text-white">Last Race Results</h2>
+                        <span className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">{raceName} • {raceDate}</span>
+                    </div>
                 </div>
-                {raceMeta && (
-                    <div className="flex flex-col items-end">
-                        <span className="font-bold text-xs text-white uppercase">{raceMeta.raceName}</span>
-                        <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
-                            <MapPin className="w-3 h-3" /> {raceMeta.circuit}
-                        </span>
-                    </div>
-                )}
             </div>
 
-            <div className="flex-1 overflow-x-auto relative z-10">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="text-[10px] font-mono uppercase text-gray-500 border-b border-white/10">
-                            <th className="py-2 pl-2 font-normal">Pos</th>
-                            <th className="py-2 font-normal">No</th>
-                            <th className="py-2 font-normal">Driver</th>
-                            <th className="py-2 font-normal">Team</th>
-                            <th className="py-2 font-normal text-right">Time/Gap</th>
-                            <th className="py-2 pr-2 font-normal text-right">Pts</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {topResults.map((result, index) => (
-                            <motion.tr
-                                key={index}
-                                initial={{ x: -10, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
-                                transition={{ duration: 0.2, delay: index * 0.05 }}
-                                className={`
-                                    border-b border-white/5 text-sm hover:bg-white/5 transition-colors group/row
-                                    ${index === 0 ? 'bg-primary-900/10' : ''}
-                                `}
-                            >
-                                <td className="py-2 pl-2">
-                                    <span className={`font-mono font-bold w-6 inline-block ${index === 0 ? 'text-primary-500' : 'text-white'}`}>
-                                        {result.position}
-                                    </span>
-                                </td>
-                                <td className="py-2">
-                                    <span className="font-mono text-xs text-gray-500">{result.number || '-'}</span>
-                                </td>
-                                <td className="py-2">
-                                    <span className={`font-bold block ${index === 0 ? 'text-white' : 'text-gray-300 group-hover/row:text-white'}`}>
-                                        {getDriverCode(result.driver)}
-                                    </span>
-                                </td>
-                                <td className="py-2">
-                                    <span className="text-xs text-secondary-400 truncate max-w-[100px] block">
-                                        {result.team}
-                                    </span>
-                                </td>
-                                <td className="py-2 text-right">
-                                    <span className={`font-mono text-xs ${result.status === 'Finished' || result.time ? 'text-accent-400' : 'text-gray-500'}`}>
-                                        {result.time || result.status}
-                                    </span>
-                                </td>
-                                <td className="py-2 pr-2 text-right">
-                                    <span className="font-mono font-bold text-white">{result.points}</span>
-                                </td>
-                            </motion.tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center relative z-10">
-                {raceMeta && (
-                    <div className="text-[10px] text-gray-500 flex items-center gap-2">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(raceMeta.date).toLocaleDateString()}
+            {results.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-gray-500 font-mono text-sm">
+                    No race data available
+                </div>
+            ) : (
+                <div className="flex-1 space-y-2">
+                    <div className="grid grid-cols-12 gap-2 text-xs font-mono text-gray-500 uppercase tracking-wider mb-2 px-3">
+                        <div className="col-span-1">Pos</div>
+                        <div className="col-span-6">Driver</div>
+                        <div className="col-span-3 text-right">Time</div>
+                        <div className="col-span-2 text-center">Pts</div>
                     </div>
-                )}
+
+                    {topResults.map((result, index) => (
+                        <motion.div
+                            key={`${result.driver}-${index}`}
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                            className={`
+                                grid grid-cols-12 gap-2 items-center p-3 rounded border transition-all duration-300 relative overflow-hidden
+                                ${index < 3
+                                    ? 'bg-white/5 border-white/10 hover:border-primary-500/50'
+                                    : 'bg-transparent border-white/5 hover:bg-white/5'
+                                }
+                            `}
+                        >
+                            {/* Position */}
+                            <div className={`col-span-1 font-heading text-lg ${index === 0 ? 'text-primary-500' : 'text-white'}`}>
+                                {result.position}
+                            </div>
+
+                            {/* Driver Info */}
+                            <div className="col-span-6">
+                                <span className="block font-bold text-sm text-white truncate">{result.driver}</span>
+                                <span className="text-xs text-gray-400 truncate">{result.team}</span>
+                            </div>
+
+                            {/* Time */}
+                            <div className="col-span-3 text-right">
+                                <div className="flex items-center justify-end gap-1 text-xs text-gray-300 font-mono">
+                                    {index === 0 ? <Timer className="w-3 h-3 text-primary-500" /> : null}
+                                    {result.time || result.status}
+                                </div>
+                            </div>
+
+                            {/* Points */}
+                            <div className="col-span-2 text-center">
+                                <span className={`font-mono font-bold ${result.points > 0 ? 'text-white' : 'text-gray-600'}`}>
+                                    {result.points}
+                                </span>
+                            </div>
+
+                            {/* Podium Indicator */}
+                            {index === 0 && (
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500"></div>
+                            )}
+                        </motion.div>
+                    ))}
+                </div>
+            )}
+
+            <div className="mt-6 pt-4 border-t border-white/5 flex justify-end">
                 <Link
-                    to={`/race-results?season=${new Date().getFullYear()}&round=last`}
+                    to="/results"
                     className="flex items-center gap-2 text-xs font-heading uppercase tracking-widest text-gray-400 hover:text-white transition-colors group/link"
                 >
-                    Full Analysis
-                    <ChevronRight className="w-4 h-4 text-secondary-500 transition-transform group-hover/link:translate-x-1" />
+                    Full Results
+                    <ChevronRight className="w-4 h-4 text-primary-500 transition-transform group-hover/link:translate-x-1" />
                 </Link>
             </div>
         </div>
     );
-};
-
-// Helper to extract driver code (e.g. Lewis Hamilton -> HAM)
-const getDriverCode = (name: string) => {
-    if (!name) return 'UNK';
-    const parts = name.split(' ');
-    if (parts.length > 1) {
-        return parts[parts.length - 1].substring(0, 3).toUpperCase();
-    }
-    return name.substring(0, 3).toUpperCase();
 };
 
 export default RaceResultsCard;

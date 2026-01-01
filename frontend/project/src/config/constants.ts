@@ -3,8 +3,9 @@
  */
 
 // API URLs
-export const API_BASE_URL = 'http://localhost:8080/api/v1';
-export const AUTH_API_URL = 'http://localhost:8085/api/fanf1x/v1/auth';
+// API URLs
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+export const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:8085/api/fanf1x/v1/auth';
 
 // Local storage keys
 export const STORAGE_KEYS = {

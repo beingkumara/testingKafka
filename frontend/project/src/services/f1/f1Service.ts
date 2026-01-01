@@ -86,7 +86,12 @@ export const getLastRaceResults = async (): Promise<RaceResult[]> => {
       driver: result.Driver.givenName,
       team: result.Constructor.name,
       time: result.Time ? result.Time.time : 'N/A',
-      points: parseInt(result.points, 10)
+      points: parseInt(result.points, 10),
+      // Added new fields
+      raceName: result.raceName,
+      date: result.date,
+      circuit: '', // Default or fetch if needed
+      fastestLap: '' // Default or fetch if needed
     }));
   } catch (error) {
     console.error('Error fetching last race results:', error);
@@ -104,7 +109,7 @@ export const getDrivers = async (): Promise<Driver[]> => {
 
     return data.map((driver: DriverFromAPI) => {
       // Use driverId if available, otherwise fallback to _id
-      const driverId = driver.driverId || driver._id;
+      const driverId = (driver as any).driverId || driver._id;
 
       return {
         id: driverId,
@@ -196,7 +201,7 @@ export const getRaceResultsByYearAndRound = async (year: number, round: number):
       return {
         position,
         driver: result.driver || 'Unknown Driver',
-        team: result.constructor || 'Unknown Team',
+        team: result['constructor'] || 'Unknown Team',
         time: result.time || 'N/A',
         fastestLap: result.fastestLap || 'N/A',
         points: parseInt(result.points, 10) || 0,

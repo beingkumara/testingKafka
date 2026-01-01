@@ -167,7 +167,7 @@ const Sidebar: React.FC = () => {
         >
           <div className="flex items-center mb-3 pb-2 border-b border-white/10">
             <Sparkles className="h-4 w-4 text-primary-500 mr-2 animate-pulse-slow" />
-            <h4 className="font-heading text-xs text-gray-300 tracking-widest uppercase">Live Telemetry</h4>
+            <h4 className="font-heading text-xs text-gray-300 tracking-widest uppercase">Season Highlights</h4>
           </div>
           <div className="space-y-3">
             <div className="flex justify-between items-center group">

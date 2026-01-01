@@ -138,6 +138,8 @@ export interface RaceResultFromAPI {
     name: string;
     nationality: string;
   };
+  raceName: string;
+  date: string;
 
 }
 

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Sun, Moon, User, LogOut, ChevronDown, Flag, Trophy, BarChart3, Calendar } from 'lucide-react';
+import { Menu, X, User, LogOut, ChevronDown, Flag, Trophy, BarChart3, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+
 import Logo from '../ui/Logo';
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -61,10 +61,6 @@ const Header: React.FC = () => {
           >
             <Link to="/" className="flex items-center group">
               <Logo className="h-8 w-auto md:h-10 transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_0_10px_rgba(225,6,0,0.5)]" />
-              <div className="ml-3 hidden md:block">
-                <span className="block font-heading text-lg leading-none tracking-widest">FanF1x</span>
-                <span className="block text-[10px] text-primary-500 font-mono tracking-[0.2em] uppercase">Telemetry</span>
-              </div>
             </Link>
           </motion.div>
 
@@ -195,24 +191,13 @@ const Header: React.FC = () => {
               )}
 
               {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="p-2 text-gray-400 hover:text-primary-500 transition-colors"
-                aria-label="Toggle theme"
-              >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
+
             </div>
           </motion.nav>
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center">
-            <button
-              onClick={toggleTheme}
-              className="p-2 mr-2 text-gray-400 hover:text-primary-500 transition-colors"
-            >
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
+
             <button
               onClick={toggleMobileMenu}
               className="p-2 text-white hover:text-primary-500 transition-colors"

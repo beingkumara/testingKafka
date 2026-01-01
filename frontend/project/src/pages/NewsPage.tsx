@@ -11,12 +11,12 @@ const NewsPage: React.FC = () => {
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMorePages, setHasMorePages] = useState(false);
   const [totalArticles, setTotalArticles] = useState(0);
-  
+
   // Filter states
   const [fromDate, setFromDate] = useState<string>('');
   const [toDate, setToDate] = useState<string>('');
@@ -24,16 +24,16 @@ const NewsPage: React.FC = () => {
   const fetchNews = async (page: number = 1, filters: Record<string, any> = {}) => {
     try {
       setIsFiltering(true);
-      
+
       // Add pagination parameters
       const params = {
         ...filters,
         page,
         pageSize: ARTICLES_PER_PAGE
       };
-      
+
       const response: NewsResponse = await getF1News(params);
-      
+
       setNews(response.articles);
       setHasMorePages(response.hasMore);
       setTotalArticles(response.totalCount);
@@ -49,10 +49,10 @@ const NewsPage: React.FC = () => {
     const fetchInitialData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch news data
         const newsResponse = await getF1News({ page: 1, pageSize: ARTICLES_PER_PAGE });
-        
+
         setNews(newsResponse.articles);
         setHasMorePages(newsResponse.hasMore);
         setTotalArticles(newsResponse.totalCount);
@@ -62,16 +62,16 @@ const NewsPage: React.FC = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchInitialData();
   }, []);
-  
+
   const handlePageChange = (newPage: number) => {
     if (newPage < 1) return;
-    
+
     // Create filter object with the current filters
     const filters: Record<string, any> = {};
-    
+
     // Format dates
     if (fromDate) {
       const fromDateObj = new Date(fromDate);
@@ -82,15 +82,15 @@ const NewsPage: React.FC = () => {
       toDateObj.setHours(23, 59, 59, 999);
       filters.toDate = toDateObj.toISOString().split('T')[0];
     }
-    
+
     fetchNews(newPage, filters);
   };
-  
+
   const handleFilterApply = async () => {
     try {
       // Create filter object with the correct property names and format dates
       const filters: Record<string, any> = {};
-      
+
       // Format dates to YYYY-MM-DD format expected by the API
       if (fromDate) {
         const fromDateObj = new Date(fromDate);
@@ -102,31 +102,31 @@ const NewsPage: React.FC = () => {
         toDateObj.setHours(23, 59, 59, 999);
         filters.toDate = toDateObj.toISOString().split('T')[0];
       }
-      
+
       // Reset to first page when applying new filters
       fetchNews(1, filters);
     } catch (error) {
       console.error('Error applying filters:', error);
     }
   };
-  
+
   const handleClearFilters = async () => {
     setFromDate('');
     setToDate('');
-    
+
     // Reset to first page and clear filters
     fetchNews(1);
   };
-  
+
   // Handle manual date input changes
   const handleFromDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFromDate(e.target.value);
   };
-  
+
   const handleToDateInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setToDate(e.target.value);
   };
-  
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -135,7 +135,7 @@ const NewsPage: React.FC = () => {
       day: 'numeric'
     });
   };
-  
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', {
@@ -143,11 +143,11 @@ const NewsPage: React.FC = () => {
       minute: '2-digit'
     });
   };
-  
+
   if (isLoading) {
     return <LoadingScreen />;
   }
-  
+
   return (
     <>
       <motion.div
@@ -161,17 +161,17 @@ const NewsPage: React.FC = () => {
             Latest news and updates from the world of Formula 1
           </p>
         </div>
-        
+
         <div className="card mb-8">
           <div className="p-6 border-b border-dark-200 dark:border-dark-700">
             <h3 className="text-xl font-bold mb-4 flex items-center">
               <Filter className="h-5 w-5 mr-2 text-primary-500" />
               Filter News
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-dark-600 dark:text-dark-300">From Date</label>
+                <label className="block text-sm font-medium mb-1.5 text-gray-300">From Date</label>
                 <div className="relative">
                   <input
                     type="date"
@@ -184,9 +184,9 @@ const NewsPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-dark-600 dark:text-dark-300">To Date</label>
+                <label className="block text-sm font-medium mb-1.5 text-gray-300">To Date</label>
                 <div className="relative">
                   <input
                     type="date"
@@ -201,18 +201,18 @@ const NewsPage: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          <div className="px-4 py-3 flex justify-end space-x-3 bg-dark-50 dark:bg-dark-800/50 border-t border-dark-100 dark:border-dark-700">
-            <button 
-              className="px-3 py-1.5 text-sm font-medium rounded-md border border-dark-200 dark:border-dark-600 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700 transition-colors flex items-center"
+
+          <div className="px-4 py-3 flex justify-end space-x-3 bg-transparent border-t border-dark-100 dark:border-dark-700">
+            <button
+              className="px-3 py-1.5 text-sm font-medium rounded-md border border-dark-200 dark:border-dark-500 text-gray-300 hover:text-dark-900 dark:hover:text-white hover:bg-dark-50 dark:hover:bg-dark-700 transition-colors flex items-center"
               onClick={handleClearFilters}
               disabled={isFiltering}
             >
               <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFiltering ? 'animate-spin' : ''}`} />
               Reset
             </button>
-            
-            <button 
+
+            <button
               className="px-3 py-1.5 text-sm font-medium rounded-md bg-primary-500 text-white hover:bg-primary-600 transition-colors flex items-center"
               onClick={handleFilterApply}
               disabled={isFiltering}
@@ -222,7 +222,7 @@ const NewsPage: React.FC = () => {
             </button>
           </div>
         </div>
-        
+
         <div className="space-y-6">
           {news.length > 0 ? (
             <>
@@ -248,33 +248,33 @@ const NewsPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="p-6 md:col-span-2">
                       <div className="flex flex-col mb-4">
                         <h2 className="text-2xl font-bold mb-2">{article.title}</h2>
                         <p className="text-secondary-600 dark:text-secondary-300 mb-4">
                           {article.description}
                         </p>
-                        
+
                         <div className="flex flex-wrap items-center text-sm text-secondary-500 dark:text-secondary-400 mb-4">
                           <span className="inline-block bg-secondary-100 dark:bg-secondary-700 px-2 py-1 rounded-md mr-3 mb-2">
                             {article.source.name}
                           </span>
-                          
+
                           <div className="flex items-center mr-4 mb-2">
                             <Calendar className="h-4 w-4 mr-1" />
                             {formatDate(article.publishedAt)}
                           </div>
-                          
+
                           <div className="flex items-center mb-2">
                             <Clock className="h-4 w-4 mr-1" />
                             {formatTime(article.publishedAt)}
                           </div>
                         </div>
-                        
-                        <a 
-                          href={article.url} 
-                          target="_blank" 
+
+                        <a
+                          href={article.url}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="btn btn-primary flex items-center self-start"
                         >
@@ -286,23 +286,22 @@ const NewsPage: React.FC = () => {
                   </div>
                 </motion.div>
               ))}
-              
+
               {/* Pagination Controls */}
               <div className="flex justify-center items-center mt-8 mb-4">
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1 || isFiltering}
-                    className={`flex items-center justify-center w-10 h-10 rounded-md border ${
-                      currentPage === 1
-                        ? 'border-dark-200 dark:border-dark-700 text-dark-400 dark:text-dark-500 cursor-not-allowed'
-                        : 'border-dark-200 dark:border-dark-600 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
-                    }`}
+                    className={`flex items-center justify-center w-10 h-10 rounded-md border ${currentPage === 1
+                      ? 'border-dark-200 dark:border-dark-700 text-dark-400 dark:text-dark-500 cursor-not-allowed'
+                      : 'border-dark-200 dark:border-dark-600 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
+                      }`}
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
-                  
+
                   {/* Wheel-like page number indicator */}
                   <div className="relative">
                     <div className="w-12 h-12 rounded-full border-4 border-primary-500 flex items-center justify-center bg-white dark:bg-dark-800 shadow-md">
@@ -313,15 +312,14 @@ const NewsPage: React.FC = () => {
                     {/* Decorative wheel spokes */}
                     <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-primary-500 border-dashed opacity-30 animate-spin-slow"></div>
                   </div>
-                  
+
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={!hasMorePages || isFiltering}
-                    className={`flex items-center justify-center w-10 h-10 rounded-md border ${
-                      !hasMorePages
-                        ? 'border-dark-200 dark:border-dark-700 text-dark-400 dark:text-dark-500 cursor-not-allowed'
-                        : 'border-dark-200 dark:border-dark-600 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
-                    }`}
+                    className={`flex items-center justify-center w-10 h-10 rounded-md border ${!hasMorePages
+                      ? 'border-dark-200 dark:border-dark-700 text-dark-400 dark:text-dark-500 cursor-not-allowed'
+                      : 'border-dark-200 dark:border-dark-600 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
+                      }`}
                     aria-label="Next page"
                   >
                     <ChevronRight className="h-5 w-5" />
@@ -339,7 +337,7 @@ const NewsPage: React.FC = () => {
                 <p className="text-secondary-400 dark:text-secondary-500 mb-6">
                   Try adjusting your filters or check back later for updates
                 </p>
-                <button 
+                <button
                   className="btn btn-outline-secondary"
                   onClick={handleClearFilters}
                 >

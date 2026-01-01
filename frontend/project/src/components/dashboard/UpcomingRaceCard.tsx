@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+
+import { Calendar, MapPin, Clock, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Calendar, Clock, MapPin, ChevronRight, Timer } from 'lucide-react';
 import { Race } from '../../types/f1.types';
 
 interface UpcomingRaceCardProps {
@@ -9,119 +9,126 @@ interface UpcomingRaceCardProps {
 }
 
 const UpcomingRaceCard: React.FC<UpcomingRaceCardProps> = ({ races }) => {
-    const upcomingRaces = races.filter(race => !race.completed);
-    const nextRace = upcomingRaces.length > 0 ? upcomingRaces[0] : null;
-    const subsequentRaces = upcomingRaces.slice(1, 4);
+    // Filter for future races and take the next few
+    // Assuming 'races' passed in are already sorted or filtered by the hook, but let's be safe if we had full list
+    // Ideally the hook provides upcoming races. Let's assume the passed 'races' list starts with the next upcoming race.
+    const upcomingRaces = races
+        .filter((r) => new Date(r.date) >= new Date())
+        .slice(0, 4);
+    const nextRace = upcomingRaces[0];
+    const laterRaces = upcomingRaces.slice(1);
 
-    if (!nextRace) return (
-        <div className="telemetry-card flex items-center justify-center p-8">
-            <span className="text-gray-500 font-mono">SEASON COMPLETE</span>
-        </div>
-    );
+    if (!nextRace) {
+        return (
+            <div className="telemetry-card h-full flex flex-col justify-center items-center text-gray-500 font-mono text-sm p-8">
+                No upcoming races scheduled
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-6">
-            {/* NEXT GP HERO CARD */}
-            <div className="telemetry-card relative overflow-hidden group">
-                {/* Background Image / Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-dark-900 via-dark-800 to-primary-900/20 z-0"></div>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-
-                {/* Content */}
-                <div className="relative z-10 p-1">
-                    <div className="flex justify-between items-start mb-6">
-                        <div>
-                            <span className="inline-block px-2 py-0.5 rounded bg-primary-600 text-white text-[10px] font-bold tracking-widest uppercase mb-2 shadow-glow-red animate-pulse-slow">
-                                NEXT GRAND PRIX
-                            </span>
-                            <h2 className="font-heading text-2xl text-white uppercase leading-tight max-w-[200px] drop-shadow-lg">
-                                {nextRace.name.replace('Grand Prix', '')} <span className="text-primary-500">GP</span>
-                            </h2>
-                        </div>
-                        <div className="text-right">
-                            <div className="font-mono text-3xl font-bold text-white tracking-tighter">
-                                {new Date(nextRace.date).getDate()}
-                            </div>
-                            <div className="font-mono text-xs text-gray-400 uppercase tracking-widest">
-                                {new Date(nextRace.date).toLocaleDateString('en-US', { month: 'short' })}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Circuit Map Placeholder */}
-                    <div className="h-48 relative flex items-center justify-center my-4 group-hover:scale-105 transition-transform duration-700">
-                        {/* We would ideally use the circuit image here if available, otherwise a placeholder */}
-                        <img
-                            src={nextRace.image || '/images/circuits/placeholder.png'}
-                            alt={nextRace.circuit}
-                            className="max-h-full max-w-full object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] invert opacity-80"
-                            onError={(e) => {
-                                // Fallback if image fails
-                                (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                        />
-                        {!nextRace.image && (
-                            <div className="text-gray-600 font-mono text-xs border border-gray-700 p-4 rounded bg-dark-800/50 backdrop-blur-sm">
-                                [CIRCUIT MAP DATA UNAVAILABLE]
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mt-6 border-t border-white/10 pt-4">
-                        <div className="flex items-center gap-3">
-                            <Clock className="w-4 h-4 text-primary-500" />
-                            <div>
-                                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Qualifying</div>
-                                <div className="font-mono text-sm text-white">SAT 14:00</div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Flag className="w-4 h-4 text-accent-500" />
-                            <div>
-                                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Race</div>
-                                <div className="font-mono text-sm text-white">SUN {nextRace.time || '15:00'}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Countdown / CTA */}
-                    <div className="mt-6">
-                        <Link
-                            to={`/races/${nextRace.id}`}
-                            className="w-full btn-primary text-center block"
-                        >
-                            Race Hub
-                        </Link>
-                    </div>
+        <div className="telemetry-card group h-full flex flex-col">
+            <div className="flex items-center justify-between mb-6 pb-2 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary-500" />
+                    <h2 className="font-heading text-lg tracking-widest uppercase text-white">Next Grand Prix</h2>
                 </div>
             </div>
 
-            {/* UPCOMING LIST */}
-            <div className="telemetry-card">
-                <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
-                    <h3 className="font-heading text-sm text-white uppercase tracking-widest">Calendar</h3>
-                    <Link to="/races" className="text-primary-500 hover:text-white transition-colors"><ChevronRight className="w-4 h-4" /></Link>
-                </div>
+            <div className="flex-1 flex flex-col gap-6">
+                {/* Main Featured Next Race */}
+                <div className="relative rounded-lg overflow-hidden group/race cursor-pointer border border-white/10 hover:border-primary-500/50 transition-colors">
+                    {nextRace.image && (
+                        <div className="absolute inset-0">
+                            <img
+                                src={nextRace.image}
+                                alt={nextRace.name}
+                                className="w-full h-full object-cover opacity-20 group-hover/race:opacity-30 transition-opacity duration-500"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-dark-950 via-dark-900/50 to-transparent"></div>
+                        </div>
+                    )}
 
-                <div className="space-y-4">
-                    {subsequentRaces.map((race) => (
-                        <div key={race.id} className="flex items-center justify-between group cursor-pointer hover:bg-white/5 p-2 rounded transition-colors">
-                            <div className="flex items-center gap-3">
-                                <div className="flex flex-col items-center justify-center w-10 h-10 rounded bg-dark-800 border border-white/10 group-hover:border-primary-500 transition-colors">
-                                    <span className="font-mono text-xs text-gray-400 uppercase">{new Date(race.date).toLocaleDateString('en-US', { month: 'short' }).substring(0, 3)}</span>
-                                    <span className="font-mono text-sm font-bold text-white">{new Date(race.date).getDate()}</span>
+                    <div className="relative p-5 space-y-4">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-primary-500 text-xs font-mono font-bold uppercase tracking-widest">
+                                Round {nextRace.round}
+                            </div>
+                            <h3 className="text-2xl font-heading font-bold text-white leading-tight">
+                                {nextRace.name}
+                            </h3>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-2">
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded bg-white/5 text-primary-500">
+                                    <MapPin className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <div className="font-bold text-xs text-white uppercase group-hover:text-primary-500 transition-colors">{race.country}</div>
-                                    <div className="text-[10px] text-gray-500 truncate max-w-[120px]">{race.circuit}</div>
+                                    <div className="text-xs text-gray-400 uppercase tracking-wider font-bold">Circuit</div>
+                                    <div className="text-sm text-gray-200 font-medium leading-snug">{nextRace.circuit}</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">{nextRace.country}</div>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <span className="font-mono text-xs text-gray-500 block">R{race.round}</span>
+
+                            <div className="flex items-start gap-3">
+                                <div className="p-2 rounded bg-white/5 text-primary-500">
+                                    <Clock className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="text-xs text-gray-400 uppercase tracking-wider font-bold">Race Day</div>
+                                    <div className="text-sm text-gray-200 font-medium leading-snug">{new Date(nextRace.date).toLocaleDateString()}</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">{nextRace.time}</div>
+                                </div>
                             </div>
                         </div>
-                    ))}
+
+                        {/* Countdown Mockup (Optional - simplistic for now) */}
+                        <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center">
+                            <span className="text-xs text-gray-400 uppercase tracking-wider">Race Start In</span>
+                            <span className="font-mono text-primary-500 font-bold">
+                                {new Date(nextRace.date) > new Date() ? 'COMING SOON' : 'Replay Available'}
+                            </span>
+                        </div>
+                    </div>
                 </div>
+
+                {/* List of following races */}
+                {laterRaces.length > 0 && (
+                    <div className="space-y-3">
+                        <h4 className="text-xs font-mono text-gray-500 uppercase tracking-widest pl-1">Following Events</h4>
+                        {laterRaces.map((race) => (
+                            <Link
+                                to={`/races/${race.id}`}
+                                key={race.id}
+                                className="flex items-center justify-between p-3 rounded bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/10 transition-all group/item"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="text-center w-8">
+                                        <div className="text-[10px] text-gray-500 font-bold uppercase">{new Date(race.date).toLocaleString('default', { month: 'short' })}</div>
+                                        <div className="text-lg font-bold text-white leading-none">{new Date(race.date).getDate()}</div>
+                                    </div>
+                                    <div className="w-px h-8 bg-white/10"></div>
+                                    <div>
+                                        <div className="text-sm font-bold text-gray-200 group-hover/item:text-white transition-colors">{race.name}</div>
+                                        <div className="text-xs text-gray-500">{race.country}</div>
+                                    </div>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-gray-600 group-hover/item:text-primary-500 transition-colors" />
+                            </Link>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-white/5 flex justify-end">
+                <Link
+                    to="/races"
+                    className="flex items-center gap-2 text-xs font-heading uppercase tracking-widest text-gray-400 hover:text-white transition-colors group/link"
+                >
+                    Full Schedule
+                    <ChevronRight className="w-4 h-4 text-primary-500 transition-transform group-hover/link:translate-x-1" />
+                </Link>
             </div>
         </div>
     );

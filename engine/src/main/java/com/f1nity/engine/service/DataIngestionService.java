@@ -868,7 +868,13 @@ public class DataIngestionService {
         }
 
         if (latestRaceWithResults != null) {
-            return latestRaceWithResults.getResults();
+            List<Result> results = latestRaceWithResults.getResults();
+            // Populate transient fields for UI display
+            for (Result result : results) {
+                result.setRaceName(latestRaceWithResults.getRaceName());
+                result.setDate(latestRaceWithResults.getDate());
+            }
+            return results;
         } else {
             // Fallback to fetch if not found
             // return fetchAndStoreLatestRaceResults(null);

@@ -1,6 +1,5 @@
 package com.f1nity.library.models.engine;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -16,18 +15,38 @@ public class Result {
     private String Q1;
     private String Q2;
     private String Q3;
-    
+
     @JsonProperty("FastestLap")
     private FastestLap fastestLap;
-    
+
     @JsonProperty("Time")
     private Time time;
-    
+
     @JsonProperty("Driver")
     private ErgastDriver driver;
-    
+
     @JsonProperty("Constructor")
     private ErgastConstructor constructor;
+
+    // Added to support display in UI
+    private String raceName;
+    private String date;
+
+    public String getRaceName() {
+        return raceName;
+    }
+
+    public void setRaceName(String raceName) {
+        this.raceName = raceName;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
 
     public String getNumber() {
         return number;
@@ -109,7 +128,6 @@ public class Result {
         this.constructor = constructor;
     }
 
-    
     public String getQ1() {
         return Q1;
     }
@@ -134,7 +152,6 @@ public class Result {
         Q3 = q3;
     }
 
-    
     @Override
     public String toString() {
         return "Result [number=" + number + ", position=" + position + ", positionText=" + positionText + ", points="

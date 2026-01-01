@@ -1,21 +1,10 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Clock, ChevronRight, Flag, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, ChevronRight, Flag, CheckCircle } from 'lucide-react';
 import { getRaces } from '../services';
 import LoadingScreen from '../components/ui/LoadingScreen';
 import { Link } from 'react-router-dom';
-
-interface Race {
-  id: number;
-  name: string;
-  circuit: string;
-  date: string;
-  time: string;
-  country: string;
-  completed: boolean;
-  image: string;
-  round: number;
-}
+import { Race } from '../types/f1.types';
 
 const RacesPage: React.FC = () => {
   const [races, setRaces] = useState<Race[]>([]);
@@ -104,6 +93,7 @@ const RacesPage: React.FC = () => {
                 alt={`${race.circuit} layout`}
                 className="object-contain h-full w-full relative z-10 transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => e.currentTarget.style.display = 'none'}
+                referrerPolicy="no-referrer"
               />
               <div className="absolute top-0 right-0 p-3">
                 <span className="font-mono text-4xl font-bold text-black/20 select-none">{String(race.round).padStart(2, '0')}</span>

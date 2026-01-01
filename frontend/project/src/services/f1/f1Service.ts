@@ -164,7 +164,7 @@ export const getRaces = async (): Promise<Race[]> => {
         circuit: race.Circuit.circuitName,
         round: parseInt(race.round),
         completed: now > raceDateTime,
-        image: race.Circuit.url,
+        image: race.circuitImageUrl || race.Circuit.url || '/images/circuits/monaco.png',
       };
     });
   } catch (error) {

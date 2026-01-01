@@ -80,6 +80,7 @@ export interface RaceFromAPI {
   country: string;
   completed: boolean;
   image: string;
+  circuitImageUrl?: string;
 }
 
 export interface Circuit {

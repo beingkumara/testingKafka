@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Calendar,
-  Clock,
   MapPin,
   Trophy,
   Flag,
@@ -11,7 +9,6 @@ import {
   AlertCircle,
   Timer,
   Layers,
-  ChevronRight
 } from 'lucide-react';
 import { getRaceById } from '../services';
 import LoadingScreen from '../components/ui/LoadingScreen';
@@ -28,12 +25,12 @@ interface RaceDetails {
     circuitId: string;
     url: string;
     circuitName: string;
+    image?: string;
     location: {
       lat: string;
       _long: string;
       locality: string;
       country: string;
-      image?: string; // Add optional image if API supports it later
     }
   };
   firstPractice: { date: string; time: string };
@@ -159,13 +156,12 @@ const RaceDetailsPage: React.FC = () => {
             <div className="bg-white/5 rounded-lg p-4 flex items-center justify-center min-h-[200px]">
               {/* Placeholder for circuit map - in real app would rely on raceDetails.circuit.url or local asset */}
               <img
-                src={raceDetails.circuit.url} // Often a Wikipedia link, so might break as image source directly if not an image URL. Assuming valid image URL or fallback.
+                src={raceDetails.circuit.image || raceDetails.circuit.url}
                 alt="Circuit Map"
                 className="w-full h-full object-contain invert opacity-80"
+                referrerPolicy="no-referrer"
                 onError={(e) => {
-                  // If wiki link is not an image (likely), show placeholder logic or hide
-                  e.currentTarget.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Circuit_Red_Bull_Ring.svg/1200px-Circuit_Red_Bull_Ring.svg.png'; // Placeholder for demo
-                  e.currentTarget.style.opacity = '0.5';
+                  e.currentTarget.style.display = 'none';
                 }}
               />
             </div>

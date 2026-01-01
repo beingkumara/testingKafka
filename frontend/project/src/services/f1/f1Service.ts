@@ -249,7 +249,8 @@ export const getRaceById = async (id: string): Promise<any> => {
           lat: data.Circuit?.Location?.lat || '',
           _long: data.Circuit?.Location?.long || '', // Note: backend uses 'long', frontend expects '_long'
           locality: data.Circuit?.Location?.locality || '',
-          country: data.Circuit?.Location?.country || ''
+          country: data.Circuit?.Location?.country || '',
+          image: data.circuitImageUrl || data.Circuit?.url || ''
         }
       },
       // Map the practice sessions (backend uses capitalized names)

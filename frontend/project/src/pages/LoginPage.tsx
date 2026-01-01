@@ -48,7 +48,7 @@ const LoginPage: React.FC = () => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="card"
+            className="glass-card"
           >
             <div className="p-8">
               <div className="text-center mb-8">

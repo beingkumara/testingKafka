@@ -76,7 +76,7 @@
 
   /* Input Fields */
   .f1-input {
-    @apply bg-dark-800/80 border border-dark-600 text-white px-4 py-3 rounded-md focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all duration-300 font-mono text-sm shadow-inner;
+    @apply w-full bg-dark-800/80 border border-dark-600 text-white px-4 py-3 rounded-md focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all duration-300 font-mono text-sm shadow-inner;
   }
 
   /* Telemetry/Data Cards */

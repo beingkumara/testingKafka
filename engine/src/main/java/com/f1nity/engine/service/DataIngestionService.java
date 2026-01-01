@@ -903,13 +903,21 @@ public class DataIngestionService {
         List<Race> races = raceRepo.findAll();
         String currentDate = LocalDate.now().toString();
         Race latestRaceWithResults = null;
-        String latestRound = null;
+        int maxRound = -1;
 
         for (Race race : races) {
             if (race.getResults() != null && !race.getResults().isEmpty() &&
                     race.getDate() != null && race.getDate().compareTo(currentDate) <= 0) {
-                if (latestRound == null || (race.getRound() != null && race.getRound().compareTo(latestRound) > 0)) {
-                    latestRound = race.getRound();
+
+                int currentRound = 0;
+                try {
+                    currentRound = Integer.parseInt(race.getRound());
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+
+                if (currentRound > maxRound) {
+                    maxRound = currentRound;
                     latestRaceWithResults = race;
                 }
             }

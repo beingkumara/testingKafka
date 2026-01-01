@@ -280,7 +280,21 @@ public class DataIngestionService {
                     if (year == 2025) {
                         for (int i = 0; i < results.size(); i++) {
                             Result result = results.get(i);
-                            Race existingRace = raceRepo.findBySeasonAndRound(String.valueOf(year), currentRound);
+
+                            List<Race> existingRaces = raceRepo.findBySeasonAndRound(String.valueOf(year),
+                                    currentRound);
+                            Race existingRace = null;
+                            if (existingRaces != null && !existingRaces.isEmpty()) {
+                                existingRace = existingRaces.get(0);
+                                if (existingRaces.size() > 1) {
+                                    System.out.println("Found duplicate races for " + year + " round " + currentRound
+                                            + ". Cleaning up " + (existingRaces.size() - 1) + " duplicates.");
+                                    for (int j = 1; j < existingRaces.size(); j++) {
+                                        raceRepo.delete(existingRaces.get(j));
+                                    }
+                                }
+                            }
+
                             if (existingRace != null) {
                                 existingRace.setStandingsUpdated(true);
                                 updateRaces.put(currentRound, existingRace);
@@ -701,8 +715,30 @@ public class DataIngestionService {
         RaceResponse response = ergastClient.getRaces(2025);
         if (response != null && response.getMrData() != null) {
             List<Race> races = response.getMrData().getRaceTable().getRaces();
-            raceRepo.saveAll(races);
-            return races;
+            List<Race> savedRaces = new ArrayList<>();
+            for (Race r : races) {
+                // Upsert logic to prevent duplicates
+                List<Race> existing = raceRepo.findBySeasonAndRound(r.getSeason(), r.getRound());
+                if (existing != null && !existing.isEmpty()) {
+                    Race current = existing.get(0);
+                    // Cleanup potential duplicates
+                    if (existing.size() > 1) {
+                        for (int j = 1; j < existing.size(); j++) {
+                            raceRepo.delete(existing.get(j));
+                        }
+                    }
+                    current.setDate(r.getDate());
+                    current.setTime(r.getTime());
+                    current.setRaceName(r.getRaceName());
+                    current.setCircuit(r.getCircuit());
+                    current.setUrl(r.getUrl());
+                    // Copy other fields if necessary
+                    savedRaces.add(raceRepo.save(current));
+                } else {
+                    savedRaces.add(raceRepo.save(r));
+                }
+            }
+            return savedRaces;
         }
         return Collections.emptyList();
     }
@@ -742,12 +778,22 @@ public class DataIngestionService {
             }
 
             // Update Race entity
-            Race existingRace = raceRepo.findBySeasonAndRound(year, round);
-            if (existingRace != null) {
+            List<Race> existingRaces = raceRepo.findBySeasonAndRound(year, round);
+            Race existingRace = null;
+
+            if (existingRaces != null && !existingRaces.isEmpty()) {
+                existingRace = existingRaces.get(0);
+                // Cleanup duplicates
+                if (existingRaces.size() > 1) {
+                    System.out.println("Cleaning up " + (existingRaces.size() - 1) + " duplicate races for " + year
+                            + " round " + round);
+                    for (int k = 1; k < existingRaces.size(); k++) {
+                        raceRepo.delete(existingRaces.get(k));
+                    }
+                }
+
                 existingRace.setResults(results);
                 existingRace.setStandingsUpdated(true);
-                // Also update possibly missing fields like circuit if needed, but results are
-                // key
                 raceRepo.save(existingRace);
             } else {
                 // If race doesn't exist (unlikely if accumulated), save it

@@ -11,5 +11,6 @@ import com.f1nity.library.models.engine.Race;
 public interface RaceRepository extends MongoRepository<Race, String> {
     // Default methods from MongoRepository are sufficient for current needs
     public Race findByRound(String round);
-    public Race findBySeasonAndRound(String season, String round);
+
+    public java.util.List<Race> findBySeasonAndRound(String season, String round);
 }

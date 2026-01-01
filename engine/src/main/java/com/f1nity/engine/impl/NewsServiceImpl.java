@@ -120,7 +120,11 @@ public class NewsServiceImpl implements NewsService {
     public void init() {
         this.webClient = webClientBuilder.baseUrl(apiUrl).build();
         try {
-            java.net.URI uri = java.net.URI.create(redisUrl);
+            String formattedUrl = redisUrl;
+            if (!formattedUrl.startsWith("redis://") && !formattedUrl.startsWith("rediss://")) {
+                formattedUrl = "redis://" + formattedUrl;
+            }
+            java.net.URI uri = java.net.URI.create(formattedUrl);
             this.jedisPool = new JedisPool(uri);
             System.out.println("Initialized Redis connection to " + uri.getHost());
         } catch (Exception e) {

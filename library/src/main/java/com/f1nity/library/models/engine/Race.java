@@ -1,6 +1,5 @@
 package com.f1nity.library.models.engine;
 
-
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
@@ -21,10 +20,19 @@ public class Race {
     private String date;
     private String time;
 
-    
     @JsonProperty("Circuit")
     private Circuit circuit;
-    
+
+    private String circuitImageUrl;
+
+    public String getCircuitImageUrl() {
+        return circuitImageUrl;
+    }
+
+    public void setCircuitImageUrl(String circuitImageUrl) {
+        this.circuitImageUrl = circuitImageUrl;
+    }
+
     @JsonProperty("Results")
     private List<Result> results;
 
@@ -53,6 +61,7 @@ public class Race {
     private Practice sprintQualifying;
 
     private boolean standingsUpdated;
+
     public String getId() {
         return id;
     }
@@ -187,7 +196,7 @@ public class Race {
         this.qualifying = qualifying;
     }
 
-    public static class Practice{
+    public static class Practice {
         private String date;
         private String time;
 
@@ -212,7 +221,6 @@ public class Race {
         return sprintQualifying;
     }
 
-    
     public void setSprintQualifying(Practice sprintQualifying) {
         this.sprintQualifying = sprintQualifying;
     }
@@ -221,7 +229,7 @@ public class Race {
         return standingsUpdated;
     }
 
-    public void setStandingsUpdated(boolean updated){
+    public void setStandingsUpdated(boolean updated) {
         this.standingsUpdated = updated;
     }
 

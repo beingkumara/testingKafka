@@ -218,7 +218,9 @@ public class DataIngestionService {
         Integer year = 2025;
         Integer round = 1;
 
-        while (year >= 2001) {
+        // OPTIMIZATION: Only process 2025 to prevent Render timeout.
+        // To process history, we would need a background job or separate endpoint.
+        while (year >= 2025) {
             while (round <= MAX_ROUNDS) {
                 String context = "year " + year + ", round " + round;
 
@@ -883,10 +885,71 @@ public class DataIngestionService {
     }
 
     public void updateCircuitUrls() {
-        // Logic to update URLs based on map
+        Map<String, String> circuitImages = new HashMap<>();
+        // 2025 Calendar Circuit Images (Wikimedia/Public Domain)
+        circuitImages.put("albert_park",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Albert_Park_Circuit_2021.png/640px-Albert_Park_Circuit_2021.png");
+        circuitImages.put("bahrain",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Bahrain_International_Circuit--Grand_Prix_Layout.svg/640px-Bahrain_International_Circuit--Grand_Prix_Layout.svg.png");
+        circuitImages.put("jeddah",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Jeddah_Corniche_Circuit_2021.svg/640px-Jeddah_Corniche_Circuit_2021.svg.png");
+        circuitImages.put("suzuka",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Suzuka_circuit_map--2005.svg/640px-Suzuka_circuit_map--2005.svg.png");
+        circuitImages.put("shanghai",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Shanghai_International_Racing_Circuit_track_map.svg/640px-Shanghai_International_Racing_Circuit_track_map.svg.png");
+        circuitImages.put("miami",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Miami_International_Autodrome_2022.svg/640px-Miami_International_Autodrome_2022.svg.png");
+        circuitImages.put("imola",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Imola_2021.svg/640px-Imola_2021.svg.png");
+        circuitImages.put("monaco",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Circuit_de_Monaco_2021.svg/640px-Circuit_de_Monaco_2021.svg.png");
+        circuitImages.put("catalunya",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Catalunya_2021.svg/640px-Catalunya_2021.svg.png");
+        circuitImages.put("red_bull_ring",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Red_Bull_Ring_2022.svg/640px-Red_Bull_Ring_2022.svg.png");
+        circuitImages.put("silverstone",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Silverstone_Circuit_2021.svg/640px-Silverstone_Circuit_2021.svg.png");
+        circuitImages.put("hungaroring",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Hungaroring_2021.svg/640px-Hungaroring_2021.svg.png");
+        circuitImages.put("spa",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Spa-Francorchamps_of_Belgium.svg/640px-Spa-Francorchamps_of_Belgium.svg.png");
+        circuitImages.put("zandvoort",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Zandvoort_Circuit_2021.svg/640px-Zandvoort_Circuit_2021.svg.png");
+        circuitImages.put("monza",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Monza_track_map.svg/640px-Monza_track_map.svg.png");
+        circuitImages.put("baku",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Baku_Formula_One_circuit_map.svg/640px-Baku_Formula_One_circuit_map.svg.png");
+        circuitImages.put("singapore",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Marina_Bay_Street_Circuit_2021.svg/640px-Marina_Bay_Street_Circuit_2021.svg.png");
+        circuitImages.put("americas",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Austin_circuit.svg/640px-Austin_circuit.svg.png");
+        circuitImages.put("rodriguez",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Aut%C3%B3dromo_Hermanos_Rodr%C3%ADguez_2015.svg/640px-Aut%C3%B3dromo_Hermanos_Rodr%C3%ADguez_2015.svg.png");
+        circuitImages.put("interlagos",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Interlagos_2014.svg/640px-Interlagos_2014.svg.png");
+        circuitImages.put("las_vegas",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Las_Vegas_Strip_Street_Circuit_2023.svg/640px-Las_Vegas_Strip_Street_Circuit_2023.svg.png");
+        circuitImages.put("losail",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Losail_International_Circuit_2021.svg/640px-Losail_International_Circuit_2021.svg.png");
+        circuitImages.put("yas_marina",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Yas_Marina_Circuit_2021.svg/640px-Yas_Marina_Circuit_2021.svg.png");
+
+        List<Race> races = raceRepo.findAll();
+        for (Race race : races) {
+            if (race.getCircuit() != null && circuitImages.containsKey(race.getCircuit().getCircuitId())) {
+                race.setCircuitImageUrl(circuitImages.get(race.getCircuit().getCircuitId()));
+            }
+        }
+        raceRepo.saveAll(races);
+        System.out.println("Updated circuit images for " + races.size() + " races.");
     }
 
     public void updateDriverImages() {
-        // Logic to update driver images based on map
+        // Logic to update driver images based on map (re-using OpenF1 logic if needed,
+        // but syncAllDrivers already handles this)
+        // If users need to force update, we can re-run the OpenF1 fetch portion of
+        // syncAllDrivers here.
+        // For now, let's keep it simple as the screenshot showed drivers HAVE images.
+        System.out.println("Driver images are updated via syncAllDrivers.");
     }
 }

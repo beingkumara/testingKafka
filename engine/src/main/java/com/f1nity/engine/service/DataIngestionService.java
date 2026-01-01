@@ -979,6 +979,14 @@ public class DataIngestionService {
                 "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Losail_International_Circuit_2021.svg/640px-Losail_International_Circuit_2021.svg.png");
         circuitImages.put("yas_marina",
                 "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Yas_Marina_Circuit_2021.svg/640px-Yas_Marina_Circuit_2021.svg.png");
+        circuitImages.put("las_vegas",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Las_Vegas_Strip_Street_Circuit_2023.svg/640px-Las_Vegas_Strip_Street_Circuit_2023.svg.png");
+        circuitImages.put("miami",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Miami_International_Autodrome_2022.svg/640px-Miami_International_Autodrome_2022.svg.png");
+        circuitImages.put("jeddah",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Jeddah_Corniche_Circuit_2021.svg/640px-Jeddah_Corniche_Circuit_2021.svg.png");
+        circuitImages.put("qatar",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Losail_International_Circuit_2021.svg/640px-Losail_International_Circuit_2021.svg.png");
 
         List<Race> races = raceRepo.findAll();
         for (Race race : races) {

@@ -280,7 +280,7 @@ public class DataIngestionService {
                     if (year == 2025) {
                         for (int i = 0; i < results.size(); i++) {
                             Result result = results.get(i);
-                            Race existingRace = raceRepo.findByRound(currentRound);
+                            Race existingRace = raceRepo.findBySeasonAndRound(String.valueOf(year), currentRound);
                             if (existingRace != null) {
                                 existingRace.setStandingsUpdated(true);
                                 updateRaces.put(currentRound, existingRace);
@@ -742,7 +742,7 @@ public class DataIngestionService {
             }
 
             // Update Race entity
-            Race existingRace = raceRepo.findByRound(round);
+            Race existingRace = raceRepo.findBySeasonAndRound(year, round);
             if (existingRace != null) {
                 existingRace.setResults(results);
                 existingRace.setStandingsUpdated(true);

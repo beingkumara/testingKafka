@@ -17,47 +17,47 @@ const SignupPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const passwordInputRef = React.useRef<HTMLInputElement>(null);
   const confirmPasswordInputRef = React.useRef<HTMLInputElement>(null);
-  
+
   const { signup } = useAuth();
   const navigate = useNavigate();
-  
+
   // Check if password meets requirements
   const validatePassword = (pass: string): { isValid: boolean; message: string } => {
     if (pass.length < 8) {
       return { isValid: false, message: 'Password must be at least 8 characters' };
     }
-    
+
     // Check for alphanumeric (at least one letter and one number)
     const hasLetter = /[a-zA-Z]/.test(pass);
     const hasNumber = /[0-9]/.test(pass);
-    
+
     if (!hasLetter || !hasNumber) {
       return { isValid: false, message: 'Password must contain both letters and numbers' };
     }
-    
+
     return { isValid: true, message: '' };
   };
-  
+
   // Calculate password strength
   const calculatePasswordStrength = (pass: string): number => {
     if (!pass) return 0;
-    
+
     let strength = 0;
-    
+
     // Length check
     if (pass.length >= 8) strength += 1;
     if (pass.length >= 12) strength += 1;
-    
+
     // Complexity checks
     if (/[a-z]/.test(pass)) strength += 1; // lowercase
     if (/[A-Z]/.test(pass)) strength += 1; // uppercase
     if (/[0-9]/.test(pass)) strength += 1; // numbers
     if (/[^a-zA-Z0-9]/.test(pass)) strength += 1; // special chars
-    
+
     // Scale to 0-100
     return Math.min(Math.floor((strength / 6) * 100), 100);
   };
-  
+
   // Validate email format
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -68,7 +68,7 @@ const SignupPage: React.FC = () => {
   useEffect(() => {
     const strength = calculatePasswordStrength(password);
     setPasswordStrength(strength);
-    
+
     if (strength === 0) {
       setPasswordFeedback('');
     } else if (strength < 40) {
@@ -79,7 +79,7 @@ const SignupPage: React.FC = () => {
       setPasswordFeedback('Strong');
     }
   }, [password]);
-  
+
   // Validate email when it changes
   useEffect(() => {
     if (email) {
@@ -92,31 +92,31 @@ const SignupPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
-    
+
     // Validation
     if (!name || !email || !password || !confirmPassword) {
       setFormError('Please fill in all fields');
       return;
     }
-    
+
     if (!validateEmail(email)) {
       setFormError('Please enter a valid email address');
       return;
     }
-    
+
     if (password !== confirmPassword) {
       setFormError('Passwords do not match');
       return;
     }
-    
+
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
       setFormError(passwordValidation.message);
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       await signup(name, email, password);
       navigate('/dashboard');
@@ -130,7 +130,7 @@ const SignupPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <div className="min-h-[calc(100vh-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
@@ -148,17 +148,17 @@ const SignupPage: React.FC = () => {
                   Join F1nity and elevate your Formula 1 experience
                 </p>
               </div>
-              
+
               {formError && (
                 <div className="bg-error-500/10 border border-error-500 text-error-500 p-3 rounded-md mb-6">
                   {formError}
                 </div>
               )}
-              
+
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">
-                  <label 
-                    htmlFor="name" 
+                  <label
+                    htmlFor="name"
                     className="block text-sm font-medium mb-1"
                   >
                     Full Name
@@ -168,15 +168,15 @@ const SignupPage: React.FC = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="input"
+                    className="f1-input"
                     placeholder="John Doe"
                     required
                   />
                 </div>
-                
+
                 <div className="mb-4">
-                  <label 
-                    htmlFor="email" 
+                  <label
+                    htmlFor="email"
                     className="block text-sm font-medium mb-1"
                   >
                     Email
@@ -186,7 +186,7 @@ const SignupPage: React.FC = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className={`input ${email && !isEmailValid ? 'border-error-500' : ''}`}
+                    className={`f1-input ${email && !isEmailValid ? 'border-error-500' : ''}`}
                     placeholder="your.email@example.com"
                     required
                   />
@@ -196,10 +196,10 @@ const SignupPage: React.FC = () => {
                     </p>
                   )}
                 </div>
-                
+
                 <div className="mb-4">
-                  <label 
-                    htmlFor="password" 
+                  <label
+                    htmlFor="password"
                     className="block text-sm font-medium mb-1"
                   >
                     Password
@@ -211,7 +211,7 @@ const SignupPage: React.FC = () => {
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="input pr-10"
+                      className="f1-input pr-10"
                       placeholder="Enter your password"
                       required
                       aria-describedby="password-requirements"
@@ -224,7 +224,7 @@ const SignupPage: React.FC = () => {
                         // Store current cursor position
                         const cursorPosition = passwordInputRef.current?.selectionStart || 0;
                         setShowPassword(!showPassword);
-                        // Return focus to the password input and restore cursor position
+                        // Return focus to the password f1-input and restore cursor position
                         setTimeout(() => {
                           if (passwordInputRef.current) {
                             passwordInputRef.current.focus();
@@ -254,21 +254,19 @@ const SignupPage: React.FC = () => {
                       <div className="mt-2">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-medium">Password Strength:</span>
-                          <span className={`text-xs font-medium ${
-                            passwordStrength < 40 ? 'text-error-500' : 
-                            passwordStrength < 70 ? 'text-warning-500' : 
-                            'text-success-500'
-                          }`}>
+                          <span className={`text-xs font-medium ${passwordStrength < 40 ? 'text-error-500' :
+                            passwordStrength < 70 ? 'text-warning-500' :
+                              'text-success-500'
+                            }`}>
                             {passwordFeedback}
                           </span>
                         </div>
                         <div className="h-1.5 w-full bg-secondary-200 dark:bg-secondary-700 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full ${
-                              passwordStrength < 40 ? 'bg-error-500' : 
-                              passwordStrength < 70 ? 'bg-warning-500' : 
-                              'bg-success-500'
-                            }`}
+                          <div
+                            className={`h-full ${passwordStrength < 40 ? 'bg-error-500' :
+                              passwordStrength < 70 ? 'bg-warning-500' :
+                                'bg-success-500'
+                              }`}
                             style={{ width: `${passwordStrength}%` }}
                           ></div>
                         </div>
@@ -287,10 +285,10 @@ const SignupPage: React.FC = () => {
                     </>
                   )}
                 </div>
-                
+
                 <div className="mb-6">
-                  <label 
-                    htmlFor="confirmPassword" 
+                  <label
+                    htmlFor="confirmPassword"
                     className="block text-sm font-medium mb-1"
                   >
                     Confirm Password
@@ -302,7 +300,7 @@ const SignupPage: React.FC = () => {
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="input pr-10"
+                      className="f1-input pr-10"
                       placeholder="Re-enter your password"
                       required
                     />
@@ -340,13 +338,12 @@ const SignupPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="mb-6">
                   <button
                     type="submit"
-                    className={`btn btn-primary w-full py-3 ${
-                      isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                    }`}
+                    className={`btn btn-primary w-full py-3 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                      }`}
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
@@ -359,13 +356,13 @@ const SignupPage: React.FC = () => {
                     )}
                   </button>
                 </div>
-                
+
                 <div className="text-center text-sm">
                   <span className="text-secondary-600 dark:text-secondary-300">
                     Already have an account?{' '}
                   </span>
-                  <Link 
-                    to="/login" 
+                  <Link
+                    to="/login"
                     className="text-primary-500 hover:text-primary-600 font-medium"
                   >
                     Log in
@@ -373,10 +370,10 @@ const SignupPage: React.FC = () => {
                 </div>
               </form>
             </div>
-            
+
             <div className="racing-line h-2 w-full"></div>
           </motion.div>
-          
+
           {/* Decorative F1 UI elements */}
           <div className="absolute -z-10 -top-6 -right-6 h-24 w-24 rounded-full border-8 border-dashed border-secondary-200 dark:border-secondary-700"></div>
           <div className="absolute -z-10 -bottom-4 -left-4 h-16 w-16 bg-primary-500/20 rounded-full blur-lg"></div>

@@ -18,16 +18,27 @@ public class ImageController {
     @GetMapping("/image-proxy")
     public ResponseEntity<byte[]> proxyImage(@RequestParam String url) {
         try {
-            // Basic validation to prevent open proxy abuse (optional but recommended)
+            // Basic validation
             if (!url.contains("wikimedia.org") && !url.contains("wikipedia.org")) {
                 return ResponseEntity.badRequest().build();
             }
 
-            ResponseEntity<byte[]> response = restTemplate.getForEntity(url, byte[].class);
+            // Set headers to mimic a browser
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.add("User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+
+            org.springframework.http.HttpEntity<String> entity = new org.springframework.http.HttpEntity<>(headers);
+
+            ResponseEntity<byte[]> response = restTemplate.exchange(
+                    url,
+                    org.springframework.http.HttpMethod.GET,
+                    entity,
+                    byte[].class);
 
             MediaType contentType = response.getHeaders().getContentType();
             if (contentType == null) {
-                contentType = MediaType.IMAGE_JPEG; // default
+                contentType = MediaType.IMAGE_JPEG;
             }
 
             return ResponseEntity.ok()

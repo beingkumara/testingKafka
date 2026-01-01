@@ -27,4 +27,5 @@ news:
     keywords: Formula 1,racing,Grand Prix
 redis:
   url: redis://localhost:6379
+  password: ""
   ttl: 86400

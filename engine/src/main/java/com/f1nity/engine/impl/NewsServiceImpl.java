@@ -116,6 +116,9 @@ public class NewsServiceImpl implements NewsService {
                 .create();
     }
 
+    @Value("${redis.password:}")
+    private String redisPassword;
+
     @jakarta.annotation.PostConstruct
     public void init() {
         this.webClient = webClientBuilder.baseUrl(apiUrl).build();
@@ -125,7 +128,26 @@ public class NewsServiceImpl implements NewsService {
                 formattedUrl = "redis://" + formattedUrl;
             }
             java.net.URI uri = java.net.URI.create(formattedUrl);
-            this.jedisPool = new JedisPool(uri);
+
+            String password = redisPassword;
+            if (password == null || password.isEmpty()) {
+                // Try to get from URI if not in env prop
+                if (uri.getUserInfo() != null) {
+                    String[] parts = uri.getUserInfo().split(":");
+                    if (parts.length > 1)
+                        password = parts[1];
+                    else if (parts.length == 1)
+                        password = parts[0];
+                }
+            }
+
+            if (password != null && !password.isEmpty()) {
+                this.jedisPool = new JedisPool(new redis.clients.jedis.JedisPoolConfig(), uri.getHost(), uri.getPort(),
+                        2000, password);
+            } else {
+                this.jedisPool = new JedisPool(uri);
+            }
+
             System.out.println("Initialized Redis connection to " + uri.getHost());
         } catch (Exception e) {
             System.err.println("Failed to initialize Redis connection: " + e.getMessage());

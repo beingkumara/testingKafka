@@ -1,0 +1,37 @@
+/**
+ * Application constants
+ */
+
+// API URLs
+// API URLs
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
+export const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:8085/api/fanf1x/v1/auth';
+
+// Local storage keys
+export const STORAGE_KEYS = {
+  AUTH_TOKEN: 'auth_token',
+};
+
+// Route paths
+export const ROUTES = {
+  HOME: '/',
+  LOGIN: '/login',
+  SIGNUP: '/signup',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password/:token',
+  DASHBOARD: '/dashboard',
+  PROFILE: '/profile',
+  DRIVERS: '/drivers',
+  DRIVER_DETAILS: '/drivers/:id',
+  RACES: '/races',
+  RACE_DETAILS: '/races/:id',
+  STANDINGS: '/standings',
+  RACE_RESULTS: '/race-results',
+  NEWS: '/news',
+};
+
+// App settings
+export const APP_SETTINGS = {
+  APP_NAME: 'FanF1x',
+  APP_DESCRIPTION: 'Formula 1 Analytics Platform',
+};

@@ -1,0 +1,56 @@
+server:
+  port: 8085
+
+spring:
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: authentication
+  
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: kumaracads@gmail.com
+    password: dxxm duqo jwjl ppbf
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 1012662831288-saksn9f9o1rm7itl3uuvamo0spt90oc0.apps.googleusercontent.com
+            client-secret: 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
+            scope: email, profile
+            redirect-uri: http://localhost:8085/api/f1nity/v1/auth/login/oauth2/code/google
+
+jwt:
+  private-key: MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDCtSx+u2UnAGKOFS8DmO72Eawllq3UsPf/qyDjz8u5edRxfkSjdC1XwB5Ng8xwx7x266ghJiiTqCF3FD1xTKxmwpVoW6CwR9L3Ax7MCa/RV67dpbu5iWWYpVb+Resb6DWglTIyDADBjYmHfu5lk5qPyeCeRCZab0MUXLQE2bWD87d1/6sSeIK/1YcywnJYUvh7plQHtPbFoPx9rN7L4FINAKWsdhDmfoZo8pGKQ9X3Jf41Pwxr/JW7jeAh/1y1HXePRcx4y7s+cYezcB9MUs0eaSOsCaG0BsRxxhA50aODXxZNrlR5jOgCy3ZZzbXYfB7oVJX3nwd+gY1kQ5SKJeOTAgMBAAECggEAQUfnPDJuTq5FXOfjVGxxKhVwx0WG0Lno3FKu+1KPNoePX+H692abUUF7p3eaEvIU0TZfr4WQszj6x2cE1rjjUKzK1Stra88Y/3KPX8+boC+q1Gudzi4v3wcIbMZadofbexSquLbnhf2Db+dx3KKpfq4r3kRxK38EWY5fWQT5Y9y7Ex8hPyUW7muN8m0jGsAKgRFeZ5MbALIfmr5DOeI5hEFsOaHiZT6IW43+N+cy7Cj83nwpHoUNaGjtIIjJfOUhvHw0SSipvhBr+OMatJlNKrDii8UJr7diwY0Qua1QS9JHs0i0kGIHGhsB40fJMO3rDCeZy9LtWVMKzTFVjsQGQQKBgQD7SACaTfualsgcFURc8g7m6mn1gH0aX8/4+hF6ewKCkxxvhM8FSQnFUnboK20JuzXCDmrHzC8zEyHyCb7IxGu37x8jI/6glFUcozjXIMch++4FraAGxlV//ZFNgazjUWXuCjrjgyD+fGCxCykZQux+HyvEyDvdxUTESNiEvOGuswKBgQDGXTPTufyb4KZIUJ1ZCGsJgPkUx7jTuGUXE70n5NMZTQCNUBc3thkaZpm/CrpiRGXZGph7QgYr6u5sQR+wFIw/1X0KyOmLaT/2xkSvVxWCnSB45XMzNJvz7N/EDOzK/mmRhUi7UOq/UCuZ1dFbOjH98ZFq1zridxeSZ42/p99noQKBgHXjyvyZ15Aoa4vZYnBk1B78HWgjtw3Xo8AAupCHA591G2MqoOGu6Zmc3dKBBTAKl+cKUoiYQBCrSkK+1bZliNALrMUUzxJRZTkBTtqHM0W7Z2lckvZ6uIRK14/QZedkOfka7ZPt4l3ixo5pWQfUARYO078H3iZmtaONNZ/Y6dzHAoGBAMQXSq6ZAyDM2VRPbNygt78zYgeq0AlsFXLUrn8Lc6tlNZB8hhcqynIQzxfN8SZHWy9dXTMrt5IesgcN8ddM2MAZuXy51DVenD7FDQ0QV1FBJuKcYF9UOH7PwPy7kjGxgoa6bYXOneD1zcRLXKSESPsynIAzuCA7fm/aMoQt3WlBAoGBAO8h84uSDQNsOfgs8+3V3wowlgJ2zEoHWhry4/VCpDC0h8lihg3OyjOAIJ41vHZRAMvr7hFhO7F36XBrqfT22OGd+Bva6RddFL7+flxGIatk755opf7c/EHwunvu9QNyJiKnuilpWuK4RBDosxMqPv51aGpq+jwWHLiB4Y4OwOzv
+  public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwrUsfrtlJwBijhUvA5ju9hGsJZat1LD3/6sg48/LuXnUcX5Eo3QtV8AeTYPMcMe8duuoISYok6ghdxQ9cUysZsKVaFugsEfS9wMezAmv0Veu3aW7uYllmKVW/kXrG+g1oJUyMgwAwY2Jh37uZZOaj8ngnkQmWm9DFFy0BNm1g/O3df+rEniCv9WHMsJyWFL4e6ZUB7T2xaD8fazey+BSDQClrHYQ5n6GaPKRikPV9yX+NT8Ma/yVu43gIf9ctR13j0XMeMu7PnGHs3AfTFLNHmkjrAmhtAbEccYQOdGjg18WTa5UeYzoAst2Wc212Hwe6FSV958HfoGNZEOUiiXjkwIDAQAB
+  expiration: 86400000
+
+
+deepseek:
+  api: sk-09395230157142c2abb1438a6746d23f
+
+token:
+  cleanup:
+    interval: 3600000 # 1 hour in milliseconds
+
+f1engine:
+  url: http://localhost:8080/api/v1
+
+hystrix:
+  shareSecurityContext: true
+
+feign:
+  hystrix:
+    enabled: false
+
+

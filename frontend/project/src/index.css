@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --header-height: 5rem;
+    --sidebar-width: 18rem;
+  }
+
+  body {
+    @apply bg-dark-900 text-white font-sans antialiased overflow-x-hidden;
+    background-image:
+      radial-gradient(circle at 50% 0%, rgba(225, 6, 0, 0.15), transparent 40%),
+      linear-gradient(rgba(10, 10, 14, 0.9), rgba(10, 10, 14, 0.95)),
+      url('/images/carbon-fiber.png');
+    /* Fallback or actual asset */
+    background-color: #0A0A0E;
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading uppercase tracking-wide;
+  }
+
+  /* Custom Scrollbar for Chrome/Safari/Webkit */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-600 rounded-full hover:bg-primary-600 transition-colors;
+  }
+}
+
+@layer components {
+
+  /* Premium Glass Effect */
+  .glass-panel {
+    @apply bg-dark-600/40 backdrop-blur-md border border-white/10;
+    box-shadow: theme('boxShadow.glass');
+  }
+
+  .glass-card {
+    @apply glass-panel rounded-xl hover:bg-dark-600/60 transition-all duration-300;
+  }
+
+  /* Neon Text */
+  .text-neon-red {
+    text-shadow: 0 0 10px rgba(225, 6, 0, 0.8), 0 0 20px rgba(225, 6, 0, 0.4);
+  }
+
+  .text-neon-blue {
+    text-shadow: 0 0 10px rgba(0, 144, 208, 0.8), 0 0 20px rgba(0, 144, 208, 0.4);
+  }
+
+  /* F1 Buttons */
+  .btn-primary {
+    @apply relative px-6 py-2 bg-primary-600 text-white font-heading text-sm tracking-wider uppercase clip-path-slant transition-all duration-300 hover:bg-primary-500 hover:shadow-glow-red hover:-translate-y-0.5 active:translate-y-0;
+    clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+  }
+
+  .btn-secondary {
+    @apply relative px-6 py-2 bg-transparent border border-white/20 text-white font-heading text-sm tracking-wider uppercase transition-all duration-300 hover:border-primary-500 hover:text-primary-500 hover:shadow-glow-red;
+  }
+
+  /* Input Fields */
+  .f1-input {
+    @apply bg-dark-800/80 border border-dark-600 text-white px-4 py-3 rounded-md focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all duration-300 font-mono text-sm shadow-inner;
+  }
+
+  /* Telemetry/Data Cards */
+  .telemetry-card {
+    @apply glass-panel rounded-lg p-4 border-l-2 border-l-primary-500 relative overflow-hidden;
+  }
+
+  .telemetry-card::before {
+    content: '';
+    @apply absolute top-0 right-0 w-24 h-24 bg-gradient-radial from-white/5 to-transparent opacity-50 -mr-6 -mt-6 rounded-full pointer-events-none;
+  }
+
+  /* Pit Board Table */
+  .pit-wall-table {
+    @apply w-full text-left border-collapse;
+  }
+
+  .pit-wall-table th {
+    @apply font-mono text-xs text-gray-400 uppercase tracking-widest py-3 border-b border-white/10;
+  }
+
+  .pit-wall-table td {
+    @apply py-3 border-b border-white/5 font-sans font-light;
+  }
+
+  .pit-wall-table tr:hover td {
+    @apply bg-white/5;
+  }
+
+  /* Layout Utilities */
+  .container-f1 {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+@layer utilities {
+  .clip-path-slant {
+    clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+  }
+
+  .clip-path-slant-left {
+    clip-path: polygon(15px 0, 100% 0, 100% 100%, 0 100%, 0 15px);
+  }
+
+  .text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+}

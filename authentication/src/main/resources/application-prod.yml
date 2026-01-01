@@ -1,0 +1,52 @@
+server:
+  port: ${PORT:8085}
+
+spring:
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+  
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: email, profile
+            redirect-uri: ${GOOGLE_REDIRECT_URI}
+
+jwt:
+  private-key: ${JWT_PRIVATE_KEY}
+  public-key: ${JWT_PUBLIC_KEY}
+  expiration: 86400000
+
+
+deepseek:
+  api: ${DEEPSEEK_API_KEY}
+
+token:
+  cleanup:
+    interval: 3600000 # 1 hour in milliseconds
+
+f1engine:
+  url: ${F1_ENGINE_URL}
+
+hystrix:
+  shareSecurityContext: true
+
+feign:
+  hystrix:
+    enabled: false

@@ -47,6 +47,24 @@ public class DataIngestionService {
 
     private final Integer MAX_ROUNDS = 24;
 
+    private static final Map<String, String> OPENF1_TO_ERGAST_NAME_MAP = new HashMap<>();
+    private static final Map<String, String> DRIVER_IMAGE_OVERRIDES = new HashMap<>();
+
+    static {
+        // Map OpenF1 names (uppercase) to Ergast names (uppercase)
+        OPENF1_TO_ERGAST_NAME_MAP.put("KIMI ANTONELLI", "ANDREA KIMI ANTONELLI");
+        OPENF1_TO_ERGAST_NAME_MAP.put("NICO HULKENBERG", "NICO HÜLKENBERG");
+        OPENF1_TO_ERGAST_NAME_MAP.put("SERGIO PEREZ", "SERGIO PÉREZ");
+        OPENF1_TO_ERGAST_NAME_MAP.put("KEVIN MAGNUSSEN", "KEVIN MAGNUSSEN"); // Seems ok but for safety
+        OPENF1_TO_ERGAST_NAME_MAP.put("VALTTERI BOTTAS", "VALTTERI BOTTAS");
+
+        // High resolution image overrides
+        DRIVER_IMAGE_OVERRIDES.put("ANDREA KIMI ANTONELLI",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Andrea_Kimi_Antonelli_%282024_Macau_Grand_Prix%29.jpg/640px-Andrea_Kimi_Antonelli_%282024_Macau_Grand_Prix%29.jpg");
+        DRIVER_IMAGE_OVERRIDES.put("NICO HÜLKENBERG",
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Nico_H%C3%BClkenberg_2019_Malaysia.jpg/640px-Nico_H%C3%BClkenberg_2019_Malaysia.jpg");
+    }
+
     @Autowired
     private ErgastClient ergastClient;
 
@@ -130,13 +148,17 @@ public class DataIngestionService {
 
             System.out.println("Merging OpenF1 drivers with Ergast drivers...");
             for (OpenF1Driver od : uniqueDrivers.values()) {
-                String key = od.getFullName().toUpperCase();
+                String openF1Name = od.getFullName().toUpperCase();
+                // Check if there is a manual mapping, otherwise use the name as is
+                String key = OPENF1_TO_ERGAST_NAME_MAP.getOrDefault(openF1Name, openF1Name);
+
                 if (mergedDrivers.containsKey(key)) {
                     Driver d = mergedDrivers.get(key);
                     d.setActive(true);
                     d.setDriverNumber(od.getDriverNumber());
                     d.setTeamName(od.getTeam_name());
-                    d.setDriverImageUrl(od.getHeadshotUrl());
+                    // Use override image if available, otherwise OpenF1
+                    d.setDriverImageUrl(DRIVER_IMAGE_OVERRIDES.getOrDefault(key, od.getHeadshotUrl()));
                     d.setPodiums(0);
                     d.setWins(0);
                     d.setPoints(0);
@@ -145,20 +167,25 @@ public class DataIngestionService {
                     d.setTotalRaces(0);
                     mergedDrivers.put(key, d);
                 } else {
+                    // This case should be rare if mapping is correct, but handles new drivers not
+                    // in Ergast yet?
+                    // Or if Ergast has different spelling we missed.
+                    System.out.println("Warning: OpenF1 driver " + openF1Name + " (mapped to " + key
+                            + ") not found in Ergast list.");
                     Driver d = new Driver();
-                    d.setDriverId(od.getFullName().toLowerCase().strip());
-                    d.setFullName(od.getFullName().toUpperCase());
+                    d.setDriverId(key.toLowerCase().strip().replace(" ", "_"));
+                    d.setFullName(key);
                     d.setActive(true);
                     d.setDriverNumber(od.getDriverNumber());
                     d.setTeamName(od.getTeam_name());
-                    d.setDriverImageUrl(od.getHeadshotUrl());
+                    d.setDriverImageUrl(DRIVER_IMAGE_OVERRIDES.getOrDefault(key, od.getHeadshotUrl()));
                     d.setWins(0);
                     d.setPodiums(0);
                     d.setPoints(0);
                     d.setPoles(0);
                     d.setFastestLaps(0);
                     d.setTotalRaces(0);
-                    mergedDrivers.put(d.getFullName(), d);
+                    mergedDrivers.put(key, d);
                 }
             }
 
@@ -302,16 +329,48 @@ public class DataIngestionService {
                                 System.out.println(
                                         "Warning: Race not found for round " + currentRound + " in year " + year);
                             }
+                            // Process Main Race Results
                             processResultForStats(year, context, updatedDrivers, updatedConstructors,
                                     updatedDriverStandings, updatedConstructorStandings,
-                                    constructorsProcessedForTotalRaces, i, result);
+                                    constructorsProcessedForTotalRaces, i, result, false);
                         }
+
+                        // Process Sprint Results
+                        try {
+                            RaceResponse sprintResponse = ergastClient.getSprintResults(year, round);
+                            if (sprintResponse != null && sprintResponse.getMrData() != null &&
+                                    sprintResponse.getMrData().getRaceTable() != null &&
+                                    !sprintResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
+
+                                Race sprintRace = sprintResponse.getMrData().getRaceTable().getRaces().get(0);
+                                List<Result> sprintResults = sprintRace.getSprintResults();
+
+                                if (sprintResults != null && !sprintResults.isEmpty()) {
+                                    System.out.println("Processing Sprint results for " + context);
+                                    for (int s = 0; s < sprintResults.size(); s++) {
+                                        processResultForStats(year, context + " (Sprint)", updatedDrivers,
+                                                updatedConstructors,
+                                                updatedDriverStandings, updatedConstructorStandings,
+                                                // We don't increment total races for sprint? Open to interpretation,
+                                                // usually GP starts count.
+                                                // So we pass a set that already has constructors potentially?
+                                                // Actually for constructor total races, let's assume GP only.
+                                                // Passing existing set is safe.
+                                                constructorsProcessedForTotalRaces, s, sprintResults.get(s), true);
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            System.err
+                                    .println("Error processing sprint results for " + context + ": " + e.getMessage());
+                        }
+
                     } else {
                         // Pre-2025: only update Driver and Constructor (no standings)
                         for (int i = 0; i < results.size(); i++) {
                             processResultForStats(year, context, updatedDrivers, updatedConstructors,
                                     null, null,
-                                    constructorsProcessedForTotalRaces, i, results.get(i));
+                                    constructorsProcessedForTotalRaces, i, results.get(i), false);
                         }
                     }
 
@@ -399,7 +458,7 @@ public class DataIngestionService {
     private void processResultForStats(Integer year, String context, Map<String, Driver> updatedDrivers,
             Map<String, Constructor> updatedConstructors, Map<String, DriverStanding> updatedDriverStandings,
             Map<String, ConstructorStanding> updatedConstructorStandings,
-            Set<String> constructorsProcessedForTotalRaces, int i, Result result) {
+            Set<String> constructorsProcessedForTotalRaces, int i, Result result, boolean isSprint) {
 
         ErgastDriver ergDriver = result.getDriver();
         ErgastConstructor egConstructor = result.getConstructor();
@@ -428,14 +487,17 @@ public class DataIngestionService {
         updatedDrivers.putIfAbsent(driverId, driver);
 
         // Update basic stats
-        if (i == 0) { // Winner
-            driver.setWins(driver.getWins() + 1);
-            driver.setPodiums(driver.getPodiums() + 1);
-            constructor.setWins(constructor.getWins() + 1);
-            constructor.setPodiums(constructor.getPodiums() + 1);
-        } else if (i < 3) { // Podium
-            driver.setPodiums(driver.getPodiums() + 1);
-            constructor.setPodiums(constructor.getPodiums() + 1);
+        // Sprint wins/podiums do NOT count towards official GP stats
+        if (!isSprint) {
+            if (i == 0) { // Winner
+                driver.setWins(driver.getWins() + 1);
+                driver.setPodiums(driver.getPodiums() + 1);
+                constructor.setWins(constructor.getWins() + 1);
+                constructor.setPodiums(constructor.getPodiums() + 1);
+            } else if (i < 3) { // Podium
+                driver.setPodiums(driver.getPodiums() + 1);
+                constructor.setPodiums(constructor.getPodiums() + 1);
+            }
         }
 
         double points = 0;
@@ -450,16 +512,20 @@ public class DataIngestionService {
             }
         }
 
-        if (result.getFastestLap() != null && result.getFastestLap().getRank() != null &&
+        // Sprints typically don't count for Fastest Lap awards in same way, or at least
+        // regular stats usually imply GP FL.
+        if (!isSprint && result.getFastestLap() != null && result.getFastestLap().getRank() != null &&
                 result.getFastestLap().getRank().equals("1")) {
             driver.setFastestLaps(driver.getFastestLaps() != null ? driver.getFastestLaps() + 1 : 1);
             constructor.setFastestLaps(constructor.getFastestLaps() != null ? constructor.getFastestLaps() + 1 : 1);
         }
 
-        driver.setTotalRaces(driver.getTotalRaces() != null ? driver.getTotalRaces() + 1 : 1);
-        if (!constructorsProcessedForTotalRaces.contains(constructorId)) {
-            constructor.setTotalRaces(constructor.getTotalRaces() != null ? constructor.getTotalRaces() + 1 : 1);
-            constructorsProcessedForTotalRaces.add(constructorId);
+        if (!isSprint) {
+            driver.setTotalRaces(driver.getTotalRaces() != null ? driver.getTotalRaces() + 1 : 1);
+            if (!constructorsProcessedForTotalRaces.contains(constructorId)) {
+                constructor.setTotalRaces(constructor.getTotalRaces() != null ? constructor.getTotalRaces() + 1 : 1);
+                constructorsProcessedForTotalRaces.add(constructorId);
+            }
         }
 
         updatedDrivers.put(driverId, driver);
@@ -489,14 +555,16 @@ public class DataIngestionService {
                 return cs;
             });
 
-            if (i == 0) {
-                driverStanding.setWins(driverStanding.getWins() + 1);
-                driverStanding.setPodiums(driverStanding.getPodiums() + 1);
-                constructorStanding.setWins(constructorStanding.getWins() + 1);
-                constructorStanding.setPodiums(constructorStanding.getPodiums() + 1);
-            } else if (i < 3) {
-                driverStanding.setPodiums(driverStanding.getPodiums() + 1);
-                constructorStanding.setPodiums(constructorStanding.getPodiums() + 1);
+            if (!isSprint) {
+                if (i == 0) {
+                    driverStanding.setWins(driverStanding.getWins() + 1);
+                    driverStanding.setPodiums(driverStanding.getPodiums() + 1);
+                    constructorStanding.setWins(constructorStanding.getWins() + 1);
+                    constructorStanding.setPodiums(constructorStanding.getPodiums() + 1);
+                } else if (i < 3) {
+                    driverStanding.setPodiums(driverStanding.getPodiums() + 1);
+                    constructorStanding.setPodiums(constructorStanding.getPodiums() + 1);
+                }
             }
             driverStanding.setPoints(driverStanding.getPoints() + points);
             constructorStanding.setPoints(constructorStanding.getPoints() + points);
@@ -801,6 +869,25 @@ public class DataIngestionService {
                 existingRace = fetchedRace;
             }
 
+            // Fetch Sprint Results as well
+            List<Result> sprintResultsAccum = new ArrayList<>();
+            try {
+                RaceResponse sprintResponse = ergastClient.getSprintResults(Integer.parseInt(year), round);
+                if (sprintResponse != null && sprintResponse.getMrData() != null &&
+                        sprintResponse.getMrData().getRaceTable() != null &&
+                        !sprintResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
+                    Race sprintRace = sprintResponse.getMrData().getRaceTable().getRaces().get(0);
+                    if (sprintRace.getSprintResults() != null) {
+                        sprintResultsAccum.addAll(sprintRace.getSprintResults());
+                        System.out
+                                .println("Fetched " + sprintResultsAccum.size() + " sprint results for round " + round);
+                    }
+                }
+            } catch (Exception e) {
+                System.err
+                        .println("Error fetching sprint results in fetchAndStoreLatestRaceResults: " + e.getMessage());
+            }
+
             // Prepare maps for bulk updates
             Map<String, Driver> updatedDrivers = new HashMap<>();
             Map<String, Constructor> updatedConstructors = new HashMap<>();
@@ -880,6 +967,37 @@ public class DataIngestionService {
                     // constructor participation.
                     // For now, let's leave constructor total races as is or implement the set
                     // logic.
+                }
+            }
+
+            // Process Sprint Results for Driver/Constructor Stats (Points only)
+            for (int i = 0; i < sprintResultsAccum.size(); i++) {
+                Result result = sprintResultsAccum.get(i);
+
+                ErgastDriver ergDriver = result.getDriver();
+                ErgastConstructor egConstructor = result.getConstructor();
+
+                if (ergDriver == null || egConstructor == null)
+                    continue;
+
+                String driverId = ergDriver.getDriverId();
+                String constructorId = egConstructor.getConstructorId();
+
+                Driver driver = updatedDrivers.computeIfAbsent(driverId,
+                        id -> driverRepo.findById(id).orElse(null));
+                Constructor constructor = updatedConstructors.computeIfAbsent(constructorId,
+                        id -> constructorRepo.findById(id).orElse(null));
+
+                if (driver != null && constructor != null) {
+                    // Points
+                    if (result.getPoints() != null) {
+                        try {
+                            double points = Double.parseDouble(result.getPoints());
+                            driver.setPoints(driver.getPoints() + points);
+                            constructor.setPoints(constructor.getPoints() + points);
+                        } catch (NumberFormatException e) {
+                        }
+                    }
                 }
             }
 

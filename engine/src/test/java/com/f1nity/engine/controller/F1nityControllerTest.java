@@ -37,13 +37,13 @@ class F1nityControllerTest {
 
     @Test
     void testGetAllDrivers() {
-        when(dataIngestionService.syncAllDrivers()).thenReturn(Arrays.asList(new Driver(), new Driver()));
+        when(f1nityService.getAllDrivers()).thenReturn(Arrays.asList(new Driver(), new Driver()));
 
         List<Driver> drivers = f1nityController.getAllDrivers();
 
         assertNotNull(drivers);
         assertEquals(2, drivers.size());
-        verify(dataIngestionService).syncAllDrivers();
+        verify(f1nityService).getAllDrivers();
     }
 
     @Test

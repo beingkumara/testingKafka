@@ -3,6 +3,7 @@ package com.f1nity.engine;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
@@ -12,8 +13,9 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
  */
 @SpringBootApplication
 @EnableScheduling
+@EnableCaching
 @EnableFeignClients(basePackages = "com.f1nity.engine.client")
-@EnableMongoRepositories(basePackages = {"com.f1nity.library.repository"})
+@EnableMongoRepositories(basePackages = { "com.f1nity.library.repository" })
 
 public class EngineApplication {
 

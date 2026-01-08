@@ -20,14 +20,14 @@ const Layout: React.FC = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col relative text-white selection:bg-primary-500 selection:text-white overflow-hidden">
+    <div className="min-h-screen flex flex-col relative text-white selection:bg-primary-500 selection:text-white">
       {/* Global Background Elements */}
       <div className="fixed inset-0 bg-dark-950 pointer-events-none z-[-2]"></div>
       <div className="fixed inset-0 bg-[url('/images/asphalt-grain.png')] opacity-20 pointer-events-none z-[-1] mix-blend-overlay"></div>
 
       <Header />
 
-      <div className="flex flex-1 relative container-f1 mx-auto pt-6 pb-12 w-full max-w-[1920px]">
+      <div className={`flex flex-1 relative w-full ${location.pathname === '/' ? '' : 'container-f1 mx-auto pt-6 pb-12 max-w-[1920px]'}`}>
         {showSidebar && (
           <motion.aside
             initial={{ x: -20, opacity: 0 }}

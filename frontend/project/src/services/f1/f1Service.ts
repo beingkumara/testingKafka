@@ -13,8 +13,8 @@ import {
   RaceResult,
   RaceResultFromAPI,
   RaceFromAPI,
-  RaceResultForYearAndRound,
-  NewsArticle
+  NewsArticle,
+  CircuitGuide
 } from '../../types/f1.types';
 
 /**
@@ -32,6 +32,34 @@ import { API_BASE_URL } from '../../config/constants';
 // Helper to bypass CORS/CORP issues using backend proxy
 const proxifyUrl = (url?: string) =>
   url ? `${API_BASE_URL}/image-proxy?url=${encodeURIComponent(url)}` : '';
+
+/**
+ * Fetches circuit guide by circuit ID
+ * @param circuitId - The ID of the circuit
+ * @returns Promise with circuit guide data
+ */
+export const getCircuitGuide = async (circuitId: string): Promise<CircuitGuide> => {
+  try {
+    const data = await f1Api.get<CircuitGuide>(`/guides/${circuitId}`);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching guide for circuit ${circuitId}:`, error);
+    // Return empty fallback
+    return {
+      id: 'fallback',
+      circuitId,
+      circuitName: 'Unknown',
+      country: '',
+      summary: 'Guide coming soon.',
+      bestGrandstands: [],
+      transportTips: [],
+      localAttractions: [],
+      hiddenGems: [],
+      currency: '-',
+      timezone: '-'
+    };
+  }
+};
 
 /**
  * Fetches current driver standings
@@ -177,6 +205,8 @@ export const getRaces = async (): Promise<Race[]> => {
         round: parseInt(race.round),
         completed: now > raceDateTime,
         image: proxifyUrl(imageUrl) || '/images/circuits/monaco.png',
+        latitude: parseFloat(race.Circuit.Location.lat),
+        longitude: parseFloat(race.Circuit.Location.long),
       };
     });
   } catch (error) {

@@ -4,9 +4,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.f1nity.engine.service.DataIngestionService;
@@ -42,7 +44,7 @@ public class F1nityController {
      */
     @GetMapping("/drivers")
     public List<Driver> getAllDrivers() {
-        return dataIngestionService.syncAllDrivers();
+        return f1nityService.getAllDrivers();
     }
 
     /**
@@ -75,7 +77,7 @@ public class F1nityController {
      */
     @GetMapping("/constructors")
     public List<Constructor> getAllConstructors() {
-        return dataIngestionService.syncAllConstructors();
+        return f1nityService.getAllConstructors();
     }
 
     // Race related endpoints
@@ -139,14 +141,20 @@ public class F1nityController {
     }
 
     /**
+     * Triggers historical data processing (Career Stats).
+     * This may take a long time.
+     */
+    @GetMapping("/update-history")
+    public void updateHistory() {
+        // Run in a separate thread to avoid blocking the HTTP response entirely
+        new Thread(() -> dataIngestionService.updateStatistics()).start();
+    }
+
+    /**
      * Retrieves sprint race statistics.
      * 
      * @return Sprint statistics as a string
      */
-    @GetMapping("/sprints")
-    public String getSprintStatistics() {
-        return dataIngestionService.getSprintStatistics();
-    }
 
     /**
      * Updates standings data.
@@ -192,6 +200,45 @@ public class F1nityController {
     @GetMapping("/races/{id}")
     public Race getRaceById(@PathVariable String id) {
         return f1nityService.getRaceById(id);
+    }
+
+    @GetMapping("/cleanup-races")
+    public String cleanupRaces() {
+        // This is a temporary endpoint to help transition seasons
+        // Ideally this should be in the service layer, but for quick fix adding here or
+        // exposing service method
+        dataIngestionService.cleanupOldRaces();
+        return "Cleanup initiated";
+    }
+
+    /**
+     * Manually triggers an update for a specific race round.
+     * Useful for forcing an update if the scheduler misses it.
+     * 
+     * @param round The round number to update (e.g., "1")
+     * @return The results fetched
+     */
+    @GetMapping("/update-race/{year}/{round}")
+    public List<Result> updateRaceResults(@PathVariable String year, @PathVariable String round) {
+        return dataIngestionService.fetchAndStoreLatestRaceResults(year, round);
+    }
+
+    /**
+     * Resets the database by deleting all data.
+     * Useful for testing and clean slate.
+     */
+    @RequestMapping(value = "/reset-db", method = RequestMethod.DELETE)
+    public String resetDatabase() {
+        dataIngestionService.resetDatabase();
+        return "Database has been reset.";
+    }
+
+    /**
+     * Manually triggers valid historical data import from JSON.
+     */
+    @RequestMapping(value = "/import-data", method = RequestMethod.POST)
+    public String importData() {
+        return dataIngestionService.importHistoricalData();
     }
 
 }

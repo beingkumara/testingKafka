@@ -36,6 +36,22 @@ export interface DriverStanding {
   podiums: number;
 }
 
+export interface CircuitGuide {
+  id: string;
+  circuitId: string;
+  circuitName: string;
+  country: string;
+  summary: string;
+  bestGrandstands: string[];
+  transportTips: string[];
+  localAttractions: string[];
+  hiddenGems: string[];
+  currency: string;
+  timezone: string;
+  firstGrandPrix?: number;
+  numberOfLaps?: number;
+}
+
 export interface ConstructorStanding {
   id: string;
   position: number;
@@ -68,6 +84,8 @@ export interface Race {
   round: number;
   completed: boolean;
   image: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface RaceFromAPI {

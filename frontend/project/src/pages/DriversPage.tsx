@@ -71,6 +71,10 @@ const DriversPage: React.FC = () => {
     if (t.includes('aston')) return 'border-green-700 shadow-green-900/50';
     if (t.includes('alpine')) return 'border-blue-500 shadow-blue-900/50';
     if (t.includes('williams')) return 'border-blue-400 shadow-blue-900/50';
+    if (t.includes('racing bulls') || t.includes('rb')) return 'border-blue-600 shadow-blue-900/50';
+    if (t.includes('audi')) return 'border-gray-400 shadow-gray-900/50';
+    if (t.includes('cadillac')) return 'border-yellow-600 shadow-yellow-900/50';
+    if (t.includes('haas')) return 'border-red-500 shadow-red-900/50';
     return 'border-gray-500 shadow-gray-900/50';
   };
 
@@ -81,6 +85,10 @@ const DriversPage: React.FC = () => {
     if (t.includes('mercedes')) return 'from-teal-900 to-teal-950';
     if (t.includes('mclaren')) return 'from-orange-900 to-orange-950';
     if (t.includes('aston')) return 'from-green-900 to-green-950';
+    if (t.includes('racing bulls') || t.includes('rb')) return 'from-blue-800 to-blue-900';
+    if (t.includes('audi')) return 'from-gray-700 to-gray-900';
+    if (t.includes('cadillac')) return 'from-yellow-900 to-yellow-950';
+    if (t.includes('haas')) return 'from-red-800 to-red-950';
     return 'from-gray-800 to-gray-900';
   };
 
@@ -192,7 +200,7 @@ const DriversPage: React.FC = () => {
                   </div>
 
                   {/* Driver Image Overlay */}
-                  <div className="absolute right-[-20px] top-10 w-2/3 h-full z-0 opacity-40 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 mix-blend-overlay group-hover:mix-blend-normal">
+                  <div className={`absolute right-[-20px] top-10 w-2/3 h-full z-0 opacity-40 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 ${driver.id === 'lindblad' ? 'mix-blend-multiply' : 'mix-blend-overlay group-hover:mix-blend-normal'}`}>
                     <img
                       src={driver.image}
                       alt={safeName}

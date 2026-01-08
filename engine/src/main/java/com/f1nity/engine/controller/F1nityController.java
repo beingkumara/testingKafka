@@ -233,4 +233,12 @@ public class F1nityController {
         return "Database has been reset.";
     }
 
+    /**
+     * Manually triggers valid historical data import from JSON.
+     */
+    @RequestMapping(value = "/import-data", method = RequestMethod.POST)
+    public String importData() {
+        return dataIngestionService.importHistoricalData();
+    }
+
 }

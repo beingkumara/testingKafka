@@ -116,6 +116,13 @@ public class DataIngestionService {
     private HistoricalDataLoader historicalDataLoader;
 
     public void initializeStaticData() {
+        // Check for forced reset environment variable
+        String forceReset = System.getenv("FORCE_RESET_DATA");
+        if ("true".equalsIgnoreCase(forceReset)) {
+            System.out.println("FORCE_RESET_DATA is true. Resetting database...");
+            resetDatabase();
+        }
+
         // Try loading from JSON first
         if (driverRepo.count() == 0 || constructorRepo.count() == 0) {
             System.out.println("Empty database detected. Attempting to load from historical_data.json...");
@@ -917,11 +924,8 @@ public class DataIngestionService {
 
     public void resetDatabase() {
         System.out.println("Resetting database...");
-        raceRepo.deleteAll();
         driverRepo.deleteAll();
-        constructorRepo.deleteAll();
-        driverStandingsRepo.deleteAll();
-        constructorStandingsRepo.deleteAll();
+        // constructorRepo.deleteAll();
         System.out.println("Database reset complete.");
     }
 }

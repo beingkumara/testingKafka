@@ -103,10 +103,22 @@ public class RaceDataScheduler {
     private NextRaceInfo calculateNextExecutionTime() {
         // Get all races from the repository
         List<Race> races = raceRepository.findAll();
-        if (races.isEmpty()) {
-            // If no races in database, fetch them
-            races = dataIngestionService.accumulateRaces();
-            if (races == null || races.isEmpty()) {
+
+        // Check if we have 2026 races
+        boolean hasCurrentSeason = races.stream().anyMatch(r -> "2026".equals(r.getSeason()));
+
+        if (races.isEmpty() || !hasCurrentSeason) {
+            // If no races or no 2026 races, fetch them
+            System.out.println("Missing 2026 race data. Fetching from API...");
+            // accumulatedRaces returns the list of SAVED races
+            List<Race> newRaces = dataIngestionService.accumulateRaces();
+
+            // If we fetched new races, refresh our main list to include them (and keep old
+            // ones if any)
+            if (newRaces != null && !newRaces.isEmpty()) {
+                races = raceRepository.findAll();
+            } else if (races.isEmpty()) {
+                // If we had nothing and fetched nothing, we can't proceed
                 return null;
             }
         }

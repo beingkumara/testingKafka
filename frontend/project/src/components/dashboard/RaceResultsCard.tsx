@@ -15,7 +15,7 @@ const RaceResultsCard: React.FC<RaceResultsCardProps> = ({ results }) => {
     const raceDate = results.length > 0 ? new Date(results[0].date).toLocaleDateString() : "";
 
     return (
-        <div className="telemetry-card group h-full flex flex-col">
+        <div className="telemetry-card group flex flex-col">
             <div className="flex items-center justify-between mb-6 pb-2 border-b border-white/10">
                 <div className="flex items-center gap-2">
                     <Flag className="h-5 w-5 text-primary-500" />

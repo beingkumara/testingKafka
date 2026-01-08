@@ -1,4 +1,5 @@
 package com.f1nity.library.models.engine;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -7,7 +8,7 @@ public class Circuit {
     private String circuitId;
     private String url;
     private String circuitName;
-    
+
     @JsonProperty("Location")
     private Location location;
 

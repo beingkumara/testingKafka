@@ -242,12 +242,12 @@ public class DataIngestionService {
     }
 
     public void updateStatistics() {
-        Integer year = 2025;
+        Integer year = 2026;
         Integer round = 1;
 
-        // OPTIMIZATION: Only process 2025 to prevent Render timeout.
+        // OPTIMIZATION: Only process 2026 to prevent Render timeout.
         // To process history, we would need a background job or separate endpoint.
-        while (year >= 2025) {
+        while (year >= 2026) {
             while (round <= MAX_ROUNDS) {
                 String context = "year " + year + ", round " + round;
 
@@ -304,7 +304,7 @@ public class DataIngestionService {
                     String currentRound = race.getRound();
 
                     // Process race results
-                    if (year == 2025) {
+                    if (year == 2026) {
                         for (int i = 0; i < results.size(); i++) {
                             Result result = results.get(i);
 
@@ -415,7 +415,7 @@ public class DataIngestionService {
                     if (!updatedConstructors.isEmpty()) {
                         constructorRepo.saveAll(updatedConstructors.values());
                     }
-                    if (year == 2025) {
+                    if (year == 2026) {
                         if (!updatedDriverStandings.isEmpty()) {
                             driverStandingsRepo.saveAll(updatedDriverStandings.values());
                         }
@@ -531,8 +531,8 @@ public class DataIngestionService {
         updatedDrivers.put(driverId, driver);
         updatedConstructors.put(constructorId, constructor);
 
-        // Update Standings (2025 only)
-        if (year == 2025 && updatedDriverStandings != null && updatedConstructorStandings != null) {
+        // Update Standings (2026 only)
+        if (year == 2026 && updatedDriverStandings != null && updatedConstructorStandings != null) {
             DriverStanding driverStanding = updatedDriverStandings.computeIfAbsent(driverId, k -> {
                 DriverStanding ds = new DriverStanding();
                 ds.setDriverId(driverId);
@@ -575,7 +575,7 @@ public class DataIngestionService {
     }
 
     public String getSprintStatistics() {
-        Integer year = 2025;
+        Integer year = 2026;
         Integer round = 1;
 
         while (year >= 2021) {
@@ -690,7 +690,7 @@ public class DataIngestionService {
     public String updateStandings() {
         // Driver Standings
         try {
-            ErgastDriverStandingsResponse driverResponse = ergastClient.getDriverStandings(2025);
+            ErgastDriverStandingsResponse driverResponse = ergastClient.getDriverStandings(2026);
             if (driverResponse != null && driverResponse.MRData != null &&
                     driverResponse.MRData.StandingsTable != null &&
                     !driverResponse.MRData.StandingsTable.StandingsLists.isEmpty()) {
@@ -729,7 +729,7 @@ public class DataIngestionService {
             }
 
             // Constructor Standings
-            ErgastConstructorStandingsResponse constructorResponse = ergastClient.getConstructorStandings(2025);
+            ErgastConstructorStandingsResponse constructorResponse = ergastClient.getConstructorStandings(2026);
             if (constructorResponse != null && constructorResponse.MRData != null &&
                     constructorResponse.MRData.StandingsTable != null &&
                     !constructorResponse.MRData.StandingsTable.StandingsLists.isEmpty()) {
@@ -780,7 +780,7 @@ public class DataIngestionService {
     }
 
     public List<Race> accumulateRaces() {
-        RaceResponse response = ergastClient.getRaces(2025);
+        RaceResponse response = ergastClient.getRaces(2026);
         if (response != null && response.getMrData() != null) {
             List<Race> races = response.getMrData().getRaceTable().getRaces();
             List<Race> savedRaces = new ArrayList<>();
@@ -824,7 +824,7 @@ public class DataIngestionService {
 
     @Transactional
     public List<Result> fetchAndStoreLatestRaceResults(String round) {
-        String year = "2025"; // Assuming current year for now, or dynamic
+        String year = "2026"; // Assuming current year for now, or dynamic
         System.out.println("Fetching race results for year " + year + ", round " + round);
 
         try {
@@ -1131,5 +1131,17 @@ public class DataIngestionService {
         // syncAllDrivers here.
         // For now, let's keep it simple as the screenshot showed drivers HAVE images.
         System.out.println("Driver images are updated via syncAllDrivers.");
+    }
+
+    public void cleanupOldRaces() {
+        // Delete races from 2025 if they exist, or just clear all and re-import
+        System.out.println("Cleaning up races...");
+        List<Race> oldRaces = raceRepo.findBySeason("2025");
+        if (oldRaces != null && !oldRaces.isEmpty()) {
+            raceRepo.deleteAll(oldRaces);
+            System.out.println("Deleted " + oldRaces.size() + " races from 2025.");
+        }
+        // Also trigger accumulation for new season
+        accumulateRaces();
     }
 }

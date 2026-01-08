@@ -1,400 +1,231 @@
-import { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { ChevronDown, Trophy, Users, Clock, BarChart3, Flag, Calendar, Activity, Zap } from 'lucide-react';
-import CountUp from 'react-countup';
+import F1CarCanvas from '../components/F1CarCanvas';
+import { Zap, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const ref = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Create a long scroll container
   const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start start', 'end start']
+    target: containerRef,
+    offset: ['start start', 'end end']
   });
-  
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const heroY = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
-  
-  useEffect(() => {
-    // Generate tire smoke effect at random intervals
-    const interval = setInterval(() => {
-      if (ref.current) {
-        const smoke = document.createElement('div');
-        smoke.classList.add('tire-smoke');
-        
-        // Random position within the hero section
-        smoke.style.left = `${Math.random() * 100}%`;
-        smoke.style.bottom = `${Math.random() * 20}%`;
-        
-        ref.current.appendChild(smoke);
-        
-        // Remove smoke element after animation completes
-        setTimeout(() => {
-          smoke.remove();
-        }, 1000);
-      }
-    }, 500);
-    
-    return () => clearInterval(interval);
-  }, []);
-  
+
+  // Smooth scroll progress for "telemetry" readouts
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
+
+  // --- TRANSFORMATION LOGIC ---
+
+  // 1. INTRO SEQUENCE (0 - 15%)
+  // Dramatic fade out of big title, slide up
+  const introOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
+  const introScale = useTransform(scrollYProgress, [0, 0.1], [1, 0.9]);
+  const introY = useTransform(scrollYProgress, [0, 0.1], [0, -50]);
+  const introBlur = useTransform(scrollYProgress, [0, 0.08], ["blur(0px)", "blur(10px)"]);
+
+  // 2. AERO DYNAMICS (15% - 40%)
+  // Slide in from left, sharp and technical
+  const aeroOpacity = useTransform(scrollYProgress, [0.15, 0.2, 0.35, 0.4], [0, 1, 1, 0]);
+  const aeroX = useTransform(scrollYProgress, [0.15, 0.2, 0.35, 0.4], [-50, 0, 0, -50]);
+  const aeroBlur = useTransform(scrollYProgress, [0.15, 0.2, 0.35, 0.4], ["blur(10px)", "blur(0px)", "blur(0px)", "blur(10px)"]);
+
+  // 3. HYBRID POWER (45% - 70%)
+  // Slide in from right, intense
+  const powerOpacity = useTransform(scrollYProgress, [0.45, 0.5, 0.65, 0.7], [0, 1, 1, 0]);
+  const powerX = useTransform(scrollYProgress, [0.45, 0.5, 0.65, 0.7], [50, 0, 0, 50]);
+  const powerBlur = useTransform(scrollYProgress, [0.45, 0.5, 0.65, 0.7], ["blur(10px)", "blur(0px)", "blur(0px)", "blur(10px)"]);
+
+  // 4. CTA / VICTORY (75% - 100%)
+  // Scale up from center
+  const ctaOpacity = useTransform(scrollYProgress, [0.75, 0.85, 1], [0, 1, 1]);
+  const ctaScale = useTransform(scrollYProgress, [0.75, 1], [0.8, 1]);
+  const ctaBlur = useTransform(scrollYProgress, [0.75, 0.85], ["blur(10px)", "blur(0px)"]);
+
+  // Parallax Background Elements
+  const bgGridY = useTransform(scrollYProgress, [0, 1], [0, 500]); // Moves slower than scroll
+  const speedLinesOpacity = useTransform(scrollYProgress, [0.1, 0.9], [0, 0.3]);
+
   return (
-    <div className="min-h-screen">
-      {/* Hero section */}
-      <motion.div
-        ref={ref}
-        style={{ opacity: heroOpacity, y: heroY }}
-        className="relative h-screen flex items-center justify-center overflow-hidden"
-      >
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0 opacity-40"
-          style={{ 
-            backgroundImage: "url('https://images.pexels.com/photos/12746357/pexels-photo-12746357.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')"
-          }}
+    <div ref={containerRef} className="relative h-[500vh] bg-[#050505] selection:bg-[#e10600] selection:text-white">
+
+      {/* Sticky Canvas Container */}
+      <div className="sticky top-0 h-screen w-full overflow-hidden">
+
+        {/* Dynamic Background Grid */}
+        <motion.div
+          style={{ y: bgGridY }}
+          className="absolute inset-0 opacity-10 pointer-events-none"
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-[#050505]"></div>
+        </motion.div>
+
+        {/* Speed Lines Effect */}
+        <motion.div
+          style={{ opacity: speedLinesOpacity }}
+          className="absolute inset-0 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 contrast-150 brightness-100 mix-blend-overlay"
         />
-        
-        <div className="absolute inset-0 bg-gradient-to-b from-dark-500/90 to-dark-600/90 z-0"></div>
-        
-        {/* Speed lines effect */}
-        <div className="speed-lines"></div>
-        
-        {/* Racing line at bottom */}
-        <div className="racing-line absolute bottom-0 left-0 right-0 h-4 z-10"></div>
-        
-        <div className="container mx-auto px-4 pt-24 lg:pt-0 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.div 
-              initial={{ y: 50, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.7 }}
-            >
-              <h1 className="text-4xl md:text-6xl lg:text-7xl text-white font-bold mb-6 f1-title">
-                Your Ultimate <span className="text-primary-500">Formula 1</span> Analytics Platform
-              </h1>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ y: 50, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.7, delay: 0.3 }}
-            >
-              <p className="text-xl md:text-2xl text-white/80 mb-10">
-                Track races, analyze driver performance, and discover insights from the world's most thrilling motorsport.
-              </p>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ y: 50, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.7, delay: 0.5 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-            >
-              {!isAuthenticated ? (
-                <>
-                  <Link to="/signup" className="f1-button bg-primary-500 hover:bg-primary-600 text-white text-lg px-8 py-3 rounded-md shadow-glow-red">
-                    Get Started
-                  </Link>
-                  <Link to="/login" className="f1-button bg-dark-500 hover:bg-dark-600 text-white text-lg px-8 py-3 rounded-md border-2 border-primary-500">
-                    Log In
-                  </Link>
-                </>
-              ) : (
-                <Link to="/dashboard" className="f1-button bg-primary-500 hover:bg-primary-600 text-white text-lg px-8 py-3 rounded-md shadow-glow-red">
-                  Go to Dashboard
-                </Link>
-              )}
-            </motion.div>
-            
-            {/* Rev counter animation */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.2, duration: 0.5 }}
-              className="mt-16 flex justify-center"
-            >
-              <div className="rev-counter">
-                {[...Array(10)].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className="rev-counter-bar" 
-                    style={{ animationDelay: `${i * 0.05}s` }}
-                  ></div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
+
+        {/* Cinematic Spotlight */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_70%)] blur-[100px] opacity-30" />
         </div>
-        
-        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-10">
+
+        {/* The 3D Car Model */}
+        <div className="absolute inset-0 z-0">
+          <F1CarCanvas scrollProgress={scrollYProgress} />
+        </div>
+
+        {/* Vignette & Color Grading */}
+        <div className="absolute inset-x-0 bottom-0 pointer-events-none bg-gradient-to-t from-[#050505] to-transparent h-48 z-10" />
+        <div className="absolute inset-x-0 top-0 pointer-events-none bg-gradient-to-b from-[#050505] via-[#050505]/60 to-transparent h-96 z-10" />
+
+        {/* --- DYNAMIC TEXT LAYERS --- */}
+        <div className="relative z-10 h-full w-full pointer-events-none">
+
+          {/* SECTION 1: INTRO */}
           <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, repeatType: 'loop' }}
+            style={{ opacity: introOpacity, scale: introScale, y: introY, filter: introBlur }}
+            className="absolute inset-0 flex flex-col items-center justify-center p-6"
           >
-            <ChevronDown className="w-10 h-10 text-white opacity-70" />
-          </motion.div>
-        </div>
-      </motion.div>
-      
-      {/* Features section */}
-      <section className="py-20 bg-white dark:bg-dark-600 relative overflow-hidden">
-        {/* F1 grid pattern background */}
-        <div className="absolute inset-0 f1-grid opacity-30"></div>
-        
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 f1-title">
-              Why Choose <span className="text-primary-500">F1nity</span>
-            </h2>
-            <div className="f1-divider max-w-xs mx-auto"></div>
-            <p className="text-lg text-dark-600 dark:text-dark-200 max-w-3xl mx-auto mt-6">
-              Experience Formula 1 data like never before with our comprehensive analytics platform.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: <Trophy className="w-10 h-10 text-primary-500" />,
-                title: 'Live Standings',
-                description: 'Real-time driver and constructor standings updated as races unfold.',
-              },
-              {
-                icon: <Users className="w-10 h-10 text-primary-500" />,
-                title: 'Driver Profiles',
-                description: 'Detailed statistics and history for every driver on the grid.',
-              },
-              {
-                icon: <Calendar className="w-10 h-10 text-primary-500" />,
-                title: 'Race Calendar',
-                description: 'Never miss a race with our comprehensive F1 calendar and countdowns.',
-              },
-              {
-                icon: <BarChart3 className="w-10 h-10 text-primary-500" />,
-                title: 'Performance Analysis',
-                description: 'Advanced metrics and visualizations to understand race performance.',
-              },
-            ].map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ y: 50, opacity: 0 }}
-                whileInView={{ y: 0, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="f1-card p-6 hover:translate-y-[-5px] transition-all duration-300"
+            <div className="overflow-hidden">
+              <motion.h1
+                initial={{ y: 100 }} animate={{ y: 0 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="text-7xl md:text-[10rem] font-black text-white leading-none tracking-tighter"
               >
-                <div className="mb-4 bg-primary-500/10 w-16 h-16 rounded-md flex items-center justify-center">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-bold mb-3 f1-title">{feature.title}</h3>
-                <p className="text-dark-600 dark:text-dark-200">
-                  {feature.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-      
-      {/* Team colors section */}
-      <section className="py-16 bg-dark-500 text-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-4xl font-bold mb-4 f1-title">F1 Teams</h2>
-            <div className="f1-divider max-w-xs mx-auto"></div>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              { name: 'Mercedes', color: 'bg-team-mercedes' },
-              { name: 'Red Bull', color: 'bg-team-redbull' },
-              { name: 'Ferrari', color: 'bg-team-ferrari' },
-              { name: 'McLaren', color: 'bg-team-mclaren' },
-              { name: 'Alpine', color: 'bg-team-alpine' },
-              { name: 'Aston Martin', color: 'bg-team-astonmartin' },
-              { name: 'Williams', color: 'bg-team-williams' },
-              { name: 'AlphaTauri', color: 'bg-team-alphatauri' },
-              { name: 'Alfa Romeo', color: 'bg-team-alfaromeo' },
-              { name: 'Haas', color: 'bg-team-haas text-dark-500' },
-            ].map((team, index) => (
-              <motion.div
-                key={index}
-                initial={{ scale: 0.9, opacity: 0 }}
-                whileInView={{ scale: 1, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                whileHover={{ y: -5 }}
-                className={`${team.color} p-4 rounded-md text-center font-bold shadow-md`}
-              >
-                {team.name}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-      
-      {/* Statistics section */}
-      <section className="py-20 bg-white dark:bg-dark-700 overflow-hidden relative">
-        {/* Racing line vertical */}
-        <div className="absolute top-0 bottom-0 left-10 w-1 racing-line-vertical"></div>
-        <div className="absolute top-0 bottom-0 right-10 w-1 racing-line-vertical"></div>
-        
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-            <div>
-              <motion.div
-                initial={{ x: -50, opacity: 0 }}
-                whileInView={{ x: 0, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <h2 className="text-3xl md:text-4xl font-bold mb-6 f1-title">
-                  Powered by Comprehensive Data
-                </h2>
-                <div className="f1-divider max-w-xs"></div>
-                <p className="text-lg mb-8 text-dark-600 dark:text-dark-200 mt-6">
-                  F1nity provides access to the most extensive Formula 1 database, 
-                  with race data going back to the beginning of the championship.
-                </p>
-              </motion.div>
-              
-              <div className="grid grid-cols-2 gap-6">
-                {[
-                  { value: 73, label: 'Championship Seasons', icon: <Trophy className="w-6 h-6" /> },
-                  { value: 1079, label: 'Grand Prix Races', icon: <Flag className="w-6 h-6" /> },
-                  { value: 770, label: 'Drivers', icon: <Users className="w-6 h-6" /> },
-                  { value: 170, label: 'Constructors', icon: <Activity className="w-6 h-6" /> },
-                ].map((stat, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ y: 30, opacity: 0 }}
-                    whileInView={{ y: 0, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
-                    className="f1-card p-4 flex flex-col items-center text-center"
-                  >
-                    <div className="mb-2 text-primary-500">
-                      {stat.icon}
-                    </div>
-                    <div className="text-3xl font-bold text-primary-500">
-                      <CountUp end={stat.value} duration={2.5} />+
-                    </div>
-                    <p className="text-dark-600 dark:text-dark-200 text-sm">
-                      {stat.label}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
+                FAN<span className="text-[#e10600]">F1</span>X
+              </motion.h1>
             </div>
-            
-            <motion.div
-              initial={{ x: 50, opacity: 0 }}
-              whileInView={{ x: 0, opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="relative"
+            <motion.p
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 1 }}
+              className="text-xl md:text-2xl text-gray-400 tracking-[0.5em] font-light mt-4 uppercase"
             >
-              <div 
-                className="aspect-video rounded-md overflow-hidden shadow-f1-card bg-cover bg-center"
-                style={{ 
-                  backgroundImage: "url('https://images.pexels.com/photos/12041877/pexels-photo-12041877.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')"
-                }}
-              />
-              
-              <div className="absolute -bottom-5 -right-5 bg-primary-500 text-white p-4 rounded-md shadow-glow-red">
-                <div className="flex items-center mb-1">
-                  <div className="pit-light mr-2"></div>
-                  <p className="text-sm font-medium">NEXT RACE</p>
-                </div>
-                <p className="text-2xl font-bold f1-title">Singapore Grand Prix</p>
-                <p className="text-sm">September 22, 2025</p>
-              </div>
+              The Apex of Analytics
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1, duration: 1 }}
+              className="absolute bottom-12 flex flex-col items-center gap-2 text-white/40"
+            >
+
+              <div className="w-px h-12 bg-gradient-to-b from-[#e10600] to-transparent"></div>
             </motion.div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Tire compounds section */}
-      <section className="py-12 bg-dark-600 text-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-10">
-            <h3 className="text-2xl font-bold f1-title">F1 Tire Compounds</h3>
-            <div className="f1-divider max-w-xs mx-auto"></div>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-6">
-            {[
-              { name: 'Soft', class: 'tire-soft' },
-              { name: 'Medium', class: 'tire-medium' },
-              { name: 'Hard', class: 'tire-hard' },
-              { name: 'Intermediate', class: 'tire-intermediate' },
-              { name: 'Wet', class: 'tire-wet' },
-            ].map((tire, index) => (
-              <motion.div
-                key={index}
-                initial={{ scale: 0.8, opacity: 0 }}
-                whileInView={{ scale: 1, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                className="flex flex-col items-center"
-              >
-                <div className={`${tire.class} w-16 h-16 rounded-full mb-2 flex items-center justify-center animate-tire-spin`}>
-                  <div className="w-6 h-6 rounded-full bg-dark-900"></div>
-                </div>
-                <p className="text-sm font-medium">{tire.name}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-      
-      {/* CTA section */}
-      <section className="py-20 bg-dark-500 text-white overflow-hidden relative">
-        <div className="container mx-auto px-4">
-          <div className="relative">
-            <div className="racing-line absolute top-0 left-0 right-0 h-4"></div>
-            <div className="racing-line absolute bottom-0 left-0 right-0 h-4"></div>
-            
-            {/* Checkered flag background */}
-            <div className="absolute top-1/2 right-10 transform -translate-y-1/2 w-20 h-20 checkered-flag opacity-50 rounded-full"></div>
-            <div className="absolute top-1/3 left-10 transform -translate-y-1/2 w-16 h-16 checkered-flag opacity-50 rounded-full"></div>
-            
-            <div className="max-w-4xl mx-auto text-center py-16">
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                whileInView={{ scale: 1, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-              >
-                <h2 className="text-3xl md:text-5xl font-bold mb-6 f1-title">
-                  Ready to Experience Formula 1 Like Never Before?
-                </h2>
-                <div className="f1-divider max-w-xs mx-auto"></div>
-                <p className="text-xl text-white/80 my-10">
-                  Join thousands of fans who've enhanced their Formula 1 experience with F1nity.
-                </p>
-                {!isAuthenticated ? (
-                  <Link 
-                    to="/signup" 
-                    className="f1-button bg-primary-500 hover:bg-primary-600 text-white text-lg px-10 py-3 rounded-md shadow-glow-red"
+          </motion.div>
+
+          {/* SECTION 2: AERODYNAMICS */}
+          <motion.div
+            style={{ opacity: aeroOpacity, x: aeroX, filter: aeroBlur }}
+            className="absolute inset-0 flex items-center justify-start px-8 md:px-24"
+          >
+            <div className="max-w-xl border-l-2 border-[#e10600] pl-8 py-4 backdrop-blur-sm bg-black/10">
+              <div className="flex items-center gap-3 mb-4 text-[#e10600]">
+                <div className="w-2 h-2 bg-[#e10600] rounded-full animate-pulse"></div>
+                <span className="text-xs font-mono tracking-[0.3em]">AERODYNAMICS_MODULE</span>
+              </div>
+              <h2 className="text-5xl md:text-8xl font-black text-white mb-6 leading-[0.85] tracking-tighter">
+                PRECISION<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-600">ENGINEERING</span>
+              </h2>
+              <p className="text-lg text-gray-300 font-light leading-relaxed max-w-md border-t border-white/10 pt-6">
+                Experience data visualization refined to the millisecond. Every curve, every lap, captured with aerodynamic efficiency.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* SECTION 3: HYBRID POWER */}
+          <motion.div
+            style={{ opacity: powerOpacity, x: powerX, filter: powerBlur }}
+            className="absolute inset-0 flex items-center justify-end px-8 md:px-24"
+          >
+            <div className="max-w-xl border-r-2 border-[#e10600] pr-8 py-4 text-right backdrop-blur-sm bg-black/10">
+              <div className="flex items-center justify-end gap-3 mb-4 text-[#e10600]">
+                <span className="text-xs font-mono tracking-[0.3em]">POWER_UNIT_TELEMETRY</span>
+                <div className="w-2 h-2 bg-[#e10600] rounded-full animate-pulse"></div>
+              </div>
+              <h2 className="text-5xl md:text-8xl font-black text-white mb-6 leading-[0.85] tracking-tighter">
+                HYBRID<br /><span className="text-transparent bg-clip-text bg-gradient-to-l from-gray-200 to-gray-600">PERFORMANCE</span>
+              </h2>
+              <p className="text-lg text-gray-300 font-light leading-relaxed max-w-md ml-auto border-t border-white/10 pt-6">
+                Unleash the full potential of F1 analytics. Real-time processing meets historical depth.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* SECTION 4: CTA / VICTORY */}
+          <motion.div
+            style={{ opacity: ctaOpacity, scale: ctaScale, filter: ctaBlur }}
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto"
+          >
+            <div className="text-center">
+              <h2 className="text-6xl md:text-9xl font-black text-white mb-12 tracking-tighter">
+                RACE <span className="text-[#e10600]">READY</span>
+              </h2>
+
+              <div className="flex flex-col md:flex-row items-center justify-center gap-8">
+                {isAuthenticated ? (
+                  <Link
+                    to="/dashboard"
+                    className="group relative px-12 py-6 bg-[#e10600] text-white overflow-hidden skew-x-[-10deg] hover:shadow-[0_0_40px_rgba(225,6,0,0.5)] transition-all duration-300"
                   >
-                    <Zap className="w-5 h-5 mr-2 inline-block" />
-                    Get Started For Free
+                    <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300" />
+                    <div className="flex items-center gap-4 skew-x-[10deg]">
+                      <span className="font-bold text-xl tracking-widest">ENTER PADDOCK</span>
+                      <ChevronRight className="w-6 h-6" />
+                    </div>
                   </Link>
                 ) : (
-                  <Link 
-                    to="/dashboard" 
-                    className="f1-button bg-primary-500 hover:bg-primary-600 text-white text-lg px-10 py-3 rounded-md shadow-glow-red"
-                  >
-                    <Zap className="w-5 h-5 mr-2 inline-block" />
-                    Go to Dashboard
-                  </Link>
+                  <>
+                    <Link
+                      to="/signup"
+                      className="group relative px-12 py-6 bg-[#e10600] text-white overflow-hidden skew-x-[-10deg] hover:shadow-[0_0_40px_rgba(225,6,0,0.5)] transition-all duration-300"
+                    >
+                      <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300" />
+                      <div className="flex items-center gap-4 skew-x-[10deg]">
+                        <span className="font-bold text-xl tracking-widest">JOIN TEAM</span>
+                        <Zap className="w-6 h-6" />
+                      </div>
+                    </Link>
+                    <Link
+                      to="/login"
+                      className="group px-12 py-6 border border-white/20 text-white skew-x-[-10deg] hover:bg-white/5 transition-all duration-300"
+                    >
+                      <span className="block font-bold text-xl tracking-widest skew-x-[10deg]">LOGIN</span>
+                    </Link>
+                  </>
                 )}
-              </motion.div>
+              </div>
             </div>
+          </motion.div>
+        </div>
+
+        {/* --- TELEMETRY SIDEBAR (Fixed) --- */}
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-8 pointer-events-none z-20">
+          <div className="flex flex-col items-center gap-2">
+
+            <div className="w-px h-32 bg-gray-800 relative overflow-hidden">
+              <motion.div
+                style={{ height: smoothProgress }}
+                className="absolute top-0 w-full bg-[#e10600]"
+              />
+            </div>
+            <span className="text-[10px] text-[#e10600] font-mono">01</span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} className="w-1 h-1 bg-gray-700 rounded-full" />
+            ))}
           </div>
         </div>
-      </section>
+
+      </div>
     </div>
   );
 };

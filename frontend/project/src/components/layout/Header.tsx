@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 
 import Logo from '../ui/Logo';
+import { DEFAULT_PROFILE_PICTURE } from '../../utils/imageUtils';
 
 const Header: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -38,7 +39,7 @@ const Header: React.FC = () => {
   return (
     <header
       className={`
-        sticky top-0 z-50 transition-all duration-300 border-b border-transparent
+        ${isHomePage ? 'fixed' : 'sticky'} top-0 z-50 transition-all duration-300 border-b border-transparent w-full
         ${isScrolled || !isHomePage
           ? 'bg-dark-900/80 backdrop-blur-md shadow-glass border-white/5'
           : 'bg-transparent'
@@ -60,7 +61,7 @@ const Header: React.FC = () => {
             className="flex items-center"
           >
             <Link to="/" className="flex items-center group">
-              <Logo className="h-8 w-auto md:h-10 transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_0_10px_rgba(225,6,0,0.5)]" />
+              <Logo className="h-12 w-auto md:h-20 text-6xl transition-transform duration-300 group-hover:scale-105 drop-shadow-[0_0_20px_rgba(225,6,0,0.7)]" />
             </Link>
           </motion.div>
 
@@ -71,64 +72,8 @@ const Header: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="hidden md:flex items-center space-x-1"
           >
-            <Link
-              to="/"
-              className={`relative px-4 py-2 font-heading text-sm uppercase tracking-wider transition-all duration-300 hover:text-primary-500 overflow-hidden group ${location.pathname === '/' ? 'text-primary-500' : 'text-gray-300'}`}
-            >
-              <span className="relative z-10 flex items-center">
-                <Flag className="w-3 h-3 mr-2" />
-                Home
-              </span>
-              <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 transform origin-left transition-transform duration-300 ${location.pathname === '/' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
-            </Link>
-
-            {isAuthenticated && (
-              <>
-                <Link
-                  to="/races"
-                  className={`relative px-4 py-2 font-heading text-sm uppercase tracking-wider transition-all duration-300 hover:text-primary-500 overflow-hidden group ${location.pathname.includes('/races') ? 'text-primary-500' : 'text-gray-300'}`}
-                >
-                  <span className="relative z-10 flex items-center">
-                    <Calendar className="w-3 h-3 mr-2" />
-                    Races
-                  </span>
-                  <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 transform origin-left transition-transform duration-300 ${location.pathname.includes('/races') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
-                </Link>
-
-                <Link
-                  to="/drivers"
-                  className={`relative px-4 py-2 font-heading text-sm uppercase tracking-wider transition-all duration-300 hover:text-primary-500 overflow-hidden group ${location.pathname.includes('/drivers') ? 'text-primary-500' : 'text-gray-300'}`}
-                >
-                  <span className="relative z-10 flex items-center">
-                    <User className="w-3 h-3 mr-2" />
-                    Drivers
-                  </span>
-                  <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 transform origin-left transition-transform duration-300 ${location.pathname.includes('/drivers') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
-                </Link>
-
-                <Link
-                  to="/standings"
-                  className={`relative px-4 py-2 font-heading text-sm uppercase tracking-wider transition-all duration-300 hover:text-primary-500 overflow-hidden group ${location.pathname.includes('/standings') ? 'text-primary-500' : 'text-gray-300'}`}
-                >
-                  <span className="relative z-10 flex items-center">
-                    <Trophy className="w-3 h-3 mr-2" />
-                    Standings
-                  </span>
-                  <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 transform origin-left transition-transform duration-300 ${location.pathname.includes('/standings') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
-                </Link>
-
-                <Link
-                  to="/dashboard"
-                  className={`relative px-4 py-2 font-heading text-sm uppercase tracking-wider transition-all duration-300 hover:text-primary-500 overflow-hidden group ${location.pathname === '/dashboard' ? 'text-primary-500' : 'text-gray-300'}`}
-                >
-                  <span className="relative z-10 flex items-center">
-                    <BarChart3 className="w-3 h-3 mr-2" />
-                    Dashboard
-                  </span>
-                  <span className={`absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 transform origin-left transition-transform duration-300 ${location.pathname === '/dashboard' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`}></span>
-                </Link>
-              </>
-            )}
+            {/* Navigation links removed to avoid redundancy with Sidebar */}
+            {/* Keeping the container structure for the Profile section on the right */}
 
             {/* User Profile / Auth */}
             <div className="flex items-center ml-6 pl-6 border-l border-white/10 space-x-4">
@@ -136,17 +81,14 @@ const Header: React.FC = () => {
                 <div className="relative group">
                   <button className="flex items-center space-x-3 text-sm font-medium text-white hover:text-primary-500 transition-colors">
                     <div className="w-8 h-8 rounded bg-gradient-to-br from-primary-600 to-primary-800 p-0.5 clip-path-slant-left shadow-glow-red">
-                      {user?.profilePicture ? (
-                        <img
-                          src={user.profilePicture}
-                          alt={user.username}
-                          className="w-full h-full object-cover clip-path-slant-left bg-dark-900"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-dark-800 flex items-center justify-center text-white text-xs font-bold clip-path-slant-left">
-                          {user?.username?.charAt(0).toUpperCase()}
-                        </div>
-                      )}
+                      <img
+                        src={user?.profilePicture || DEFAULT_PROFILE_PICTURE}
+                        alt={user?.username || 'User'}
+                        onError={(e) => {
+                          e.currentTarget.src = DEFAULT_PROFILE_PICTURE;
+                        }}
+                        className="w-full h-full object-cover clip-path-slant-left bg-dark-900"
+                      />
                     </div>
                     <span className="hidden lg:block font-heading text-xs tracking-wider uppercase">{user?.username}</span>
                     <ChevronDown className="h-3 w-3 transition-transform group-hover:rotate-180" />
@@ -222,11 +164,14 @@ const Header: React.FC = () => {
                 <>
                   <div className="flex items-center space-x-3 mb-6 pb-6 border-b border-white/5">
                     <div className="w-10 h-10 rounded bg-primary-600 p-0.5 clip-path-slant-left shadow-glow-red">
-                      {user?.profilePicture ? (
-                        <img src={user.profilePicture} alt={user.username} className="w-full h-full object-cover clip-path-slant-left bg-dark-900" />
-                      ) : (
-                        <div className="w-full h-full bg-dark-800 flex items-center justify-center text-white text-sm font-bold clip-path-slant-left">{user?.username?.charAt(0).toUpperCase()}</div>
-                      )}
+                      <img
+                        src={user?.profilePicture || DEFAULT_PROFILE_PICTURE}
+                        alt={user?.username || 'User'}
+                        onError={(e) => {
+                          e.currentTarget.src = DEFAULT_PROFILE_PICTURE;
+                        }}
+                        className="w-full h-full object-cover clip-path-slant-left bg-dark-900"
+                      />
                     </div>
                     <div>
                       <div className="font-heading text-sm uppercase tracking-wider text-white">{user?.username}</div>

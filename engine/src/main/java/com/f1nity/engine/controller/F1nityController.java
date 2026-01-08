@@ -194,4 +194,13 @@ public class F1nityController {
         return f1nityService.getRaceById(id);
     }
 
+    @GetMapping("/cleanup-races")
+    public String cleanupRaces() {
+        // This is a temporary endpoint to help transition seasons
+        // Ideally this should be in the service layer, but for quick fix adding here or
+        // exposing service method
+        dataIngestionService.cleanupOldRaces();
+        return "Cleanup initiated";
+    }
+
 }

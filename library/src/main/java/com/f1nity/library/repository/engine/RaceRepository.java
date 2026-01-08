@@ -13,4 +13,6 @@ public interface RaceRepository extends MongoRepository<Race, String> {
     public Race findByRound(String round);
 
     public java.util.List<Race> findBySeasonAndRound(String season, String round);
+
+    public java.util.List<Race> findBySeason(String season);
 }

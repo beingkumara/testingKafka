@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Calendar, Clock, ChevronRight, Flag, CheckCircle } from 'lucide-react';
 import { getRaces } from '../services';
 import LoadingScreen from '../components/ui/LoadingScreen';
+import { getRaceTrackImage } from '../utils/imageUtils';
 import { Link } from 'react-router-dom';
 import { Race } from '../types/f1.types';
 
@@ -86,21 +87,22 @@ const RacesPage: React.FC = () => {
             `}
           >
             {/* Header Image Area */}
-            <div className="h-40 relative bg-white flex items-center justify-center p-4 overflow-hidden">
+            {/* Header Image Area */}
+            <div className="h-40 relative bg-white/5 flex items-center justify-center overflow-hidden">
               <div className="absolute inset-0 bg-[url('/images/grid.png')] opacity-10"></div>
               <img
-                src={race.image}
+                src={getRaceTrackImage(race.round) || race.image}
                 alt={`${race.circuit} layout`}
-                className="object-contain h-full w-full relative z-10 transition-transform duration-500 group-hover:scale-105"
+                className="object-contain h-full w-full relative z-0 opacity-80 invert mix-blend-screen transition-transform duration-500 group-hover:scale-105"
                 onError={(e) => e.currentTarget.style.display = 'none'}
                 referrerPolicy="no-referrer"
               />
-              <div className="absolute top-0 right-0 p-3">
-                <span className="font-mono text-4xl font-bold text-black/20 select-none">{String(race.round).padStart(2, '0')}</span>
+              <div className="absolute top-0 right-0 p-3 z-10">
+                <span className="font-mono text-4xl font-bold text-white/10 select-none">{String(race.round).padStart(2, '0')}</span>
               </div>
 
               {/* Status Badge */}
-              <div className="absolute top-3 left-3">
+              <div className="absolute top-3 left-3 z-10">
                 {race.completed ? (
                   <span className="flex items-center gap-1 bg-gray-900/10 backdrop-blur-sm text-gray-600 border border-gray-200 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">
                     <CheckCircle className="w-3 h-3" /> Finished

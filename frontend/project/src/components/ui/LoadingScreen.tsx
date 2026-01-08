@@ -6,7 +6,7 @@ const LoadingScreen: React.FC = () => {
     <div className="fixed inset-0 flex items-center justify-center bg-dark-950 z-50">
       <div className="text-center">
         <div className="mb-6">
-          <Logo className="h-16 w-auto mx-auto" />
+          <Logo className="h-16 w-auto text-4xl mx-auto" />
         </div>
 
         <div className="relative w-48 h-2 bg-secondary-700 rounded-full overflow-hidden mx-auto">

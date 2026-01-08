@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Trophy, TrendingUp, ChevronRight } from 'lucide-react';
+import { Trophy, ChevronRight } from 'lucide-react';
 import { DriverStanding } from '../../types/f1.types';
 
 interface DriverStandingsCardProps {
@@ -13,7 +13,7 @@ const DriverStandingsCard: React.FC<DriverStandingsCardProps> = ({ drivers }) =>
     const topDrivers = drivers.slice(0, 5);
 
     return (
-        <div className="telemetry-card group h-full flex flex-col">
+        <div className="telemetry-card group flex flex-col">
             <div className="flex items-center justify-between mb-6 pb-2 border-b border-white/10">
                 <div className="flex items-center gap-2">
                     <Trophy className="h-5 w-5 text-primary-500" />

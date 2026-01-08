@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { User, Calendar, Edit3 } from 'lucide-react';
 import { User as UserType } from '../../types/auth.types';
+import { DEFAULT_PROFILE_PICTURE } from '../../utils/imageUtils';
 
 interface ProfileHeaderProps {
     user: UserType | null;
@@ -9,8 +10,7 @@ interface ProfileHeaderProps {
 }
 
 const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onEditClick }) => {
-    const defaultProfilePicture = 'https://via.placeholder.com/150?text=User';
-    const displayImage = user?.profilePicture || defaultProfilePicture;
+    const displayImage = user?.profilePicture || DEFAULT_PROFILE_PICTURE;
     const defaultCoverPhoto = 'https://images.unsplash.com/photo-1541348263662-e068662d82af?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80';
     const displayCover = user?.coverPhoto || defaultCoverPhoto;
 
@@ -18,9 +18,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onEditClick }) => {
         <div className="relative mb-20">
             {/* Cover Image */}
             <div className="h-48 md:h-64 w-full rounded-b-2xl overflow-hidden relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-900 to-dark-900 opacity-90"></div>
-                <div className="absolute inset-0 bg-cover bg-center mix-blend-overlay" style={{ backgroundImage: `url(${displayCover})` }}></div>
-                <div className="absolute inset-0 bg-grid-pattern opacity-20"></div>
+                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${displayCover})` }}></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/40 to-transparent opacity-80"></div>
+                <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
             </div>
 
             {/* Profile Info Container */}

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Instagram, ExternalLink, Heart } from 'lucide-react';
+import { Github, Twitter, Instagram } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Logo from '../ui/Logo';
 
@@ -21,7 +21,7 @@ const Footer: React.FC = () => {
             className="md:col-span-1"
           >
             <div className="flex items-center mb-4">
-              <Logo className="h-8 w-auto mr-2 drop-shadow-[0_0_5px_rgba(225,6,0,0.8)]" />
+              <Logo className="h-8 w-auto text-2xl mr-2 drop-shadow-[0_0_5px_rgba(225,6,0,0.8)]" />
               <span className="font-heading text-lg tracking-widest uppercase">F1NITY</span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">

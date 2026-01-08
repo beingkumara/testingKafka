@@ -7,7 +7,7 @@ interface LogoProps {
   className?: string;
 }
 
-const Logo: React.FC<LogoProps> = ({ className = 'h-8 w-auto' }) => {
+const Logo: React.FC<LogoProps> = ({ className = 'h-8 w-auto text-2xl' }) => {
   // Extract height related classes to adapt text size if possible, or just default
   // For text logo, we probably want to ignore the "h-8" part essentially for the container and just size the text
   // But to be safe, let's wrap it.
@@ -18,10 +18,11 @@ const Logo: React.FC<LogoProps> = ({ className = 'h-8 w-auto' }) => {
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5 }}
-        className="font-heading italic tracking-tighter text-2xl"
+        className="font-black tracking-tighter"
       >
-        <span className="text-white">Fan</span>
-        <span className="text-primary-500">F1x</span>
+        <span className="text-white">FAN</span>
+        <span className="text-[#e10600]">F1</span>
+        <span className="text-white">X</span>
       </motion.div>
     </div>
   );

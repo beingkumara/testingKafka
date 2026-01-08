@@ -63,7 +63,7 @@ public class RaceDataScheduler {
         if (nextInfo != null && nextInfo.nextExecution != null) {
             // Schedule the task to run at the calculated time
             scheduledTask = taskScheduler.schedule(
-                    () -> executeRaceResultsUpdate(nextInfo.nextRound),
+                    () -> executeRaceResultsUpdate(nextInfo.nextSeason, nextInfo.nextRound),
                     nextInfo.nextExecution);
             System.out.println("Next race results update scheduled for: " + nextInfo.nextExecution);
         } else {
@@ -78,8 +78,8 @@ public class RaceDataScheduler {
     /**
      * Executes the race results update and schedules the next update
      */
-    private void executeRaceResultsUpdate(String nextRound) {
-        updateLatestRaceResults(nextRound);
+    private void executeRaceResultsUpdate(String nextSeason, String nextRound) {
+        updateLatestRaceResults(nextSeason, nextRound);
         // After execution, schedule the next update
         scheduleNextRaceUpdate();
     }
@@ -91,9 +91,11 @@ public class RaceDataScheduler {
     private static class NextRaceInfo {
         public final Date nextExecution;
         public final String nextRound;
+        public final String nextSeason;
 
-        public NextRaceInfo(Date nextExecution, String nextRound) {
+        public NextRaceInfo(Date nextExecution, String nextSeason, String nextRound) {
             this.nextExecution = nextExecution;
+            this.nextSeason = nextSeason;
             this.nextRound = nextRound;
         }
     }
@@ -128,9 +130,8 @@ public class RaceDataScheduler {
                         System.out.println(
                                 "Found pending past race: " + race.getRaceName() + " (Round " + race.getRound() + ")");
 
-                        // Schedule immediate update (in 10 seconds)
-                        Date executionTime = new Date(System.currentTimeMillis() + 10_000);
-                        return new NextRaceInfo(executionTime, race.getRound());
+                        Date executionTime = new Date(System.currentTimeMillis() + 30 * 60 * 1000);
+                        return new NextRaceInfo(executionTime, race.getSeason(), race.getRound());
                     }
                 } catch (Exception e) {
                     System.err.println("Error checking past race: " + race.getRaceName());
@@ -167,14 +168,14 @@ public class RaceDataScheduler {
             ZonedDateTime scheduledTime = nextRaceDateTime.plus(Duration.ofHours(4));
             System.out.println("Next upcoming race: " + nextRace.getRaceName() + " at " + nextRaceDateTime);
             System.out.println("Scheduled data fetch for 4 hours after race: " + scheduledTime);
-            return new NextRaceInfo(Date.from(scheduledTime.toInstant()), nextRound);
+            return new NextRaceInfo(Date.from(scheduledTime.toInstant()), nextRace.getSeason(), nextRound);
         }
 
         // If no future races found, but we might have missed something or just waiting
         // for next season
         System.out.println("No pending past races and no upcoming races found. checking again next day.");
         return new NextRaceInfo(Date.from(ZonedDateTime.now(ZoneId.of("UTC")).plus(Duration.ofHours(24)).toInstant()),
-                null);
+                null, null);
     }
 
     private ZonedDateTime parseRaceDateTime(Race race) {
@@ -197,9 +198,12 @@ public class RaceDataScheduler {
      * initially
      * stored without results (e.g., before the race was completed).
      */
-    public void updateLatestRaceResults(String nextRound) {
-        System.out.println("Scheduled task: Updating latest race results for round: " + nextRound);
-        List<Result> latestRace = dataIngestionService.fetchAndStoreLatestRaceResults(nextRound);
+    public void updateLatestRaceResults(String nextSeason, String nextRound) {
+        if (nextSeason == null || nextRound == null)
+            return;
+        System.out.println(
+                "Scheduled task: Updating latest race results for year " + nextSeason + " round: " + nextRound);
+        List<Result> latestRace = dataIngestionService.fetchAndStoreLatestRaceResults(nextSeason, nextRound);
         if (latestRace != null) {
             System.out.println("Updated latest race results for: " + latestRace);
             // Update standings after race results are updated

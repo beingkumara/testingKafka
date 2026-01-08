@@ -52,81 +52,6 @@ class DataIngestionServiceTest {
     }
 
     @Test
-    void testSyncAllDrivers() {
-        ErgastResponse ergastResponse = new ErgastResponse();
-        ergastResponse.MRData = new ErgastDriver.MRData();
-        ergastResponse.MRData.DriverTable = new ErgastDriver.DriverTable();
-        ErgastDriver ergDriver = new ErgastDriver();
-        ergDriver.setGivenName("Max");
-        ergDriver.setFamilyName("Verstappen");
-        ergDriver.setDriverId("max_verstappen");
-        ergastResponse.MRData.DriverTable.Drivers = Collections.singletonList(ergDriver);
-
-        when(ergastClient.getDrivers(anyInt(), anyInt())).thenReturn(Mono.just(ergastResponse));
-        when(openF1Client.getAllDrivers()).thenReturn(Mono.just(new OpenF1Driver[] {}));
-        when(driverRepo.saveAll(any())).thenReturn(Collections.emptyList());
-
-        List<Driver> drivers = dataIngestionService.syncAllDrivers();
-
-        assertNotNull(drivers);
-        assertEquals(1, drivers.size()); // Merged primarily by full name
-        verify(ergastClient, times(9)).getDrivers(anyInt(), anyInt());
-    }
-
-    @Test
-    void testSyncDriversWithNameNormalization() {
-        // Ergast has "Andrea Kimi Antonelli"
-        ErgastResponse ergastResponse = new ErgastResponse();
-        ergastResponse.MRData = new ErgastDriver.MRData();
-        ergastResponse.MRData.DriverTable = new ErgastDriver.DriverTable();
-        ErgastDriver ergDriver = new ErgastDriver();
-        ergDriver.setGivenName("Andrea Kimi");
-        ergDriver.setFamilyName("Antonelli");
-        ergDriver.setDriverId("kimi_antonelli"); // ID might be different
-        ergastResponse.MRData.DriverTable.Drivers = Collections.singletonList(ergDriver);
-
-        // OpenF1 has "Kimi Antonelli"
-        OpenF1Driver openDriver = new OpenF1Driver();
-        openDriver.setFullName("Kimi Antonelli");
-        openDriver.setDriverNumber("12");
-        openDriver.setHeadshotUrl("low_res.jpg");
-
-        when(ergastClient.getDrivers(anyInt(), anyInt())).thenReturn(Mono.just(ergastResponse));
-        when(openF1Client.getAllDrivers()).thenReturn(Mono.just(new OpenF1Driver[] { openDriver }));
-        when(driverRepo.saveAll(any())).thenReturn(Collections.emptyList());
-
-        List<Driver> drivers = dataIngestionService.syncAllDrivers();
-
-        assertNotNull(drivers);
-        assertEquals(1, drivers.size(), "Should merge into single driver despite name difference");
-        Driver d = drivers.get(0);
-        assertEquals("ANDREA KIMI ANTONELLI", d.getFullName());
-        assertEquals("12", d.getDriverNumber());
-        // Verify override image is used
-        assertTrue(d.getDriverImageUrl().contains("wikimedia"), "Should use high-res override image");
-    }
-
-    @Test
-    void testSyncAllConstructors() {
-        ConstructorResponse response = new ConstructorResponse();
-        response.MRData = new MRData();
-        response.MRData.setConstructorTable(new ConstructorTable());
-        ErgastConstructor ergConstructor = new ErgastConstructor();
-        ergConstructor.setConstructorId("red_bull");
-        ergConstructor.setName("Red Bull");
-        response.MRData.getConstructorTable().setConstructors(Collections.singletonList(ergConstructor));
-
-        when(ergastClient.getConstructors(anyInt(), anyInt())).thenReturn(Mono.just(response));
-        when(constructorRepo.saveAll(any())).thenReturn(Collections.emptyList());
-
-        List<Constructor> constructors = dataIngestionService.syncAllConstructors();
-
-        assertNotNull(constructors);
-        assertEquals(3, constructors.size()); // 250 / 100 ceil approx loop count adds duplicates in list
-        verify(ergastClient, times(3)).getConstructors(anyInt(), anyInt());
-    }
-
-    @Test
     void testAccumulateRaces() {
         RaceResponse response = new RaceResponse();
         response.setMrData(new MRData());
@@ -197,7 +122,7 @@ class DataIngestionServiceTest {
         initialConstructor.setTotalRaces(0);
         when(constructorRepo.findById("c1")).thenReturn(Optional.of(initialConstructor));
 
-        dataIngestionService.fetchAndStoreLatestRaceResults(round);
+        dataIngestionService.fetchAndStoreLatestRaceResults(String.valueOf(year), round);
 
         // Verify points accumulation: 25 (GP) + 8 (Sprint) = 33
         // The service updates 'updatedDrivers' map and saves them.

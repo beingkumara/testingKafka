@@ -11,6 +11,7 @@ import com.f1nity.library.models.engine.Driver;
 import com.f1nity.library.models.engine.Race;
 import com.f1nity.library.models.engine.DriverStanding;
 import com.f1nity.library.models.engine.ConstructorStanding;
+import com.f1nity.library.models.engine.Constructor;
 
 /**
  * Service interface for F1 data operations.
@@ -41,6 +42,14 @@ public class F1nityService {
      */
     public List<Race> getRacesOfCurrentYear() {
         return f1nityServiceImpl.getRacesOfCurrentYear();
+    }
+
+    public List<Driver> getAllDrivers() {
+        return f1nityServiceImpl.getAllDrivers();
+    }
+
+    public List<Constructor> getAllConstructors() {
+        return f1nityServiceImpl.getAllConstructors();
     }
 
     /**

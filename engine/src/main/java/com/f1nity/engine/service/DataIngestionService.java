@@ -1,19 +1,19 @@
 package com.f1nity.engine.service;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +29,7 @@ import com.f1nity.library.models.engine.ErgastConstructorStandingsResponse;
 import com.f1nity.library.models.engine.ErgastDriver;
 import com.f1nity.library.models.engine.ErgastDriver.ErgastResponse;
 import com.f1nity.library.models.engine.ErgastDriverStandingsResponse;
-import com.f1nity.library.models.engine.FastestLap;
+
 import com.f1nity.library.models.engine.OpenF1Driver;
 import com.f1nity.library.models.engine.Race;
 import com.f1nity.library.models.engine.RaceResponse;
@@ -40,8 +40,6 @@ import com.f1nity.library.repository.engine.DriverRepository;
 import com.f1nity.library.repository.engine.DriverStandingsRepository;
 import com.f1nity.library.repository.engine.RaceRepository;
 
-import reactor.core.publisher.Mono;
-
 @Service
 public class DataIngestionService {
 
@@ -49,6 +47,7 @@ public class DataIngestionService {
 
     private static final Map<String, String> OPENF1_TO_ERGAST_NAME_MAP = new HashMap<>();
     private static final Map<String, String> DRIVER_IMAGE_OVERRIDES = new HashMap<>();
+    private static final Set<String> DRIVERS_2026 = new HashSet<>();
 
     static {
         // Map OpenF1 names (uppercase) to Ergast names (uppercase)
@@ -63,6 +62,33 @@ public class DataIngestionService {
                 "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Andrea_Kimi_Antonelli_%282024_Macau_Grand_Prix%29.jpg/640px-Andrea_Kimi_Antonelli_%282024_Macau_Grand_Prix%29.jpg");
         DRIVER_IMAGE_OVERRIDES.put("NICO HÜLKENBERG",
                 "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Nico_H%C3%BClkenberg_2019_Malaysia.jpg/640px-Nico_H%C3%BClkenberg_2019_Malaysia.jpg");
+
+        // 2026 Confirmed Driver Lineup
+        DRIVERS_2026.add("LANDO NORRIS");
+        DRIVERS_2026.add("OSCAR PIASTRI");
+        DRIVERS_2026.add("GEORGE RUSSELL");
+        DRIVERS_2026.add("ANDREA KIMI ANTONELLI");
+        DRIVERS_2026.add("MAX VERSTAPPEN");
+        DRIVERS_2026.add("ISACK HADJAR");
+        DRIVERS_2026.add("CHARLES LECLERC");
+        DRIVERS_2026.add("LEWIS HAMILTON");
+        DRIVERS_2026.add("ALEX ALBON");
+        DRIVERS_2026.add("CARLOS SAINZ");
+        DRIVERS_2026.add("LIAM LAWSON");
+        DRIVERS_2026.add("ARVID LINDBLAD");
+        DRIVERS_2026.add("FERNANDO ALONSO");
+        DRIVERS_2026.add("LANCE STROLL");
+        DRIVERS_2026.add("PIERRE GASLY");
+        DRIVERS_2026.add("FRANCO COLAPINTO");
+        DRIVERS_2026.add("ESTEBAN OCON");
+        DRIVERS_2026.add("OLLIE BEARMAN"); // Check if name matches Ergast/OpenF1 exactly, usually OLIVER BEARMAN
+        DRIVERS_2026.add("OLIVER BEARMAN"); // Adding both just in case
+        DRIVERS_2026.add("NICO HÜLKENBERG");
+        DRIVERS_2026.add("NICO HULKENBERG"); // Variation
+        DRIVERS_2026.add("GABRIEL BORTOLETO");
+        DRIVERS_2026.add("SERGIO PÉREZ");
+        DRIVERS_2026.add("SERGIO PEREZ"); // Variation
+        DRIVERS_2026.add("VALTTERI BOTTAS");
     }
 
     @Autowired
@@ -86,173 +112,73 @@ public class DataIngestionService {
     @Autowired
     private RaceRepository raceRepo;
 
+    @Autowired
+    private HistoricalDataLoader historicalDataLoader;
+
     public void initializeStaticData() {
-        if (driverRepo.count() == 0) {
-            System.out.println("No drivers found in database. Initializing...");
-            syncAllDrivers();
+        // Try loading from JSON first
+        if (driverRepo.count() == 0 || constructorRepo.count() == 0) {
+            System.out.println("Empty database detected. Attempting to load from historical_data.json...");
+            historicalDataLoader.loadHistoricalData();
         }
-        if (constructorRepo.count() == 0) {
-            System.out.println("No constructors found in database. Initializing...");
-            syncAllConstructors();
+
+        // Removed API fallback as requested. We strictly rely on JSON for historical
+        // baseline.
+        if (driverRepo.count() > 0) {
+            updateDriverActiveStatus();
         }
     }
 
-    public List<Driver> syncAllDrivers() {
-        try {
-            // Fetch all Ergast drivers with pagination
-            Map<String, Driver> mergedDrivers = new HashMap<>();
-            int limit = 100;
-            int offset = 0;
-            int total = 900;
-
-            while (offset < total) {
-                ErgastResponse ergastResponse = ergastClient.getDrivers(limit, offset).block();
-
-                if (ergastResponse == null || ergastResponse.MRData == null
-                        || ergastResponse.MRData.DriverTable == null) {
-                    break;
-                }
-
-                for (ErgastDriver ed : ergastResponse.MRData.DriverTable.Drivers) {
-                    String fullName = (ed.getGivenName() + " " + ed.getFamilyName()).toUpperCase();
-                    Driver d = new Driver();
-                    d.setDriverId(ed.getDriverId() != null ? ed.getDriverId() : fullName.toLowerCase().strip());
-                    d.setFirstName(ed.getGivenName());
-                    d.setLastName(ed.getFamilyName());
-                    d.setFullName(fullName);
-                    d.setDateOfBirth(ed.getDateOfBirth());
-                    d.setNationality(ed.getNationality());
-                    d.setActive(false);
-                    d.setDriverNumber(ed.getPermanentNumber());
-                    d.setPodiums(0);
-                    d.setWins(0);
-                    d.setPoints(0);
-                    d.setPoles(0);
-                    d.setFastestLaps(0);
-                    d.setTotalRaces(0);
-
-                    mergedDrivers.put(fullName, d);
-                }
-
-                offset += limit;
+    public void updateDriverActiveStatus() {
+        System.out.println("Updating driver active status based on 2026 lineup...");
+        List<Driver> allDrivers = driverRepo.findAll();
+        for (Driver d : allDrivers) {
+            if (DRIVERS_2026.contains(d.getFullName().toUpperCase())) {
+                d.setActive(true);
+            } else {
+                d.setActive(false);
             }
-
-            // Fetch OpenF1 drivers
-            OpenF1Driver[] openDrivers = openF1Client.getAllDrivers().block();
-            Map<String, OpenF1Driver> uniqueDrivers = new HashMap<>();
-            if (openDrivers != null) {
-                for (OpenF1Driver od : openDrivers) {
-                    uniqueDrivers.put(od.getFullName().toUpperCase(), od);
-                }
-            }
-
-            System.out.println("Merging OpenF1 drivers with Ergast drivers...");
-            for (OpenF1Driver od : uniqueDrivers.values()) {
-                String openF1Name = od.getFullName().toUpperCase();
-                // Check if there is a manual mapping, otherwise use the name as is
-                String key = OPENF1_TO_ERGAST_NAME_MAP.getOrDefault(openF1Name, openF1Name);
-
-                if (mergedDrivers.containsKey(key)) {
-                    Driver d = mergedDrivers.get(key);
-                    d.setActive(true);
-                    d.setDriverNumber(od.getDriverNumber());
-                    d.setTeamName(od.getTeam_name());
-                    // Use override image if available, otherwise OpenF1
-                    d.setDriverImageUrl(DRIVER_IMAGE_OVERRIDES.getOrDefault(key, od.getHeadshotUrl()));
-                    d.setPodiums(0);
-                    d.setWins(0);
-                    d.setPoints(0);
-                    d.setPoles(0);
-                    d.setFastestLaps(0);
-                    d.setTotalRaces(0);
-                    mergedDrivers.put(key, d);
-                } else {
-                    // This case should be rare if mapping is correct, but handles new drivers not
-                    // in Ergast yet?
-                    // Or if Ergast has different spelling we missed.
-                    System.out.println("Warning: OpenF1 driver " + openF1Name + " (mapped to " + key
-                            + ") not found in Ergast list.");
-                    Driver d = new Driver();
-                    d.setDriverId(key.toLowerCase().strip().replace(" ", "_"));
-                    d.setFullName(key);
-                    d.setActive(true);
-                    d.setDriverNumber(od.getDriverNumber());
-                    d.setTeamName(od.getTeam_name());
-                    d.setDriverImageUrl(DRIVER_IMAGE_OVERRIDES.getOrDefault(key, od.getHeadshotUrl()));
-                    d.setWins(0);
-                    d.setPodiums(0);
-                    d.setPoints(0);
-                    d.setPoles(0);
-                    d.setFastestLaps(0);
-                    d.setTotalRaces(0);
-                    mergedDrivers.put(key, d);
-                }
-            }
-
-            List<Driver> result = new ArrayList<>(mergedDrivers.values());
-            driverRepo.saveAll(result);
-            return result;
-
-        } catch (Exception e) {
-            System.err.println("General Error while fetching drivers: " + e.getMessage());
         }
-        return Collections.emptyList();
+        driverRepo.saveAll(allDrivers);
+        System.out.println("Updated active status for " + allDrivers.size() + " drivers.");
     }
 
-    public List<Constructor> syncAllConstructors() {
-        try {
-            int limit = 100;
-            int offset = 0;
-            int total = 250;
-            List<Constructor> constructorList = new ArrayList<>();
-
-            while (offset < total) {
-                ConstructorResponse constructors = ergastClient.getConstructors(limit, offset).block();
-
-                if (constructors == null || constructors.MRData == null
-                        || constructors.MRData.getConstructorTable() == null) {
-                    break;
-                }
-
-                for (ErgastConstructor constructor : constructors.MRData.getConstructorTable().getConstructors()) {
-                    Constructor c = new Constructor();
-                    c.setPodiums(0);
-                    c.setWins(0);
-                    c.setPoints(0);
-                    c.setPolePositions(0);
-                    c.setFastestLaps(0);
-                    c.setTotalRaces(0);
-                    c.setConstructorId(constructor.getConstructorId());
-                    c.setUrl(constructor.getUrl());
-                    c.setNationality(constructor.getNationality());
-                    c.setName(constructor.getName());
-                    constructorList.add(c);
-                }
-
-                offset += limit;
-            }
-
-            constructorRepo.saveAll(constructorList);
-            return constructorList;
-
-        } catch (Exception e) {
-            System.err.println("Error fetching constructors: " + e.getMessage());
-        }
-        return Collections.emptyList();
-    }
+    @Autowired
+    private com.f1nity.library.repository.engine.FailedRequestRepository failedRequestRepo;
 
     public void updateStatistics() {
         Integer year = 2026;
         Integer round = 1;
 
-        // OPTIMIZATION: Only process 2026 to prevent Render timeout.
-        // To process history, we would need a background job or separate endpoint.
+        // Note: Global reset removed to support incremental JSON updates + new race
+        // additions.
+        // We assume historical data is loaded from JSON.
+
+        // Only check for current season (or future seasons)
         while (year >= 2026) {
             while (round <= MAX_ROUNDS) {
                 String context = "year " + year + ", round " + round;
 
+                // First check if we already have this race processed to avoid unnecessary API
+                // calls
+                List<Race> existingRaces = raceRepo.findBySeasonAndRound(String.valueOf(year), String.valueOf(round));
+                if (existingRaces != null && !existingRaces.isEmpty()) {
+                    System.out.println("Race " + context + " already exists. Skipping accumulation.");
+                    round++;
+                    continue;
+                }
+
                 try {
-                    RaceResponse raceResponse = ergastClient.getRaceResults(year, round);
+                    // Check for nulls/empty responses without exception flow where possible
+                    RaceResponse raceResponse = null;
+                    try {
+                        raceResponse = ergastClient.getRaceResults(year, round);
+                    } catch (Exception e) {
+                        System.err.println("Error fetching race results for " + context + ": " + e.getMessage());
+                        saveFailedRequest(year, String.valueOf(round), "race", e.getMessage());
+                        round++;
+                        continue;
+                    }
 
                     if (raceResponse == null || raceResponse.getMrData() == null ||
                             raceResponse.getMrData().getRaceTable() == null ||
@@ -260,7 +186,7 @@ public class DataIngestionService {
                         System.out.println("No race data for " + context);
                         round++;
                         try {
-                            Thread.sleep(1000);
+                            Thread.sleep(200);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                         }
@@ -269,21 +195,21 @@ public class DataIngestionService {
 
                     Race race = raceResponse.getMrData().getRaceTable().getRaces().get(0);
                     String circuitId = race.getCircuit().getCircuitId();
-
                     List<Result> results = race.getResults();
 
                     if (results == null || results.isEmpty()) {
                         System.out.println("No results in race data for " + context);
                         round++;
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
                         continue;
                     }
 
-                    RaceResponse qualiResponse = ergastClient.getQualifyingResults(year, round);
+                    // ... Quali logic ...(rest of function)
+                    RaceResponse qualiResponse = null;
+                    try {
+                        qualiResponse = ergastClient.getQualifyingResults(year, round);
+                    } catch (Exception e) {
+                        System.err.println("Error fetching quali results for " + context + ": " + e.getMessage());
+                    }
 
                     List<Result> qualiResults = Collections.emptyList();
                     if (qualiResponse != null && qualiResponse.getMrData() != null &&
@@ -304,38 +230,19 @@ public class DataIngestionService {
                     String currentRound = race.getRound();
 
                     // Process race results
-                    if (year == 2026) {
-                        for (int i = 0; i < results.size(); i++) {
-                            Result result = results.get(i);
+                    // Since we already checked for existence at the top, we just process here.
+                    // But for safety, we set standingsUpdated
+                    race.setStandingsUpdated(true);
+                    updateRaces.put(currentRound, race);
 
-                            List<Race> existingRaces = raceRepo.findBySeasonAndRound(String.valueOf(year),
-                                    currentRound);
-                            Race existingRace = null;
-                            if (existingRaces != null && !existingRaces.isEmpty()) {
-                                existingRace = existingRaces.get(0);
-                                if (existingRaces.size() > 1) {
-                                    System.out.println("Found duplicate races for " + year + " round " + currentRound
-                                            + ". Cleaning up " + (existingRaces.size() - 1) + " duplicates.");
-                                    for (int j = 1; j < existingRaces.size(); j++) {
-                                        raceRepo.delete(existingRaces.get(j));
-                                    }
-                                }
-                            }
+                    for (int i = 0; i < results.size(); i++) {
+                        processResultForStats(year, context, updatedDrivers, updatedConstructors,
+                                updatedDriverStandings, updatedConstructorStandings,
+                                constructorsProcessedForTotalRaces, i, results.get(i), false);
+                    }
 
-                            if (existingRace != null) {
-                                existingRace.setStandingsUpdated(true);
-                                updateRaces.put(currentRound, existingRace);
-                            } else {
-                                System.out.println(
-                                        "Warning: Race not found for round " + currentRound + " in year " + year);
-                            }
-                            // Process Main Race Results
-                            processResultForStats(year, context, updatedDrivers, updatedConstructors,
-                                    updatedDriverStandings, updatedConstructorStandings,
-                                    constructorsProcessedForTotalRaces, i, result, false);
-                        }
-
-                        // Process Sprint Results
+                    // Process Sprint Results
+                    if (year >= 2021) {
                         try {
                             RaceResponse sprintResponse = ergastClient.getSprintResults(year, round);
                             if (sprintResponse != null && sprintResponse.getMrData() != null &&
@@ -350,12 +257,8 @@ public class DataIngestionService {
                                     for (int s = 0; s < sprintResults.size(); s++) {
                                         processResultForStats(year, context + " (Sprint)", updatedDrivers,
                                                 updatedConstructors,
-                                                updatedDriverStandings, updatedConstructorStandings,
-                                                // We don't increment total races for sprint? Open to interpretation,
-                                                // usually GP starts count.
-                                                // So we pass a set that already has constructors potentially?
-                                                // Actually for constructor total races, let's assume GP only.
-                                                // Passing existing set is safe.
+                                                year == 2026 ? updatedDriverStandings : null,
+                                                year == 2026 ? updatedConstructorStandings : null,
                                                 constructorsProcessedForTotalRaces, s, sprintResults.get(s), true);
                                     }
                                 }
@@ -363,80 +266,58 @@ public class DataIngestionService {
                         } catch (Exception e) {
                             System.err
                                     .println("Error processing sprint results for " + context + ": " + e.getMessage());
-                        }
-
-                    } else {
-                        // Pre-2025: only update Driver and Constructor (no standings)
-                        for (int i = 0; i < results.size(); i++) {
-                            processResultForStats(year, context, updatedDrivers, updatedConstructors,
-                                    null, null,
-                                    constructorsProcessedForTotalRaces, i, results.get(i), false);
+                            saveFailedRequest(year, String.valueOf(round), "sprint", e.getMessage());
                         }
                     }
 
-                    // Process qualifying results (poles)
+                    // Process Quali (Poles) - existing logic
                     if (qualiResults != null && !qualiResults.isEmpty()) {
-                        Result poleResult = qualiResults.get(0); // Assuming first result is P1
+                        Result poleResult = qualiResults.get(0);
                         if (poleResult.getPosition() != null && poleResult.getPosition().equals("1")) {
                             ErgastDriver ergDriver = poleResult.getDriver();
                             ErgastConstructor egConstructor = poleResult.getConstructor();
-
                             if (ergDriver != null && egConstructor != null) {
                                 String driverId = ergDriver.getDriverId();
                                 String constructorId = egConstructor.getConstructorId();
 
-                                Driver driver = updatedDrivers.get(driverId);
-                                Constructor constructor = updatedConstructors.get(constructorId);
-
-                                if (driver == null) {
-                                    Optional<Driver> dOpt = driverRepo.findById(driverId);
-                                    if (dOpt.isPresent())
-                                        driver = dOpt.get();
-                                }
-                                if (constructor == null) {
-                                    Optional<Constructor> cOpt = constructorRepo.findById(constructorId);
-                                    if (cOpt.isPresent())
-                                        constructor = cOpt.get();
-                                }
+                                Driver driver = updatedDrivers.computeIfAbsent(driverId,
+                                        k -> driverRepo.findById(k).orElse(null));
+                                Constructor constructor = updatedConstructors.computeIfAbsent(constructorId,
+                                        k -> constructorRepo.findById(k).orElse(null));
 
                                 if (driver != null && constructor != null) {
                                     driver.setPoles(driver.getPoles() + 1);
                                     constructor.setPolePositions(constructor.getPolePositions() + 1);
-                                    updatedDrivers.put(driverId, driver);
-                                    updatedConstructors.put(constructorId, constructor);
                                 }
                             }
                         }
                     }
 
-                    if (!updatedDrivers.isEmpty()) {
+                    if (!updatedDrivers.isEmpty())
                         driverRepo.saveAll(updatedDrivers.values());
-                    }
-                    if (!updatedConstructors.isEmpty()) {
+                    if (!updatedConstructors.isEmpty())
                         constructorRepo.saveAll(updatedConstructors.values());
-                    }
                     if (year == 2026) {
-                        if (!updatedDriverStandings.isEmpty()) {
+                        if (!updatedDriverStandings.isEmpty())
                             driverStandingsRepo.saveAll(updatedDriverStandings.values());
-                        }
-                        if (!updatedConstructorStandings.isEmpty()) {
+                        if (!updatedConstructorStandings.isEmpty())
                             constructorStandingsRepo.saveAll(updatedConstructorStandings.values());
-                        }
-                    }
-                    if (!updateRaces.isEmpty()) {
-                        raceRepo.saveAll(updateRaces.values());
+                        if (!updateRaces.isEmpty())
+                            raceRepo.saveAll(updateRaces.values());
                     }
 
-                    System.out.println("Successfully processed " + context + ", circuit " + circuitId);
+                    System.out.println("Successfully processed " + context);
 
                 } catch (Exception e) {
                     System.err.println("General error processing " + context + ": " + e.getMessage());
+                    saveFailedRequest(year, String.valueOf(round), "general", e.getMessage());
                     e.printStackTrace();
                 }
 
                 round++;
+                // Polite delay
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -444,14 +325,21 @@ public class DataIngestionService {
 
             year--;
             round = 1;
-            if (year >= 2001) {
-                try {
-                    System.out.println("Waiting for 60 seconds before processing year " + year + "...");
-                    Thread.sleep(60000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
+            // Removed the massive 60s sleep to prevent connection drops.
+            // ErgastClient has its own rate limiting logic if we hit 429.
+            System.out.println("Finished processing year " + (year + 1) + ". Moving to " + year);
+        }
+        // Update JSON file after bulk update
+        historicalDataLoader.exportDataToJSON();
+    }
+
+    private void saveFailedRequest(int year, String round, String type, String msg) {
+        try {
+            com.f1nity.library.models.engine.FailedRequest fr = new com.f1nity.library.models.engine.FailedRequest(year,
+                    String.valueOf(round), type, msg);
+            failedRequestRepo.save(fr);
+        } catch (Exception e) {
+            System.err.println("Could not save failed request: " + e.getMessage());
         }
     }
 
@@ -469,26 +357,16 @@ public class DataIngestionService {
         String driverId = ergDriver.getDriverId();
         String constructorId = egConstructor.getConstructorId();
 
-        Optional<Driver> driverOpt = driverRepo.findById(driverId);
-        Optional<Constructor> constructorOpt = constructorRepo.findById(constructorId);
+        Driver driver = updatedDrivers.computeIfAbsent(driverId, k -> driverRepo.findById(k).orElse(new Driver()));
+        Constructor constructor = updatedConstructors.computeIfAbsent(constructorId,
+                k -> constructorRepo.findById(k).orElse(new Constructor()));
 
-        if (driverOpt.isEmpty()) {
-            System.out.println("Missing driver: " + driverId + " for " + context);
+        if (driver == null || constructor == null)
             return;
-        }
-        if (constructorOpt.isEmpty()) {
-            System.out.println("Missing constructor: " + constructorId + " for " + context);
-            return;
-        }
-
-        Driver driver = driverOpt.get();
-        Constructor constructor = updatedConstructors.computeIfAbsent(constructorId, k -> constructorOpt.get());
-
-        updatedDrivers.putIfAbsent(driverId, driver);
 
         // Update basic stats
-        // Sprint wins/podiums do NOT count towards official GP stats
         if (!isSprint) {
+            // Main Race Stats
             if (i == 0) { // Winner
                 driver.setWins(driver.getWins() + 1);
                 driver.setPodiums(driver.getPodiums() + 1);
@@ -500,36 +378,41 @@ public class DataIngestionService {
             }
         }
 
-        double points = 0;
+        // Points (Sprint + Main)
         if (result.getPoints() != null && !result.getPoints().isEmpty()) {
             try {
-                points = Double.parseDouble(result.getPoints());
+                double points = Double.parseDouble(result.getPoints());
                 driver.setPoints(driver.getPoints() + points);
                 constructor.setPoints(constructor.getPoints() + points);
             } catch (NumberFormatException e) {
-                System.err.println(
-                        "Could not parse points: " + result.getPoints() + " for driver " + driverId + " in " + context);
             }
         }
 
-        // Sprints typically don't count for Fastest Lap awards in same way, or at least
-        // regular stats usually imply GP FL.
+        // Fastest Lap (Main Only usually)
         if (!isSprint && result.getFastestLap() != null && result.getFastestLap().getRank() != null &&
                 result.getFastestLap().getRank().equals("1")) {
             driver.setFastestLaps(driver.getFastestLaps() != null ? driver.getFastestLaps() + 1 : 1);
             constructor.setFastestLaps(constructor.getFastestLaps() != null ? constructor.getFastestLaps() + 1 : 1);
         }
 
+        // Total Races - FIXED: Include Sprints
+        driver.setTotalRaces(driver.getTotalRaces() != null ? driver.getTotalRaces() + 1 : 1);
+
         if (!isSprint) {
-            driver.setTotalRaces(driver.getTotalRaces() != null ? driver.getTotalRaces() + 1 : 1);
             if (!constructorsProcessedForTotalRaces.contains(constructorId)) {
                 constructor.setTotalRaces(constructor.getTotalRaces() != null ? constructor.getTotalRaces() + 1 : 1);
                 constructorsProcessedForTotalRaces.add(constructorId);
             }
+        } else {
+            // Sprint Specific Stats
+            driver.setSprintRaces(driver.getSprintRaces() != null ? driver.getSprintRaces() + 1 : 1);
+            if (i == 0) { // Sprint Winner
+                driver.setSprintWins(driver.getSprintWins() != null ? driver.getSprintWins() + 1 : 1);
+                driver.setSprintPodiums(driver.getSprintPodiums() != null ? driver.getSprintPodiums() + 1 : 1);
+            } else if (i < 3) { // Sprint Podium
+                driver.setSprintPodiums(driver.getSprintPodiums() != null ? driver.getSprintPodiums() + 1 : 1);
+            }
         }
-
-        updatedDrivers.put(driverId, driver);
-        updatedConstructors.put(constructorId, constructor);
 
         // Update Standings (2026 only)
         if (year == 2026 && updatedDriverStandings != null && updatedConstructorStandings != null) {
@@ -566,126 +449,22 @@ public class DataIngestionService {
                     constructorStanding.setPodiums(constructorStanding.getPodiums() + 1);
                 }
             }
-            driverStanding.setPoints(driverStanding.getPoints() + points);
-            constructorStanding.setPoints(constructorStanding.getPoints() + points);
-
-            updatedDriverStandings.put(driverId, driverStanding);
-            updatedConstructorStandings.put(constructorId, constructorStanding);
-        }
-    }
-
-    public String getSprintStatistics() {
-        Integer year = 2026;
-        Integer round = 1;
-
-        while (year >= 2021) {
-            while (round <= MAX_ROUNDS) {
-                String context = "sprint for year " + year + ", round " + round;
-                Map<String, Driver> updatedDrivers = new HashMap<>();
-                Map<String, Constructor> updatedConstructors = new HashMap<>();
-                Map<String, DriverStanding> updatedDriverStandings = new HashMap<>();
-                Map<String, ConstructorStanding> updatedConstructorStandings = new HashMap<>();
-                Set<String> constructorsProcessedForSprintRaceCount = new HashSet<>();
-
+            double pointsVal = 0.0;
+            if (result.getPoints() != null) {
                 try {
-                    RaceResponse sprintResponse = ergastClient.getSprintResults(year, round);
-
-                    if (sprintResponse == null || sprintResponse.getMrData() == null ||
-                            sprintResponse.getMrData().getRaceTable() == null ||
-                            sprintResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
-                        System.out.println("No sprint data found for " + context);
-                        round++;
-                        try {
-                            Thread.sleep(5000);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                        continue;
-                    }
-
-                    Race sprintRace = sprintResponse.getMrData().getRaceTable().getRaces().get(0);
-                    List<Result> sprintResults = sprintRace.getSprintResults();
-
-                    if (sprintResults == null || sprintResults.isEmpty()) {
-                        System.out.println("No results in sprint data for " + context);
-                        round++;
-                        try {
-                            Thread.sleep(500);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        }
-                        continue;
-                    }
-
-                    for (Result sprintObj : sprintResults) {
-                        // Refactored sprint logic simplified here for brevity - essentially same as
-                        // FastF1 but using maps
-                        // ... (copy paste logic if needed but it's massive duplication, leaving
-                        // placeholder for now or copy fully)
-                        // For this exercise, I will assume we should implement it fully to avoid
-                        // breaking functionality.
-
-                        if (sprintObj.getDriver() == null || sprintObj.getConstructor() == null)
-                            continue;
-                        String driverId = sprintObj.getDriver().getDriverId();
-                        String constructorId = sprintObj.getConstructor().getConstructorId();
-
-                        Optional<Driver> driverOpt = driverRepo.findById(driverId);
-                        Optional<Constructor> constructorOpt = constructorRepo.findById(constructorId);
-
-                        if (driverOpt.isEmpty() || constructorOpt.isEmpty())
-                            continue;
-
-                        Driver driver = updatedDrivers.computeIfAbsent(driverId, k -> driverOpt.get());
-                        Constructor constructor = updatedConstructors.computeIfAbsent(constructorId,
-                                k -> constructorOpt.get());
-
-                        // Update points, stats etc.
-                        if (sprintObj.getPoints() != null && !sprintObj.getPoints().isEmpty()) {
-                            try {
-                                int points = Integer.parseInt(sprintObj.getPoints());
-                                driver.setPoints(driver.getPoints() + points);
-                                constructor.setPoints(constructor.getPoints() + points);
-                            } catch (Exception e) {
-                            }
-                        }
-
-                        // ... (More sprint specific stats updates)
-
-                        updatedDrivers.put(driverId, driver);
-                        updatedConstructors.put(constructorId, constructor);
-                    }
-
-                    if (!updatedDrivers.isEmpty())
-                        driverRepo.saveAll(updatedDrivers.values());
-                    if (!updatedConstructors.isEmpty())
-                        constructorRepo.saveAll(updatedConstructors.values());
-
-                    System.out.println("Successfully processed " + context);
-
+                    pointsVal = Double.parseDouble(result.getPoints());
                 } catch (Exception e) {
-                    System.err.println("Error processing " + context + ": " + e.getMessage());
-                }
-
-                round++;
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
                 }
             }
-            year--;
-            round = 1;
-            if (year >= 2021) {
-                try {
-                    Thread.sleep(30000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
+            driverStanding.setPoints(driverStanding.getPoints() + pointsVal);
+            constructorStanding.setPoints(constructorStanding.getPoints() + pointsVal);
         }
-        return "OK";
     }
+
+    /**
+     * Dummy API to fix Sprint Logic specifically.
+     * Iterates 2021-2026 and adds missing sprint stats.
+     */
 
     public String updateStandings() {
         // Driver Standings
@@ -823,12 +602,12 @@ public class DataIngestionService {
     }
 
     @Transactional
-    public List<Result> fetchAndStoreLatestRaceResults(String round) {
-        String year = "2026"; // Assuming current year for now, or dynamic
+    public List<Result> fetchAndStoreLatestRaceResults(String yearStr, String round) {
+        int year = Integer.parseInt(yearStr);
         System.out.println("Fetching race results for year " + year + ", round " + round);
 
         try {
-            RaceResponse raceResponse = ergastClient.getRaceResults(Integer.parseInt(year), round);
+            RaceResponse raceResponse = ergastClient.getRaceResults(year, round);
 
             if (raceResponse == null || raceResponse.getMrData() == null ||
                     raceResponse.getMrData().getRaceTable() == null ||
@@ -846,169 +625,139 @@ public class DataIngestionService {
             }
 
             // Update Race entity
-            List<Race> existingRaces = raceRepo.findBySeasonAndRound(year, round);
+            List<Race> existingRaces = raceRepo.findBySeasonAndRound(String.valueOf(year), round);
             Race existingRace = null;
 
             if (existingRaces != null && !existingRaces.isEmpty()) {
                 existingRace = existingRaces.get(0);
-                // Cleanup duplicates
                 if (existingRaces.size() > 1) {
-                    System.out.println("Cleaning up " + (existingRaces.size() - 1) + " duplicate races for " + year
-                            + " round " + round);
                     for (int k = 1; k < existingRaces.size(); k++) {
                         raceRepo.delete(existingRaces.get(k));
                     }
                 }
-
                 existingRace.setResults(results);
                 existingRace.setStandingsUpdated(true);
                 raceRepo.save(existingRace);
             } else {
-                // If race doesn't exist (unlikely if accumulated), save it
+                fetchedRace.setStandingsUpdated(true);
                 raceRepo.save(fetchedRace);
                 existingRace = fetchedRace;
             }
 
-            // Fetch Sprint Results as well
-            List<Result> sprintResultsAccum = new ArrayList<>();
-            try {
-                RaceResponse sprintResponse = ergastClient.getSprintResults(Integer.parseInt(year), round);
-                if (sprintResponse != null && sprintResponse.getMrData() != null &&
-                        sprintResponse.getMrData().getRaceTable() != null &&
-                        !sprintResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
-                    Race sprintRace = sprintResponse.getMrData().getRaceTable().getRaces().get(0);
-                    if (sprintRace.getSprintResults() != null) {
-                        sprintResultsAccum.addAll(sprintRace.getSprintResults());
-                        System.out
-                                .println("Fetched " + sprintResultsAccum.size() + " sprint results for round " + round);
-                    }
-                }
-            } catch (Exception e) {
-                System.err
-                        .println("Error fetching sprint results in fetchAndStoreLatestRaceResults: " + e.getMessage());
-            }
-
-            // Prepare maps for bulk updates
+            // Prepare maps for stats updates
             Map<String, Driver> updatedDrivers = new HashMap<>();
             Map<String, Constructor> updatedConstructors = new HashMap<>();
 
-            // We need to fetch current Driver/Constructor stats to update them cumulatively
-            // Note: This simple accumulation assumes we haven't processed this race before.
-            // Ideally, we should check if this race was already processed for stats to
-            // avoid double counting.
-            // For now, we assume this runs once per race.
+            // Note: For live updates, we might ideally want to fetch current standings
+            // state if we were doing incremental.
+            // But since our stats logic is "recalculate all or add to current", and
+            // processResultForStats
+            // ADDS to the driver object provided.
+            // So we fetch the current state of drivers/constructors from DB.
 
-            // To be safe, let's re-fetch ALL stats from scratch or implementing a smarter
-            // delta update is risky
-            // without a "processed_races" tracking table.
-            // However, the task assumes "update logic".
-            // Given the existing updateStatistics() recalculates everything from 2001,
-            // maybe we should just trigger that? But that's heavy.
-            // Let's implement the delta update but BEWARE of double counting if run twice.
-            // A flag "statsUpdated" on Race entity would be good.
-            // I see "setStandingsUpdated(true)" above. I should check that.
+            // However, processResultForStats expects us to pre-populate the maps with the
+            // DB entities
+            // OR it tries to find them. The method signature:
+            // processResultForStats(..., Map<String, Driver> updatedDrivers, ...)
+            // checks the map first, then the repo.
+            // So we can pass empty maps and let it fetch/update.
 
-            // BUT, the existingRace might come from accumulation which doesn't set that
-            // flag.
+            Map<String, DriverStanding> updatedDriverStandings = new HashMap<>();
+            Map<String, ConstructorStanding> updatedConstructorStandings = new HashMap<>();
+            Set<String> constructorsProcessedForTotalRaces = new HashSet<>();
 
-            List<Result> processedResults = new ArrayList<>();
+            String context = "Live Update " + year + " Round " + round;
 
+            // Process Main Race
             for (int i = 0; i < results.size(); i++) {
-                Result result = results.get(i);
-                processedResults.add(result);
-
-                ErgastDriver ergDriver = result.getDriver();
-                ErgastConstructor egConstructor = result.getConstructor();
-
-                if (ergDriver == null || egConstructor == null)
-                    continue;
-
-                String driverId = ergDriver.getDriverId();
-                String constructorId = egConstructor.getConstructorId();
-
-                // Fetch or get from cache
-                Driver driver = updatedDrivers.computeIfAbsent(driverId,
-                        id -> driverRepo.findById(id).orElse(null));
-                Constructor constructor = updatedConstructors.computeIfAbsent(constructorId,
-                        id -> constructorRepo.findById(id).orElse(null));
-
-                if (driver != null && constructor != null) {
-                    // Update Counts
-                    if (i == 0) { // Winner
-                        driver.setWins(driver.getWins() + 1);
-                        driver.setPodiums(driver.getPodiums() + 1);
-                        constructor.setWins(constructor.getWins() + 1);
-                        constructor.setPodiums(constructor.getPodiums() + 1);
-                    } else if (i < 3) { // Podium
-                        driver.setPodiums(driver.getPodiums() + 1);
-                        constructor.setPodiums(constructor.getPodiums() + 1);
-                    }
-
-                    // Points
-                    if (result.getPoints() != null) {
-                        try {
-                            double points = Double.parseDouble(result.getPoints());
-                            driver.setPoints(driver.getPoints() + points);
-                            constructor.setPoints(constructor.getPoints() + points);
-                        } catch (NumberFormatException e) {
-                        }
-                    }
-
-                    // Fastest Lap
-                    if (result.getFastestLap() != null && "1".equals(result.getFastestLap().getRank())) {
-                        driver.setFastestLaps(driver.getFastestLaps() + 1);
-                        constructor.setFastestLaps(constructor.getFastestLaps() + 1);
-                    }
-
-                    driver.setTotalRaces(driver.getTotalRaces() + 1);
-                    // Note: Constructor total races logic usually per race, not per driver result,
-                    // but simpler here to just increment if we haven't for this race.
-                    // Simplified: We accept slight inaccuracy or need a set to track per-race
-                    // constructor participation.
-                    // For now, let's leave constructor total races as is or implement the set
-                    // logic.
-                }
+                processResultForStats(year, context, updatedDrivers, updatedConstructors,
+                        updatedDriverStandings, updatedConstructorStandings,
+                        constructorsProcessedForTotalRaces, i, results.get(i), false);
             }
 
-            // Process Sprint Results for Driver/Constructor Stats (Points only)
-            for (int i = 0; i < sprintResultsAccum.size(); i++) {
-                Result result = sprintResultsAccum.get(i);
+            // Process Sprint if available
+            try {
+                RaceResponse sprintResponse = ergastClient.getSprintResults(year, round);
+                if (sprintResponse != null && sprintResponse.getMrData() != null &&
+                        sprintResponse.getMrData().getRaceTable() != null &&
+                        !sprintResponse.getMrData().getRaceTable().getRaces().isEmpty()) {
 
-                ErgastDriver ergDriver = result.getDriver();
-                ErgastConstructor egConstructor = result.getConstructor();
+                    Race sprintRace = sprintResponse.getMrData().getRaceTable().getRaces().get(0);
+                    List<Result> sprintResults = sprintRace.getSprintResults();
 
-                if (ergDriver == null || egConstructor == null)
-                    continue;
-
-                String driverId = ergDriver.getDriverId();
-                String constructorId = egConstructor.getConstructorId();
-
-                Driver driver = updatedDrivers.computeIfAbsent(driverId,
-                        id -> driverRepo.findById(id).orElse(null));
-                Constructor constructor = updatedConstructors.computeIfAbsent(constructorId,
-                        id -> constructorRepo.findById(id).orElse(null));
-
-                if (driver != null && constructor != null) {
-                    // Points
-                    if (result.getPoints() != null) {
-                        try {
-                            double points = Double.parseDouble(result.getPoints());
-                            driver.setPoints(driver.getPoints() + points);
-                            constructor.setPoints(constructor.getPoints() + points);
-                        } catch (NumberFormatException e) {
+                    if (sprintResults != null && !sprintResults.isEmpty()) {
+                        System.out.println("Processing Sprint results for " + context);
+                        for (int s = 0; s < sprintResults.size(); s++) {
+                            processResultForStats(year, context + " (Sprint)", updatedDrivers,
+                                    updatedConstructors,
+                                    updatedDriverStandings, updatedConstructorStandings,
+                                    constructorsProcessedForTotalRaces, s, sprintResults.get(s), true);
                         }
                     }
                 }
+            } catch (Exception e) {
+                System.err.println("Error processing sprint results in live update: " + e.getMessage());
             }
 
+            // SAVE UPDATES
             if (!updatedDrivers.isEmpty()) {
                 driverRepo.saveAll(updatedDrivers.values());
             }
             if (!updatedConstructors.isEmpty()) {
                 constructorRepo.saveAll(updatedConstructors.values());
             }
+            if (!updatedDriverStandings.isEmpty()) {
+                // For standings, typically we replace or update.
+                // Logic in updateStandings() (the bulk one) replaces ALL.
+                // Here we are adding points.
+                // Actually, processResultForStats ALSO updates standings maps if year==2026.
+                // But wait, processResultForStats adds points to 0 if new object.
+                // The Standings objects created in processResultForStats are `new
+                // DriverStanding()`.
+                // They don't fetch existing standings.
+                // This is a flaw in trying to reuse processResultForStats for INCREMENTAL
+                // updates if it assumes full recalc.
 
-            return processedResults;
+                // Let's check processResultForStats implementation again:
+                // DriverStanding driverStanding = updatedDriverStandings.computeIfAbsent(...,
+                // new DriverStanding()... setPoints(0))
+
+                // YES, processResultForStats assumes it's building from scratch for that
+                // session.
+                // So if we run this for just ONE race, it calculates points ONLY for that race.
+                // It does NOT add to existing career total in the Standing object (it operates
+                // on a fresh object).
+                // BUT for Driver/Constructor entities, it DOES fetch from repo:
+                // updatedDrivers.putIfAbsent(driverId, driver) -> where driver comes from repo.
+
+                // SO:
+                // Driver/Constructor Entities: SAFE (Cumulative).
+                // Standings Entities: UNSAFE (Would overwrite with single-race points if we
+                // blindly save).
+
+                // HOWEVER, we have a separate method `updateStandings()` that fetches full
+                // standings from Ergast API.
+                // And `RaceDataScheduler` calls `updateStandings()` immediately after
+                // `fetchAndStoreLatestRaceResults`.
+                // So we don't strictly need to update Standings HERE manually.
+                // We can rely on `updateStandings()` to sync the official table.
+
+                // BUT `updateStandings` fetches from Ergast. If Ergast hasn't updated its
+                // standings endpoint yet (latency),
+                // we might be ahead.
+                // But typically, if results are out, standings are out.
+
+                // Given the complexity of incremental standings update (calculating positions
+                // etc),
+                // it's safer to rely on the `updateStandings` call which uses the official
+                // source.
+                // So we can IGNORE updatedDriverStandings here.
+            }
+
+            // Sync to JSON file after live update
+            historicalDataLoader.exportDataToJSON();
+
+            return results;
 
         } catch (Exception e) {
             System.err.println("Error processing latest race results: " + e.getMessage());
@@ -1143,5 +892,36 @@ public class DataIngestionService {
         }
         // Also trigger accumulation for new season
         accumulateRaces();
+    }
+
+    public void exportData() {
+        historicalDataLoader.exportDataToJSON();
+    }
+
+    public String importHistoricalData() {
+        return historicalDataLoader.loadHistoricalData();
+    }
+
+    public String cleanupBadDrivers() {
+        List<String> badIds = List.of("sergio perez", "valtteri bottas");
+        List<Driver> toDelete = new ArrayList<>();
+        for (String id : badIds) {
+            driverRepo.findById(id).ifPresent(toDelete::add);
+        }
+        if (!toDelete.isEmpty()) {
+            driverRepo.deleteAll(toDelete);
+            return "Deleted " + toDelete.size() + " bad driver records.";
+        }
+        return "No bad driver records found.";
+    }
+
+    public void resetDatabase() {
+        System.out.println("Resetting database...");
+        raceRepo.deleteAll();
+        driverRepo.deleteAll();
+        constructorRepo.deleteAll();
+        driverStandingsRepo.deleteAll();
+        constructorStandingsRepo.deleteAll();
+        System.out.println("Database reset complete.");
     }
 }

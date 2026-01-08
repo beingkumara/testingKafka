@@ -22,6 +22,8 @@ import com.f1nity.library.models.engine.Result;
 import com.f1nity.library.repository.authentication.UserRepository;
 import com.f1nity.library.repository.engine.DriverRepository;
 import com.f1nity.library.repository.engine.RaceRepository;
+import com.f1nity.library.models.engine.Constructor;
+import com.f1nity.library.repository.engine.ConstructorRepository;
 import com.f1nity.library.repository.engine.DriverStandingsRepository;
 import com.f1nity.library.repository.engine.ConstructorStandingsRepository;
 import com.f1nity.library.models.engine.DriverStanding;
@@ -44,9 +46,6 @@ public class F1nityServiceImpl {
     private RaceRepository raceRepo;
 
     @Autowired
-    private DataIngestionService dataIngestionService;
-
-    @Autowired
     private ErgastClient ergastClient;
 
     @Autowired
@@ -55,22 +54,24 @@ public class F1nityServiceImpl {
     @Autowired
     private ConstructorStandingsRepository constructorStandingsRepo;
 
+    @Autowired
+    private ConstructorRepository constructorRepo;
+
     /**
      * Retrieves the current drivers for the season.
      * 
      * @return List of current drivers
      */
     public List<Driver> getCurrentDrivers() {
-        Map<String, String> driverMap = dataIngestionService.getCurrentDriversId();
-        List<Driver> drivers = new ArrayList<>();
-        for (String driverNumber : driverMap.keySet()) {
-            String fullName = driverMap.get(driverNumber);
-            Driver driver = driverRepo.findDriverByDriverNumberAndFullName(driverNumber, fullName);
-            if (driver != null) {
-                drivers.add(driver);
-            }
-        }
-        return drivers;
+        return driverRepo.findDriverByIsActive(true);
+    }
+
+    public List<Driver> getAllDrivers() {
+        return driverRepo.findAll();
+    }
+
+    public List<Constructor> getAllConstructors() {
+        return constructorRepo.findAll();
     }
 
     /**

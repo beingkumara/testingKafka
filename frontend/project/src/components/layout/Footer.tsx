@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
       <div className="absolute inset-0 bg-[url('/images/carbon-fiber.png')] opacity-20 pointer-events-none mix-blend-overlay"></div>
 
       <div className="container-f1 mx-auto px-4 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -39,15 +39,17 @@ const Footer: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="md:col-span-1"
+            className="md:col-span-1 flex flex-col md:items-center"
           >
-            <h4 className="font-heading text-sm text-white uppercase tracking-widest mb-6 border-l-2 border-primary-500 pl-3">Paddock</h4>
-            <ul className="space-y-3 text-sm">
-              <li><Link to="/" className="text-gray-400 hover:text-primary-500 transition-colors flex items-center"><ChevronRightIcon /> Home</Link></li>
-              <li><Link to="/dashboard" className="text-gray-400 hover:text-primary-500 transition-colors flex items-center"><ChevronRightIcon /> Telemetry Dashboard</Link></li>
-              <li><Link to="/drivers" className="text-gray-400 hover:text-primary-500 transition-colors flex items-center"><ChevronRightIcon /> Driver Standings</Link></li>
-              <li><Link to="/races" className="text-gray-400 hover:text-primary-500 transition-colors flex items-center"><ChevronRightIcon /> Race Calendar</Link></li>
-            </ul>
+            <div>
+              <h4 className="font-heading text-sm text-white uppercase tracking-widest mb-6 border-l-2 border-primary-500 pl-3">Paddock</h4>
+              <ul className="space-y-3 text-sm">
+                <li><Link to="/" className="text-gray-400 hover:text-primary-500 transition-colors flex items-center"><ChevronRightIcon /> Home</Link></li>
+                <li><Link to="/dashboard" className="text-gray-400 hover:text-primary-500 transition-colors flex items-center"><ChevronRightIcon /> Telemetry Dashboard</Link></li>
+                <li><Link to="/standings" className="text-gray-400 hover:text-primary-500 transition-colors flex items-center"><ChevronRightIcon /> Driver Standings</Link></li>
+                <li><Link to="/races" className="text-gray-400 hover:text-primary-500 transition-colors flex items-center"><ChevronRightIcon /> Race Calendar</Link></li>
+              </ul>
+            </div>
           </motion.div>
 
           <motion.div
@@ -55,33 +57,15 @@ const Footer: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="md:col-span-1"
+            className="md:col-span-1 flex flex-col md:items-center"
           >
-            <h4 className="font-heading text-sm text-white uppercase tracking-widest mb-6 border-l-2 border-secondary-500 pl-3">Resources</h4>
-            <ul className="space-y-3 text-sm">
-              <li><a href="#" className="text-gray-400 hover:text-secondary-500 transition-colors flex items-center"><ChevronRightIcon /> API Documentation</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-secondary-500 transition-colors flex items-center"><ChevronRightIcon /> Technical Analysis</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-secondary-500 transition-colors flex items-center"><ChevronRightIcon /> Community Hub</a></li>
-            </ul>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="md:col-span-1"
-          >
-            <h4 className="font-heading text-sm text-white uppercase tracking-widest mb-6 border-l-2 border-accent-500 pl-3">Latest Updates</h4>
-            <div className="space-y-4">
-              <div className="bg-white/5 p-3 rounded border border-white/10 hover:border-accent-500 transition-colors cursor-pointer group">
-                <div className="text-xs text-accent-500 font-mono mb-1">DEC 12, 2025</div>
-                <div className="text-xs text-gray-300 group-hover:text-white line-clamp-2">New Season 2026 Regulations Announced: Key Changes Explained</div>
-              </div>
-              <div className="bg-white/5 p-3 rounded border border-white/10 hover:border-primary-500 transition-colors cursor-pointer group">
-                <div className="text-xs text-primary-500 font-mono mb-1">NOV 28, 2025</div>
-                <div className="text-xs text-gray-300 group-hover:text-white line-clamp-2">Final Race Recap: Championship Decided in Dramatic Fashion</div>
-              </div>
+            <div>
+              <h4 className="font-heading text-sm text-white uppercase tracking-widest mb-6 border-l-2 border-secondary-500 pl-3">Resources</h4>
+              <ul className="space-y-3 text-sm">
+                <li><a href="https://api.jolpi.ca/ergast/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-secondary-500 transition-colors flex items-center"><ChevronRightIcon /> Jolpica Ergast API</a></li>
+                <li><a href="https://openf1.org/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-secondary-500 transition-colors flex items-center"><ChevronRightIcon /> OpenF1</a></li>
+                <li><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-secondary-500 transition-colors flex items-center"><ChevronRightIcon /> OpenMeteo</a></li>
+              </ul>
             </div>
           </motion.div>
         </div>

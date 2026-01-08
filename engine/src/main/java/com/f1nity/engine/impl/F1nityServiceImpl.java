@@ -80,7 +80,7 @@ public class F1nityServiceImpl {
      * @return List of races for the current year
      */
     public List<Race> getRacesOfCurrentYear() {
-        return raceRepo.findAll();
+        return raceRepo.findBySeason("2026");
     }
 
     /**

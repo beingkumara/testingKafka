@@ -18,6 +18,14 @@ public class AuthenticationController {
         this.authenticationService = authenticationService;
     }
 
+    /**
+     * Health check endpoint.
+     */
+    @GetMapping("/health")
+    public String healthCheck() {
+        return "Authentication is active";
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
         // Frontend sends email as username for login

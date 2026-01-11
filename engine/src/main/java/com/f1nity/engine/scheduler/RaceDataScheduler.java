@@ -104,6 +104,7 @@ public class RaceDataScheduler {
         // Get all races from the repository
         List<Race> races = raceRepository.findAll();
 
+        
         // Check if we have 2026 races
         boolean hasCurrentSeason = races.stream().anyMatch(r -> "2026".equals(r.getSeason()));
 

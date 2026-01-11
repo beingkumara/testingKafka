@@ -35,6 +35,14 @@ public class F1nityController {
     @Autowired
     private F1nityService f1nityService;
 
+    /**
+     * Health check endpoint to keep the service awake.
+     */
+    @GetMapping("/health")
+    public String healthCheck() {
+        return "Engine is active";
+    }
+
     // Driver related endpoints
 
     /**

@@ -35,6 +35,7 @@ public class SecurityConfig {
                     .authorizeHttpRequests(authorize -> authorize
                             // Public endpoints - no authentication required
                             // Public endpoints - no authentication required
+                            .requestMatchers("/api/fanf1x/v1/auth/health").permitAll()
                             .requestMatchers("/api/fanf1x/v1/auth/login").permitAll()
                             .requestMatchers("/api/fanf1x/v1/auth/register").permitAll()
                             .requestMatchers("/api/fanf1x/v1/auth/forgot-password").permitAll()

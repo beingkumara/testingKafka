@@ -3,7 +3,8 @@ import {
     getDriverStandings,
     getConstructorStandings,
     getRaces,
-    getLastRaceResults
+    getLastRaceResults,
+    getRaceResultsByYearAndRound
 } from '../services';
 import {
     Driver,
@@ -54,9 +55,14 @@ export const useRaces = () => {
 /**
  * Hook to fetch last race results
  */
-export const useLastRaceResults = () => {
+export const useLastRaceResults = (year?: number, round?: number) => {
     return useQuery<RaceResult[], Error>({
-        queryKey: [QUERY_KEYS.LAST_RACE_RESULTS],
-        queryFn: getLastRaceResults,
+        queryKey: [QUERY_KEYS.LAST_RACE_RESULTS, year, round],
+        queryFn: () => {
+            if (year && round) {
+                return getRaceResultsByYearAndRound(year, round);
+            }
+            return getLastRaceResults();
+        },
     });
 };

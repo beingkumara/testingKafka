@@ -11,7 +11,28 @@ const DashboardPage: React.FC = () => {
   // Use React Query hooks
   const { data: drivers = [], isLoading: isLoadingDrivers } = useDriverStandings();
   const { data: races = [], isLoading: isLoadingRaces } = useRaces();
-  const { data: results = [], isLoading: isLoadingResults } = useLastRaceResults();
+
+  // Calculate the target race for results (previous round relative to next upcoming race)
+  const targetRace = React.useMemo(() => {
+    if (!races.length) return undefined;
+
+    const now = new Date();
+    // Find the next upcoming race
+    const nextRace = races.find(r => {
+      const raceDate = new Date(`${r.date}T${r.time}`);
+      return raceDate >= now;
+    });
+
+    if (nextRace && nextRace.round > 1) {
+      const year = new Date(nextRace.date).getFullYear();
+      return { year, round: nextRace.round - 1 };
+    }
+
+    // Fallback: Use default endpoint if next is Round 1 (needs previous season) or no next race found
+    return undefined;
+  }, [races]);
+
+  const { data: results = [], isLoading: isLoadingResults } = useLastRaceResults(targetRace?.year, targetRace?.round);
 
   const isLoading = isLoadingDrivers || isLoadingRaces || isLoadingResults;
 

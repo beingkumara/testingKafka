@@ -11,7 +11,7 @@ const F1CarCanvas: React.FC<F1CarCanvasProps> = ({ scrollProgress }) => {
     const [isLoaded, setIsLoaded] = useState(false);
 
     // Number of frames in the sequence
-    const frameCount = 96;
+    const frameCount = 240;
 
     // Preload images
     useEffect(() => {

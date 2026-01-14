@@ -21,8 +21,7 @@ import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -33,7 +32,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 @Service
 public class AuthenticationServiceImpl {
     private final UserRepository userRepository;
-    private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetTokenRepository tokenRepo;
@@ -45,10 +43,9 @@ public class AuthenticationServiceImpl {
     @Autowired
     private JavaMailSender mailSender;
 
-    public AuthenticationServiceImpl(UserRepository userRepository, AuthenticationManager authenticationManager,
+    public AuthenticationServiceImpl(UserRepository userRepository,
             JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder, PasswordResetTokenRepository tokenRepo,
             AuthenticationUtil authenticationUtil, SecureOTPGenerator otpGenerator) {
-        this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -59,25 +56,25 @@ public class AuthenticationServiceImpl {
 
     public ResponseEntity<?> login(User user) {
         try {
-            // Try to authenticate with email first
-            Authentication auth;
+            // Optimizing login to avoid double DB lookup (one here, one in
+            // UserDetailsService)
             User userByEmail = userRepository.findByEmail(user.getUsername());
 
-            if (userByEmail != null) {
-                // If email is found, authenticate with username from the found user
-                auth = authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(userByEmail.getEmail(), user.getPassword()));
-            } else {
-                // If email not found, try with username
-                try {
-                    auth = authenticationManager.authenticate(
-                            new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
-                } catch (Exception e) {
-                    throw new Exception("Invalid email/username or password");
-                }
+            if (userByEmail == null) {
+                throw new Exception("Invalid email/username or password");
             }
 
-            UserDetails userDetails = (UserDetails) auth.getPrincipal();
+            // Manually verify password
+            if (!passwordEncoder.matches(user.getPassword(), userByEmail.getPassword())) {
+                throw new Exception("Invalid email/username or password");
+            }
+
+            // Create UserDetails manually avoiding the second DB call
+            UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                    userByEmail.getEmail(),
+                    userByEmail.getPassword(),
+                    Collections.emptyList());
+
             String token = jwtTokenProvider.generateToken(userDetails);
             System.out.println("Login successful for user: " + userDetails.getUsername());
             Map<String, Object> response = new HashMap<>();

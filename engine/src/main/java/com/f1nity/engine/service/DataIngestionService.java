@@ -566,33 +566,45 @@ public class DataIngestionService {
     }
 
     public List<Race> accumulateRaces() {
-        RaceResponse response = ergastClient.getRaces(2026);
+        int year = 2026; // Or LocalDate.now().getYear()
+        RaceResponse response = ergastClient.getRaces(year);
+
         if (response != null && response.getMrData() != null) {
             List<Race> races = response.getMrData().getRaceTable().getRaces();
-            List<Race> savedRaces = new ArrayList<>();
-            for (Race r : races) {
-                // Upsert logic to prevent duplicates
-                List<Race> existing = raceRepo.findBySeasonAndRound(r.getSeason(), r.getRound());
-                if (existing != null && !existing.isEmpty()) {
-                    Race current = existing.get(0);
-                    // Cleanup potential duplicates
-                    if (existing.size() > 1) {
-                        for (int j = 1; j < existing.size(); j++) {
-                            raceRepo.delete(existing.get(j));
-                        }
-                    }
-                    current.setDate(r.getDate());
-                    current.setTime(r.getTime());
-                    current.setRaceName(r.getRaceName());
-                    current.setCircuit(r.getCircuit());
-                    current.setUrl(r.getUrl());
-                    // Copy other fields if necessary
-                    savedRaces.add(raceRepo.save(current));
-                } else {
-                    savedRaces.add(raceRepo.save(r));
+
+            // Optimization: Fetch all existing races for the season in one go
+            List<Race> existingRacesList = raceRepo.findBySeason(String.valueOf(year));
+            Map<String, Race> existingRacesMap = new HashMap<>();
+
+            if (existingRacesList != null) {
+                for (Race r : existingRacesList) {
+                    existingRacesMap.put(r.getRound(), r);
                 }
             }
-            return savedRaces;
+
+            List<Race> racesToSave = new ArrayList<>();
+
+            for (Race r : races) {
+                // Upsert logic using memory map
+                Race existing = existingRacesMap.get(r.getRound());
+
+                if (existing != null) {
+                    // Update existing
+                    existing.setDate(r.getDate());
+                    existing.setTime(r.getTime());
+                    existing.setRaceName(r.getRaceName());
+                    existing.setCircuit(r.getCircuit());
+                    existing.setUrl(r.getUrl());
+                    // Copy other fields if necessary
+                    racesToSave.add(existing);
+                } else {
+                    // Create new
+                    racesToSave.add(r);
+                }
+            }
+            // Save all at once (or individually if saveAll is prone to partial failure
+            // issues, but saveAll is better for perf)
+            return raceRepo.saveAll(racesToSave);
         }
         return Collections.emptyList();
     }
@@ -774,26 +786,37 @@ public class DataIngestionService {
     }
 
     public List<Result> getLatestRaceResults() {
-        List<Race> races = raceRepo.findAll();
+        // Optimization: Fetch only current season's races instead of findAll()
+        String currentYear = String.valueOf(LocalDate.now().getYear());
+        List<Race> races = raceRepo.findBySeason(currentYear);
+
+        // If no races found for current year (e.g. start of year), try previous year
+        if (races == null || races.isEmpty()) {
+            races = raceRepo.findBySeason(String.valueOf(LocalDate.now().getYear() - 1));
+        }
+
+        // If still empty, return empty list
+        if (races == null || races.isEmpty()) {
+            return Collections.emptyList();
+        }
+
         String currentDate = LocalDate.now().toString();
         Race latestRaceWithResults = null;
-        int maxRound = -1;
+
+        // Sort races by date in descending order to find the latest completed race
+        // easily
+        races.sort((r1, r2) -> {
+            if (r1.getDate() == null || r2.getDate() == null)
+                return 0;
+            return r2.getDate().compareTo(r1.getDate());
+        });
 
         for (Race race : races) {
-            if (race.getResults() != null && !race.getResults().isEmpty() &&
-                    race.getDate() != null && race.getDate().compareTo(currentDate) <= 0) {
-
-                int currentRound = 0;
-                try {
-                    currentRound = Integer.parseInt(race.getRound());
-                } catch (NumberFormatException e) {
-                    continue;
-                }
-
-                if (currentRound > maxRound) {
-                    maxRound = currentRound;
-                    latestRaceWithResults = race;
-                }
+            // Check if race has happened and has results
+            if (race.getDate() != null && race.getDate().compareTo(currentDate) <= 0
+                    && race.getResults() != null && !race.getResults().isEmpty()) {
+                latestRaceWithResults = race;
+                break; // Found the most recent completed race with results
             }
         }
 
@@ -806,8 +829,6 @@ public class DataIngestionService {
             }
             return results;
         } else {
-            // Fallback to fetch if not found
-            // return fetchAndStoreLatestRaceResults(null);
             return Collections.emptyList();
         }
     }

@@ -12,8 +12,8 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
  * Enables scheduling for periodic data updates.
  */
 @SpringBootApplication
-@EnableScheduling
 @EnableCaching
+@EnableScheduling
 @EnableFeignClients(basePackages = "com.f1nity.engine.client")
 @EnableMongoRepositories(basePackages = { "com.f1nity.library.repository" })
 

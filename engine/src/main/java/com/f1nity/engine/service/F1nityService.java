@@ -12,6 +12,7 @@ import com.f1nity.library.models.engine.Race;
 import com.f1nity.library.models.engine.DriverStanding;
 import com.f1nity.library.models.engine.ConstructorStanding;
 import com.f1nity.library.models.engine.Constructor;
+import org.springframework.cache.annotation.Cacheable;
 
 /**
  * Service interface for F1 data operations.
@@ -40,7 +41,9 @@ public class F1nityService {
      * 
      * @return List of races for the current year
      */
+    @Cacheable("races")
     public List<Race> getRacesOfCurrentYear() {
+        System.out.println("CACHE MISS: Fetching Races from DB");
         return f1nityServiceImpl.getRacesOfCurrentYear();
     }
 
@@ -77,11 +80,15 @@ public class F1nityService {
         return f1nityServiceImpl.getRaceById(id);
     }
 
+    @Cacheable("driverStandings")
     public List<DriverStanding> getDriverStandings() {
+        System.out.println("CACHE MISS: Fetching Driver Standings from DB");
         return f1nityServiceImpl.getDriverStandings();
     }
 
+    @Cacheable("constructorStandings")
     public List<ConstructorStanding> getConstructorStandings() {
+        System.out.println("CACHE MISS: Fetching Constructor Standings from DB");
         return f1nityServiceImpl.getConstructorStandings();
     }
 }

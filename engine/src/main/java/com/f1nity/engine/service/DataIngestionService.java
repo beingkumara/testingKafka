@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 import com.f1nity.engine.client.ErgastClient;
 import com.f1nity.engine.client.OpenF1Client;
@@ -473,6 +475,7 @@ public class DataIngestionService {
      * Iterates 2021-2026 and adds missing sprint stats.
      */
 
+    @CacheEvict(value = { "driverStandings", "constructorStandings" }, allEntries = true)
     public String updateStandings() {
         // Driver Standings
         try {
@@ -565,6 +568,7 @@ public class DataIngestionService {
         }
     }
 
+    @CacheEvict(value = "races", allEntries = true)
     public List<Race> accumulateRaces() {
         int year = 2026; // Or LocalDate.now().getYear()
         RaceResponse response = ergastClient.getRaces(year);
@@ -621,6 +625,7 @@ public class DataIngestionService {
     }
 
     @Transactional
+    @CacheEvict(value = { "latestResults", "driverStandings", "constructorStandings" }, allEntries = true)
     public List<Result> fetchAndStoreLatestRaceResults(String yearStr, String round) {
         int year = Integer.parseInt(yearStr);
         System.out.println("Fetching race results for year " + year + ", round " + round);
@@ -785,7 +790,9 @@ public class DataIngestionService {
         return Collections.emptyList();
     }
 
+    @Cacheable("latestResults")
     public List<Result> getLatestRaceResults() {
+        System.out.println("CACHE MISS: Fetching Latest Results from DB");
         // Optimization: Fetch only current season's races instead of findAll()
         String currentYear = String.valueOf(LocalDate.now().getYear());
         List<Race> races = raceRepo.findBySeason(currentYear);

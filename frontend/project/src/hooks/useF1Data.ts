@@ -29,6 +29,8 @@ export const useDriverStandings = () => {
     return useQuery<DriverStanding[], Error>({
         queryKey: [QUERY_KEYS.DRIVER_STANDINGS],
         queryFn: getDriverStandings,
+        staleTime: 3600000, // 1 hour
+        gcTime: 3600000, // 1 hour
     });
 };
 
@@ -39,6 +41,8 @@ export const useConstructorStandings = () => {
     return useQuery<ConstructorStanding[], Error>({
         queryKey: [QUERY_KEYS.CONSTRUCTOR_STANDINGS],
         queryFn: getConstructorStandings,
+        staleTime: 3600000, // 1 hour
+        gcTime: 3600000, // 1 hour
     });
 };
 
@@ -49,6 +53,8 @@ export const useRaces = () => {
     return useQuery<Race[], Error>({
         queryKey: [QUERY_KEYS.RACES],
         queryFn: getRaces,
+        staleTime: 3600000, // 1 hour
+        gcTime: 3600000, // 1 hour
     });
 };
 
@@ -64,5 +70,7 @@ export const useLastRaceResults = (year?: number, round?: number) => {
             }
             return getLastRaceResults();
         },
+        staleTime: 300000, // 5 minutes
+        gcTime: 300000, // 5 minutes
     });
 };

@@ -302,15 +302,42 @@ const NewsPage: React.FC = () => {
                     <ChevronLeft className="h-5 w-5" />
                   </button>
 
-                  {/* Wheel-like page number indicator */}
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-full border-4 border-primary-500 flex items-center justify-center bg-white dark:bg-dark-800 shadow-md">
-                      <div className="text-primary-600 dark:text-primary-400 font-bold">
-                        {currentPage}
-                      </div>
-                    </div>
-                    {/* Decorative wheel spokes */}
-                    <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-primary-500 border-dashed opacity-30 animate-spin-slow"></div>
+                  <div className="flex space-x-2">
+                    {(() => {
+                      const totalPages = Math.ceil(totalArticles / ARTICLES_PER_PAGE);
+                      const pageNumbers = [];
+                      const maxVisiblePages = 5;
+
+                      if (totalPages <= maxVisiblePages) {
+                        for (let i = 1; i <= totalPages; i++) {
+                          pageNumbers.push(i);
+                        }
+                      } else {
+                        if (currentPage <= 3) {
+                          pageNumbers.push(1, 2, 3, 4, '...', totalPages);
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNumbers.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                        } else {
+                          pageNumbers.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+                        }
+                      }
+
+                      return pageNumbers.map((page, index) => (
+                        <button
+                          key={index}
+                          onClick={() => typeof page === 'number' ? handlePageChange(page) : undefined}
+                          disabled={typeof page !== 'number'}
+                          className={`w-10 h-10 rounded-md flex items-center justify-center border ${page === currentPage
+                              ? 'bg-primary-500 text-white border-primary-500'
+                              : typeof page === 'number'
+                                ? 'border-dark-200 dark:border-dark-600 text-dark-700 dark:text-dark-200 hover:bg-dark-50 dark:hover:bg-dark-700'
+                                : 'border-transparent text-dark-400 dark:text-dark-500 cursor-default'
+                            }`}
+                        >
+                          {page}
+                        </button>
+                      ));
+                    })()}
                   </div>
 
                   <button

@@ -2,6 +2,7 @@ package com.f1nity.engine.controller;
 
 import com.f1nity.engine.service.NewsService;
 import com.f1nity.library.models.news.NewsArticle;
+import com.f1nity.engine.dto.PagedResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -41,12 +42,19 @@ class NewsControllerTest {
         int page = 1;
         int pageSize = 10;
 
-        when(newsService.getNews(ticket, from, to, page, pageSize)).thenReturn(Arrays.asList(new NewsArticle()));
+        PagedResponse<NewsArticle> mockResponse = new PagedResponse<>(
+                Arrays.asList(new NewsArticle()),
+                page,
+                pageSize,
+                1);
 
-        List<NewsArticle> articles = newsController.getLatestF1News(ticket, from, to, page, pageSize);
+        when(newsService.getNews(ticket, from, to, page, pageSize)).thenReturn(mockResponse);
 
-        assertNotNull(articles);
-        assertEquals(1, articles.size());
+        PagedResponse<NewsArticle> response = newsController.getLatestF1News(ticket, from, to, page, pageSize);
+
+        assertNotNull(response);
+        assertEquals(1, response.getContent().size());
+        assertEquals(1, response.getTotalPages());
         verify(newsService).getNews(ticket, from, to, page, pageSize);
     }
 
@@ -55,8 +63,10 @@ class NewsControllerTest {
         // Defaults: query="F1", page=0, pageSize=0 (primitive int default)
         // Check implementation default logic
 
+        PagedResponse<NewsArticle> emptyResponse = new PagedResponse<>(Collections.emptyList(), 0, 0, 0);
+
         when(newsService.getNews(anyString(), anyString(), anyString(), anyInt(), anyInt()))
-                .thenReturn(Collections.emptyList());
+                .thenReturn(emptyResponse);
 
         newsController.getLatestF1News(null, null, null, 0, 0);
 

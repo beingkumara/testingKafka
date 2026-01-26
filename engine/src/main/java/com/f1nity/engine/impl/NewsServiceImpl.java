@@ -29,6 +29,7 @@ import java.util.Comparator;
 import java.time.LocalDate;
 import org.springframework.scheduling.annotation.Scheduled;
 import com.f1nity.engine.utils.OffsetDateTimeAdapter;
+import com.f1nity.engine.dto.PagedResponse;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class NewsApiResponse {
@@ -210,7 +211,27 @@ public class NewsServiceImpl implements NewsService {
         }
     }
 
-    public List<NewsArticle> getNewsFromCache(String ticker, String fromDate, String toDate, int page, int pageSize) {
+    private PagedResponse<NewsArticle> createPagedResponse(List<NewsArticle> allNews, int page, int pageSize) {
+        // Sort the news articles by published date in descending order
+        allNews.sort(Comparator.comparing(NewsArticle::getPublishedAt, Comparator.reverseOrder()));
+
+        // Apply pagination
+        int totalElements = allNews.size();
+        int startIndex = (page - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, totalElements);
+
+        List<NewsArticle> pagedContent;
+        if (startIndex >= totalElements) {
+            pagedContent = Collections.emptyList();
+        } else {
+            pagedContent = allNews.subList(startIndex, endIndex);
+        }
+
+        return new PagedResponse<>(pagedContent, page, pageSize, totalElements);
+    }
+
+    public PagedResponse<NewsArticle> getNewsFromCache(String ticker, String fromDate, String toDate, int page,
+            int pageSize) {
         List<NewsArticle> allNews = new ArrayList<>();
         try (Jedis jedis = jedisPool.getResource()) {
             LocalDate startDate = parseDate(fromDate);
@@ -234,20 +255,11 @@ public class NewsServiceImpl implements NewsService {
             }
         }
 
-        // Sort the news articles by published date in descending order
-        allNews.sort(Comparator.comparing(NewsArticle::getPublishedAt, Comparator.reverseOrder()));
-
-        // Apply pagination
-        int startIndex = (page - 1) * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, allNews.size());
-        if (startIndex >= allNews.size()) {
-            return Collections.emptyList();
-        }
-        List<NewsArticle> pagedNews = allNews.subList(startIndex, endIndex);
-        return pagedNews;
+        return createPagedResponse(allNews, page, pageSize);
     }
 
-    public List<NewsArticle> getNewsFromNewsApi(String ticker, String fromDate, String toDate, int page, int pageSize) {
+    public PagedResponse<NewsArticle> getNewsFromNewsApi(String ticker, String fromDate, String toDate, int page,
+            int pageSize) {
         try {
             String query = String.format("\"%s\" %s -%s",
                     ticker,
@@ -290,23 +302,16 @@ public class NewsServiceImpl implements NewsService {
 
             // Break recursion: return processed list directly
             List<NewsArticle> result = news != null ? news : new ArrayList<>();
-            result.sort(Comparator.comparing(NewsArticle::getPublishedAt, Comparator.reverseOrder()));
-
-            int startIndex = (page - 1) * pageSize;
-            int endIndex = Math.min(startIndex + pageSize, result.size());
-            if (startIndex >= result.size()) {
-                return Collections.emptyList();
-            }
-            return result.subList(startIndex, endIndex);
+            return createPagedResponse(result, page, pageSize);
 
         } catch (Exception e) {
             logger.error("Error in getNewsFromNewsApi: {}", e.getMessage(), e);
-            return Collections.emptyList();
+            return new PagedResponse<>(Collections.emptyList(), page, pageSize, 0);
         }
     }
 
     @Override
-    public List<NewsArticle> getNews(String ticker, String fromDate, String toDate, int page, int pageSize) {
+    public PagedResponse<NewsArticle> getNews(String ticker, String fromDate, String toDate, int page, int pageSize) {
         LocalDate startDate = parseDate(fromDate);
         LocalDate endDate = parseDate(toDate);
         boolean allDatesCached = true;

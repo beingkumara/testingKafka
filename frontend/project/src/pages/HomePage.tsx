@@ -54,7 +54,7 @@ const HomePage: React.FC = () => {
   const speedLinesOpacity = useTransform(scrollYProgress, [0.1, 0.9], [0, 0.3]);
 
   return (
-    <div ref={containerRef} className="relative h-[500vh] bg-[#050505] selection:bg-[#e10600] selection:text-white">
+    <div ref={containerRef} className="relative h-[300vh] bg-[#050505] selection:bg-[#e10600] selection:text-white">
 
       {/* Sticky Canvas Container */}
       <div className="sticky top-0 h-screen w-full overflow-hidden">
@@ -81,7 +81,7 @@ const HomePage: React.FC = () => {
 
         {/* The 3D Car Model */}
         <div className="absolute inset-0 z-0">
-          <F1CarCanvas scrollProgress={scrollYProgress} />
+          <F1CarCanvas scrollProgress={smoothProgress} />
         </div>
 
         {/* Vignette & Color Grading */}

@@ -13,17 +13,16 @@ import redis.clients.jedis.JedisPool;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.text.ParseException;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Comparator;
@@ -107,7 +106,8 @@ public class NewsServiceImpl implements NewsService {
     private final WebClient.Builder webClientBuilder;
     private final Gson gson;
     private static final String KEY_PREFIX = "f1nity:news:";
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final java.time.format.DateTimeFormatter DATE_FORMAT = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final Logger logger = LoggerFactory.getLogger(NewsServiceImpl.class);
 
     public NewsServiceImpl(WebClient.Builder webClientBuilder) {
         this.webClientBuilder = webClientBuilder;
@@ -148,10 +148,9 @@ public class NewsServiceImpl implements NewsService {
                 this.jedisPool = new JedisPool(uri);
             }
 
-            System.out.println("Initialized Redis connection to " + uri.getHost());
+            logger.info("Initialized Redis connection to {}", uri.getHost());
         } catch (Exception e) {
-            System.err.println("Failed to initialize Redis connection: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Failed to initialize Redis connection: {}", e.getMessage(), e);
         }
     }
 
@@ -164,54 +163,49 @@ public class NewsServiceImpl implements NewsService {
             java.time.LocalDate yesterday = today.minusDays(1);
             String fromDate = yesterday.toString();
             String toDate = today.toString();
-            System.out.println("[Scheduler] Updating news cache from " + fromDate + " to " + toDate);
+            logger.info("[Scheduler] Updating news cache from {} to {}", fromDate, toDate);
             getNewsFromNewsApi(defaultTicker, fromDate, toDate, 0, pageSize);
         } catch (Exception e) {
-            System.err.println("[Scheduler] Error updating news cache: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("[Scheduler] Error updating news cache: {}", e.getMessage(), e);
         }
     }
 
-    private String createRedisKey(String date) {
-        return KEY_PREFIX + date;
+    private String createRedisKey(LocalDate date) {
+        return KEY_PREFIX + date.format(DATE_FORMAT);
     }
 
-    private boolean checkIfKeyExistsInCache(String date) {
+    private boolean checkIfKeyExistsInCache(LocalDate date) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.exists(createRedisKey(date));
         }
     }
 
-    private void saveNewsToCache(String fromDate, String toDate, List<NewsArticle> news) {
+    private void saveNewsToCache(LocalDate fromDate, LocalDate toDate, List<NewsArticle> news) {
         try (Jedis jedis = jedisPool.getResource()) {
-            for (Date currentDate = parseDate(fromDate); !currentDate.after(parseDate(toDate)); currentDate = DateUtils
-                    .addDays(currentDate, 1)) {
-                final Date loopDate = new Date(currentDate.getTime()); // Create a final copy for the lambda
+            for (LocalDate currentDate = fromDate; !currentDate.isAfter(toDate); currentDate = currentDate
+                    .plusDays(1)) {
+                final LocalDate loopDate = currentDate;
                 List<NewsArticle> newsForDate = news.stream()
                         .filter(newsArticle -> {
                             // Align publishedAt to system default zone and extract only the date
                             LocalDate articleDate = newsArticle.getPublishedAt()
                                     .atZoneSameInstant(ZoneId.systemDefault())
                                     .toLocalDate();
-                            LocalDate loopLocalDate = loopDate.toInstant()
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate();
-                            return articleDate.equals(loopLocalDate);
+                            return articleDate.equals(loopDate);
                         })
                         .collect(Collectors.toList());
-                System.out.println("Saving news to Redis key: " + createRedisKey(DATE_FORMAT.format(loopDate)));
-                System.out.println(
-                        "Saving " + newsForDate.size() + " news articles for date " + DATE_FORMAT.format(loopDate));
+                logger.info("Saving news to Redis key: {}", createRedisKey(loopDate));
+                logger.info("Saving {} news articles for date {}", newsForDate.size(), loopDate);
 
-                jedis.setex(createRedisKey(DATE_FORMAT.format(loopDate)), redisTtl, gson.toJson(newsForDate));
+                jedis.setex(createRedisKey(loopDate), redisTtl, gson.toJson(newsForDate));
             }
         }
     }
 
-    private Date parseDate(String date) {
+    private LocalDate parseDate(String date) {
         try {
-            return DATE_FORMAT.parse(date);
-        } catch (ParseException e) {
+            return LocalDate.parse(date, DATE_FORMAT);
+        } catch (DateTimeParseException e) {
             throw new IllegalArgumentException("Invalid date format: " + date, e);
         }
     }
@@ -219,14 +213,14 @@ public class NewsServiceImpl implements NewsService {
     public List<NewsArticle> getNewsFromCache(String ticker, String fromDate, String toDate, int page, int pageSize) {
         List<NewsArticle> allNews = new ArrayList<>();
         try (Jedis jedis = jedisPool.getResource()) {
-            Date startDate = parseDate(fromDate);
-            Date endDate = parseDate(toDate);
+            LocalDate startDate = parseDate(fromDate);
+            LocalDate endDate = parseDate(toDate);
             Type listType = new TypeToken<List<NewsArticle>>() {
             }.getType();
 
-            for (Date currentDate = startDate; !currentDate.after(endDate); currentDate = DateUtils.addDays(currentDate,
-                    1)) {
-                String redisKey = createRedisKey(DATE_FORMAT.format(currentDate));
+            for (LocalDate currentDate = startDate; !currentDate.isAfter(endDate); currentDate = currentDate
+                    .plusDays(1)) {
+                String redisKey = createRedisKey(currentDate);
                 if (jedis.exists(redisKey)) {
                     String json = jedis.get(redisKey);
                     List<NewsArticle> newsForDate = gson.fromJson(json, listType);
@@ -282,44 +276,53 @@ public class NewsServiceImpl implements NewsService {
                     .bodyToMono(NewsApiResponse.class)
                     .doOnNext(response -> {
                         if (response.getArticles() != null) {
-                            System.out.println("Number of articles: " + response.getArticles().size());
+                            logger.info("Number of articles: {}", response.getArticles().size());
                         } else {
-                            System.out.println("No articles in response");
+                            logger.info("No articles in response");
                         }
                     })
                     .map(NewsApiResponse::getArticles)
                     .block();
 
             if (news != null && !news.isEmpty()) {
-                saveNewsToCache(fromDate, toDate, news);
+                saveNewsToCache(parseDate(fromDate), parseDate(toDate), news);
             }
-            return news != null ? getNewsFromCache(ticker, fromDate, toDate, page, pageSize) : Collections.emptyList();
+
+            // Break recursion: return processed list directly
+            List<NewsArticle> result = news != null ? news : new ArrayList<>();
+            result.sort(Comparator.comparing(NewsArticle::getPublishedAt, Comparator.reverseOrder()));
+
+            int startIndex = (page - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, result.size());
+            if (startIndex >= result.size()) {
+                return Collections.emptyList();
+            }
+            return result.subList(startIndex, endIndex);
+
         } catch (Exception e) {
-            System.err.println("Error in getNewsFromNewsApi: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error in getNewsFromNewsApi: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
 
     @Override
     public List<NewsArticle> getNews(String ticker, String fromDate, String toDate, int page, int pageSize) {
-        Date startDate = parseDate(fromDate);
-        Date endDate = parseDate(toDate);
+        LocalDate startDate = parseDate(fromDate);
+        LocalDate endDate = parseDate(toDate);
         boolean allDatesCached = true;
 
-        for (Date currentDate = startDate; !currentDate.after(endDate); currentDate = DateUtils.addDays(currentDate,
-                1)) {
-            if (!checkIfKeyExistsInCache(DATE_FORMAT.format(currentDate))) {
+        for (LocalDate currentDate = startDate; !currentDate.isAfter(endDate); currentDate = currentDate.plusDays(1)) {
+            if (!checkIfKeyExistsInCache(currentDate)) {
                 allDatesCached = false;
                 break;
             }
         }
 
         if (allDatesCached) {
-            System.out.println("All dates cached");
+            logger.info("All dates cached");
             return getNewsFromCache(ticker, fromDate, toDate, page, pageSize);
         } else {
-            System.out.println("Not all dates cached. So fetching from API and caching");
+            logger.info("Not all dates cached. So fetching from API and caching");
             return getNewsFromNewsApi(ticker, fromDate, toDate, page, pageSize);
         }
     }

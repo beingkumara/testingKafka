@@ -360,10 +360,20 @@ export const getF1News = async (params: NewsParams = {}): Promise<NewsResponse> 
 
     try {
       // Fetch news data
-      const response = await f1Api.get<any[]>(url);
+      // Backend now returns PagedResponse object, not an array
+      interface PagedApiResponse {
+        content: any[];
+        totalElements: number;
+        totalPages: number;
+        last: boolean;
+        pageNumber: number;
+        pageSize: number;
+      }
 
-      // Transform the API response to match NewsArticle type
-      const data: NewsArticle[] = response.map(item => ({
+      const response = await f1Api.get<PagedApiResponse>(url);
+
+      // Transform the API response from content list
+      const data: NewsArticle[] = response.content.map((item: any) => ({
         title: item.title,
         description: item.description,
         url: item.url,
@@ -376,13 +386,10 @@ export const getF1News = async (params: NewsParams = {}): Promise<NewsResponse> 
         }
       }));
 
-      // Determine if there are more articles
-      const hasMore = data.length === pageSize;
-
       return {
         articles: data,
-        totalCount: data.length + (hasMore ? (page * pageSize) : 0),
-        hasMore
+        totalCount: response.totalElements,
+        hasMore: !response.last
       };
     } catch (apiError) {
       console.error('Error fetching F1 news:', apiError);

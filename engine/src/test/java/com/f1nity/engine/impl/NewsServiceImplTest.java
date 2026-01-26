@@ -1,6 +1,7 @@
 package com.f1nity.engine.impl;
 
 import com.f1nity.library.models.news.NewsArticle;
+import com.f1nity.engine.dto.PagedResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -64,9 +65,10 @@ class NewsServiceImplTest {
         when(jedis.exists(anyString())).thenReturn(true);
         when(jedis.get(anyString())).thenReturn("[{}]"); // Mock JSON response
 
-        List<NewsArticle> articles = newsService.getNews(query, from, to, page, pageSize);
+        PagedResponse<NewsArticle> response = newsService.getNews(query, from, to, page, pageSize);
 
-        assertNotNull(articles);
+        assertNotNull(response);
+        assertNotNull(response.getContent());
         verify(jedis, atLeastOnce()).get(anyString());
     }
 

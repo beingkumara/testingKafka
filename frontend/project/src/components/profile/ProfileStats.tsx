@@ -44,10 +44,12 @@ const ProfileStats: React.FC<ProfileStatsProps> = ({ user }) => {
             {stats.map((stat, index) => (
                 <motion.div
                     key={stat.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 + index * 0.1 }}
-                    className={`glass p-4 rounded-xl border ${stat.borderColor} bg-gradient-to-br ${stat.color} hover:shadow-lg transition-all duration-300`}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ delay: 0.6 + index * 0.1, type: "spring", stiffness: 300 }}
+                    className={`glass p-4 rounded-xl border ${stat.borderColor} bg-gradient-to-br ${stat.color} hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:border-white/20 transition-all duration-300 cursor-pointer`}
                 >
                     <div className="flex items-start justify-between">
                         <div className="p-2 bg-dark-800/50 rounded-lg">

@@ -103,14 +103,11 @@ const Header: React.FC = () => {
 
                   {/* Dropdown */}
                   <div
-                    className="absolute right-0 mt-4 w-56 glass-panel rounded-none border-t-2 border-primary-500 invisible group-hover:visible opacity-0 group-hover:opacity-100 origin-top-right"
-                    style={{
-                      transition: 'opacity 200ms ease-out, transform 200ms ease-out',
-                      transform: 'translateY(8px)',
-                    }}
-                    // Note: using CSS group-hover approach, no JS transition-all
+                    className="absolute right-0 top-full pt-2 w-56 invisible group-hover:visible opacity-0 group-hover:opacity-100 origin-top-right transition-all duration-200 translate-y-2 group-hover:translate-y-0"
+                    // Removed inline transform to prevent physical gap, using tailwind translate-y
                   >
-                    <div className="py-2">
+                    <div className="glass-panel rounded-none border-t-2 border-primary-500">
+                      <div className="py-2">
                       <Link
                         to="/profile"
                         className="flex items-center px-4 py-3 text-sm text-gray-300 hover:text-white hover:bg-white/5"
@@ -128,6 +125,7 @@ const Header: React.FC = () => {
                         <LogOut className="h-4 w-4 mr-3 text-red-400" />
                         <span className="font-mono text-xs uppercase tracking-wider">Log Out</span>
                       </button>
+                      </div>
                     </div>
                   </div>
                 </div>

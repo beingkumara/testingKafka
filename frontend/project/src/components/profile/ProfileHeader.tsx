@@ -17,9 +17,9 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onEditClick }) => {
     return (
         <div className="relative mb-20">
             {/* Cover Image */}
-            <div className="h-48 md:h-64 w-full rounded-b-2xl overflow-hidden relative">
+            <div className="h-64 md:h-80 w-full rounded-b-2xl overflow-hidden relative group">
                 <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${displayCover})` }}></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/40 to-transparent opacity-80"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-dark-900 via-dark-900/50 to-primary-900/30 opacity-90 transition-opacity group-hover:opacity-75"></div>
                 <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
             </div>
 
@@ -33,7 +33,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onEditClick }) => {
                         transition={{ delay: 0.2 }}
                         className="relative"
                     >
-                        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-dark-900 overflow-hidden shadow-2xl bg-dark-800">
+                        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-dark-900 overflow-hidden shadow-[0_0_30px_rgba(255,0,0,0.3)] bg-dark-800 relative z-10">
                             <img
                                 src={displayImage}
                                 alt={user?.username || 'User'}
@@ -83,7 +83,7 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onEditClick }) => {
                 >
                     <button
                         onClick={onEditClick}
-                        className="flex items-center gap-2 px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-full font-medium transition-all shadow-lg shadow-primary-900/40"
+                        className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white rounded-full font-medium transition-all shadow-glow-red hover:scale-105 active:scale-95 z-10 relative"
                     >
                         <Edit3 size={18} />
                         Edit Profile

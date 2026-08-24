@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const LoginPage: React.FC = () => {
@@ -18,7 +19,6 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setFormError('');
 
-    // Simple validation
     if (!email || !password) {
       setFormError('Please fill in all fields');
       return;
@@ -41,147 +41,184 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        <div className="relative">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="glass-card"
+    <div className="min-h-[calc(100vh-80px)] relative flex items-center justify-center overflow-hidden">
+      {/* Full-bleed F1 race start background */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1578255321055-d2c70c27ed6d?auto=format&fit=crop&w=1920&q=80')",
+        }}
+      />
+      {/* Dark gradient overlay — left side darker for card readability */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/30" />
+      {/* Bottom vignette */}
+      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-dark-800/80 to-transparent" />
+
+      {/* Speed lines accent */}
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary-500 via-primary-400 to-transparent opacity-80" />
+
+      {/* Login Card */}
+      <div className="relative z-10 w-full max-w-md mx-auto px-4 md:ml-16 md:mr-auto md:max-w-sm">
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0, y: 16 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {/* Card — outer radius xl (12px) wraps inner content with p-8 (32px) */}
+          <div
+            className="relative overflow-hidden rounded-xl"
+            style={{
+              background: 'rgba(10, 10, 14, 0.88)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(225,6,0,0.15)',
+            }}
           >
+            {/* Red accent top border */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-primary-600 via-primary-500 to-transparent" />
+
+            {/* Angular corner accent */}
+            <div
+              className="absolute top-0 right-0 w-16 h-16 bg-primary-600/10"
+              style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 0)' }}
+            />
+
             <div className="p-8">
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold">Welcome Back</h1>
-                <p className="text-secondary-600 dark:text-secondary-300 mt-2">
+              {/* Header */}
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+                  <span className="text-[10px] font-mono text-primary-500 uppercase tracking-[0.3em]">Paddock Access</span>
+                </div>
+                <h1 className="text-2xl font-heading font-bold text-white tracking-wide">
+                  Welcome Back
+                </h1>
+                <p className="text-gray-500 text-sm mt-1 font-sans normal-case tracking-normal">
                   Log in to access your Formula 1 dashboard
                 </p>
               </div>
 
+              {/* Error message */}
               {formError && (
-                <div className="bg-error-500/10 border border-error-500 text-error-500 p-3 rounded-md mb-6">
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-primary-600/10 border border-primary-600/40 text-primary-400 p-3 rounded-md mb-6 text-sm font-mono"
+                >
                   {formError}
-                </div>
+                </motion.div>
               )}
 
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit} noValidate>
+                {/* Email */}
                 <div className="mb-4">
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium mb-1"
-                  >
+                  <label htmlFor="login-email" className="block text-xs font-mono text-gray-500 uppercase tracking-widest mb-2">
                     Email
                   </label>
                   <input
-                    id="email"
+                    id="login-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="f1-input"
                     placeholder="your.email@example.com"
                     required
+                    autoComplete="email"
                   />
                 </div>
 
+                {/* Password */}
                 <div className="mb-6">
-                  <div className="flex items-center justify-between mb-1">
-                    <label
-                      htmlFor="password"
-                      className="block text-sm font-medium"
-                    >
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="login-password" className="block text-xs font-mono text-gray-500 uppercase tracking-widest">
                       Password
                     </label>
                     <Link
                       to="/forgot-password"
-                      className="text-sm text-primary-500 hover:text-primary-600"
+                      className="text-xs text-primary-500 hover:text-primary-400 font-mono"
+                      style={{ transition: 'color 200ms ease-out' }}
                     >
                       Forgot password?
                     </Link>
                   </div>
                   <div className="relative">
                     <input
-                      id="password"
+                      id="login-password"
                       ref={passwordInputRef}
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="f1-input pr-10"
+                      className="f1-input pr-12"
                       placeholder="Enter your password"
                       required
+                      autoComplete="current-password"
                     />
+                    {/* Show/hide button — 44px hit area */}
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-secondary-500 hover:text-secondary-700 focus:outline-none"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        // Store current cursor position
-                        const cursorPosition = passwordInputRef.current?.selectionStart || 0;
+                      className="absolute inset-y-0 right-0 flex items-center justify-center w-11 text-gray-500 hover:text-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-r-md"
+                      onClick={() => {
+                        const cursor = passwordInputRef.current?.selectionStart || 0;
                         setShowPassword(!showPassword);
-                        // Return focus to the password input and restore cursor position
                         setTimeout(() => {
                           if (passwordInputRef.current) {
                             passwordInputRef.current.focus();
-                            passwordInputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+                            passwordInputRef.current.setSelectionRange(cursor, cursor);
                           }
                         }, 0);
                       }}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      tabIndex={-1} // Prevent tab focus on the button
+                      style={{ transition: 'color 150ms ease-out' }}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      tabIndex={-1}
                     >
-                      {showPassword ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-                          <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clipRule="evenodd" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                          <path d="M3.53 2.47a.75.75 0 00-1.06 1.06l18 18a.75.75 0 101.06-1.06l-18-18zM22.676 12.553a11.249 11.249 0 01-2.631 4.31l-3.099-3.099a5.25 5.25 0 00-6.71-6.71L7.759 4.577a11.217 11.217 0 014.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113z" />
-                          <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0115.75 12zM12.53 15.713l-4.243-4.244a3.75 3.75 0 004.243 4.243z" />
-                          <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 00-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 016.75 12z" />
-                        </svg>
-                      )}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <button
-                    type="submit"
-                    className={`btn btn-primary w-full py-3 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                      }`}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center justify-center">
-                        <div className="loader h-5 w-5 mr-2"></div>
-                        Logging in...
-                      </span>
-                    ) : (
-                      'Log In'
-                    )}
-                  </button>
-                </div>
+                {/* Submit */}
+                <button
+                  id="login-submit"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`btn-primary w-full py-3 flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Logging in...</span>
+                    </>
+                  ) : (
+                    'Log In'
+                  )}
+                </button>
 
-                <div className="text-center text-sm">
-                  <span className="text-secondary-600 dark:text-secondary-300">
-                    Don't have an account?{' '}
-                  </span>
+                {/* Sign up link */}
+                <p className="text-center text-sm mt-6 text-gray-600">
+                  Don't have an account?{' '}
                   <Link
                     to="/signup"
-                    className="text-primary-500 hover:text-primary-600 font-medium"
+                    className="text-primary-500 hover:text-primary-400 font-medium"
+                    style={{ transition: 'color 200ms ease-out' }}
                   >
                     Sign up
                   </Link>
-                </div>
+                </p>
               </form>
             </div>
+          </div>
+        </motion.div>
+      </div>
 
-            <div className="racing-line h-2 w-full"></div>
-          </motion.div>
-
-          {/* Decorative F1 UI elements */}
-          <div className="absolute -z-10 -top-6 -left-6 h-24 w-24 rounded-full border-8 border-dashed border-secondary-200 dark:border-secondary-700"></div>
-          <div className="absolute -z-10 -bottom-4 -right-4 h-16 w-16 bg-primary-500/20 rounded-full blur-lg"></div>
+      {/* Right side — decorative text (desktop only) */}
+      <div className="hidden lg:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col items-end pointer-events-none select-none">
+        <div
+          className="text-[8rem] font-heading font-black leading-none text-white/5 tracking-tighter"
+        >
+          F1
+        </div>
+        <div className="text-xs font-mono text-white/20 tracking-[0.4em] uppercase mt-2">
+          {new Date().getFullYear()} Season
         </div>
       </div>
     </div>

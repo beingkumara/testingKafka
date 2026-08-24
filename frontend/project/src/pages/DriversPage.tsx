@@ -146,24 +146,26 @@ const DriversPage: React.FC = () => {
 
       {/* Drivers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <AnimatePresence>
+      <AnimatePresence mode="popLayout">
           {filteredDrivers.map((driver, index) => {
             const safeTeam = driver.team || 'Unknown Team';
             const safeName = driver.name || 'Unknown Driver';
 
             return (
               <motion.div
-                layout
                 key={driver.id || index}
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                whileHover={{ scale: 1.02, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                 onClick={() => navigate(`/drivers/${driver.id || safeName.toLowerCase().replace(/\s+/g, '-')}`)}
                 className={`
                  relative group cursor-pointer overflow-hidden rounded-xl bg-gradient-to-br ${getTeamGradient(safeTeam)} border-t-4
-                 ${getTeamColor(safeTeam)} hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2
+                 ${getTeamColor(safeTeam)}
               `}
+                style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}
               >
                 {/* Card Content */}
                 <div className="relative z-10 p-5 h-full flex flex-col">

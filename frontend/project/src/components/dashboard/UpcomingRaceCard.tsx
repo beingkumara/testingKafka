@@ -74,7 +74,12 @@ const UpcomingRaceCard: React.FC<UpcomingRaceCardProps> = ({ races }) => {
 
             <div className="flex-1 flex flex-col gap-6">
                 {/* Main Featured Next Race */}
-                <div className="relative rounded-lg overflow-hidden group/race cursor-pointer border border-white/10 hover:border-primary-500/50 transition-colors bg-white/5">
+                <div
+                    className="relative rounded-lg overflow-hidden group/race cursor-pointer bg-white/5"
+                    style={{ border: '1px solid rgba(255,255,255,0.08)', transition: 'border-color 200ms ease-out' }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(225,6,0,0.4)')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+                >
 
                     {/* Header Section */}
                     <div className="p-5 pb-2">
@@ -134,22 +139,17 @@ const UpcomingRaceCard: React.FC<UpcomingRaceCardProps> = ({ races }) => {
                                 <span className="text-xs text-gray-400 uppercase tracking-wider">Race Start In</span>
                             </div>
                             <div className="grid grid-cols-4 gap-2 text-center">
-                                <div className="bg-dark-800/50 rounded p-2 border border-white/5">
-                                    <div className="text-lg font-mono font-bold text-white">{timeLeft.days}</div>
-                                    <div className="text-[10px] text-gray-500 uppercase">Days</div>
-                                </div>
-                                <div className="bg-dark-800/50 rounded p-2 border border-white/5">
-                                    <div className="text-lg font-mono font-bold text-white">{timeLeft.hours}</div>
-                                    <div className="text-[10px] text-gray-500 uppercase">Hrs</div>
-                                </div>
-                                <div className="bg-dark-800/50 rounded p-2 border border-white/5">
-                                    <div className="text-lg font-mono font-bold text-primary-500">{timeLeft.minutes}</div>
-                                    <div className="text-[10px] text-gray-500 uppercase">Mins</div>
-                                </div>
-                                <div className="bg-dark-800/50 rounded p-2 border border-white/5">
-                                    <div className="text-lg font-mono font-bold text-primary-500">{timeLeft.seconds}</div>
-                                    <div className="text-[10px] text-gray-500 uppercase">Secs</div>
-                                </div>
+                                {[{ label: 'D', value: timeLeft.days, dim: true }, { label: 'H', value: timeLeft.hours, dim: true }, { label: 'M', value: timeLeft.minutes, dim: false }, { label: 'S', value: timeLeft.seconds, dim: false }].map(({ label, value, dim }) => (
+                                    <div key={label} className="bg-black/40 rounded-md p-2.5 border border-white/5">
+                                        <div
+                                            className="tabular-nums font-black text-2xl leading-none"
+                                            style={{ fontFamily: '"Orbitron", monospace', color: dim ? '#e5e7eb' : '#E10600' }}
+                                        >
+                                            {value}
+                                        </div>
+                                        <div className="text-[9px] text-gray-600 uppercase tracking-widest mt-1">{label}</div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -163,7 +163,8 @@ const UpcomingRaceCard: React.FC<UpcomingRaceCardProps> = ({ races }) => {
                             <Link
                                 to={`/races/${race.id}`}
                                 key={race.id}
-                                className="flex items-center justify-between p-3 rounded bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/10 transition-all group/item"
+                                className="flex items-center justify-between p-3 rounded bg-white/5 hover:bg-white/8 border border-white/5 group/item"
+                                style={{ transition: 'background-color 200ms ease-out' }}
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="text-center w-8">
@@ -172,11 +173,11 @@ const UpcomingRaceCard: React.FC<UpcomingRaceCardProps> = ({ races }) => {
                                     </div>
                                     <div className="w-px h-8 bg-white/10"></div>
                                     <div>
-                                        <div className="text-sm font-bold text-gray-200 group-hover/item:text-white transition-colors">{race.name}</div>
+                                        <div className="text-sm font-bold text-gray-200 group-hover/item:text-white" style={{ transition: 'color 200ms ease-out' }}>{race.name}</div>
                                         <div className="text-xs text-gray-500">{race.country}</div>
                                     </div>
                                 </div>
-                                <ChevronRight className="w-4 h-4 text-gray-600 group-hover/item:text-primary-500 transition-colors" />
+                                <ChevronRight className="w-3.5 h-3.5 text-gray-600 group-hover/item:text-primary-500" style={{ transition: 'color 200ms ease-out' }} />
                             </Link>
                         ))}
                     </div>

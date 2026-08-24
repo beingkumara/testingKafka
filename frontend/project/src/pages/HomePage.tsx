@@ -1,230 +1,278 @@
-import React, { useRef } from 'react';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import F1CarCanvas from '../components/F1CarCanvas';
-import { Zap, ChevronRight } from 'lucide-react';
+import { ChevronRight, Trophy, Calendar, Flag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getDriverStandings, getConstructorStandings, getRaces } from '../services';
+import { DriverStanding, ConstructorStanding, Race } from '../types/f1.types';
+import { getRaceTrackImage } from '../utils/imageUtils';
+
+// Team color helper
+const getTeamColor = (team: string): string => {
+  const t = (team || '').toLowerCase();
+  if (t.includes('red bull')) return '#0600EF';
+  if (t.includes('ferrari')) return '#E80020';
+  if (t.includes('mercedes')) return '#00D2BE';
+  if (t.includes('mclaren')) return '#FF8000';
+  if (t.includes('aston')) return '#229971';
+  if (t.includes('alpine')) return '#0090FF';
+  if (t.includes('williams')) return '#64C4FF';
+  if (t.includes('racing bulls') || t.includes('rb ')) return '#1634CB';
+  if (t.includes('audi') || t.includes('sauber') || t.includes('kick')) return '#52E252';
+  if (t.includes('haas') || t.includes('cadillac')) return '#B6BABD';
+  return '#E10600';
+};
 
 const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
-  // Create a long scroll container
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end end']
-  });
+  // Data fetching
+  const [driverStandings, setDriverStandings] = useState<DriverStanding[]>([]);
+  const [constructorStandings, setConstructorStandings] = useState<ConstructorStanding[]>([]);
+  const [nextRace, setNextRace] = useState<Race | null>(null);
 
-  // Smooth scroll progress for "telemetry" readouts
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001
-  });
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [driversData, constructorsData, racesData] = await Promise.all([
+          getDriverStandings(),
+          getConstructorStandings(),
+          getRaces()
+        ]);
+        setDriverStandings(driversData.slice(0, 5)); // Top 5
+        setConstructorStandings(constructorsData.slice(0, 5)); // Top 5
+        const upcoming = racesData.filter(r => !r.completed);
+        if (upcoming.length > 0) setNextRace(upcoming[0]);
+      } catch (err) {
+        console.error("Failed to load homepage data", err);
+      }
+    };
+    fetchData();
+  }, []);
 
-  // --- TRANSFORMATION LOGIC ---
+  // Countdown for Next Race
+  const [timeLeft, setTimeLeft] = useState({ days: '00', hours: '00', minutes: '00', seconds: '00' });
+  useEffect(() => {
+    if (!nextRace) return;
+    const timer = setInterval(() => {
+      const raceDate = new Date(`${nextRace.date}T${nextRace.time}`);
+      const diff = raceDate.getTime() - new Date().getTime();
+      if (diff > 0) {
+        setTimeLeft({
+          days: String(Math.floor(diff / (1000 * 60 * 60 * 24))).padStart(2, '0'),
+          hours: String(Math.floor((diff / (1000 * 60 * 60)) % 24)).padStart(2, '0'),
+          minutes: String(Math.floor((diff / 1000 / 60) % 60)).padStart(2, '0'),
+          seconds: String(Math.floor((diff / 1000) % 60)).padStart(2, '0')
+        });
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [nextRace]);
 
-  // 1. INTRO SEQUENCE (0 - 15%)
-  // Dramatic fade out of big title, slide up
-  const introOpacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
-  const introScale = useTransform(scrollYProgress, [0, 0.1], [1, 0.9]);
-  const introY = useTransform(scrollYProgress, [0, 0.1], [0, -50]);
-  const introBlur = useTransform(scrollYProgress, [0, 0.08], ["blur(0px)", "blur(10px)"]);
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
 
-  // 2. AERO DYNAMICS (15% - 40%)
-  // Slide in from left, sharp and technical
-  const aeroOpacity = useTransform(scrollYProgress, [0.15, 0.2, 0.35, 0.4], [0, 1, 1, 0]);
-  const aeroX = useTransform(scrollYProgress, [0.15, 0.2, 0.35, 0.4], [-50, 0, 0, -50]);
-  const aeroBlur = useTransform(scrollYProgress, [0.15, 0.2, 0.35, 0.4], ["blur(10px)", "blur(0px)", "blur(0px)", "blur(10px)"]);
-
-  // 3. HYBRID POWER (45% - 70%)
-  // Slide in from right, intense
-  const powerOpacity = useTransform(scrollYProgress, [0.45, 0.5, 0.65, 0.7], [0, 1, 1, 0]);
-  const powerX = useTransform(scrollYProgress, [0.45, 0.5, 0.65, 0.7], [50, 0, 0, 50]);
-  const powerBlur = useTransform(scrollYProgress, [0.45, 0.5, 0.65, 0.7], ["blur(10px)", "blur(0px)", "blur(0px)", "blur(10px)"]);
-
-  // 4. CTA / VICTORY (75% - 100%)
-  // Scale up from center
-  const ctaOpacity = useTransform(scrollYProgress, [0.75, 0.85, 1], [0, 1, 1]);
-  const ctaScale = useTransform(scrollYProgress, [0.75, 1], [0.8, 1]);
-  const ctaBlur = useTransform(scrollYProgress, [0.75, 0.85], ["blur(10px)", "blur(0px)"]);
-
-  // Parallax Background Elements
-  const bgGridY = useTransform(scrollYProgress, [0, 1], [0, 500]); // Moves slower than scroll
-  const speedLinesOpacity = useTransform(scrollYProgress, [0.1, 0.9], [0, 0.3]);
+  const itemVariants = {
+    hidden: { opacity: 0, y: reduceMotion ? 0 : 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.5, ease: "easeOut" }
+    }
+  };
 
   return (
-    <div ref={containerRef} className="relative h-[300vh] bg-[#050505] selection:bg-[#e10600] selection:text-white">
+    <div className="min-h-screen bg-[#050505] selection:bg-[#e10600] selection:text-white pb-32">
+      {/* VIGNETTE & TEXTURE (Mission Control Vibe) */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+         <div className="absolute inset-0 bg-[#050505]"></div>
+         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+         <div className="absolute top-0 inset-x-0 h-[60vh] bg-[radial-gradient(ellipse_at_top,rgba(225,6,0,0.08),transparent_70%)]"></div>
+         {/* Subtle scanline overlay for premium technical feel */}
+         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDIiLz4KPC9zdmc+')] opacity-50 mix-blend-overlay"></div>
+      </div>
 
-      {/* Sticky Canvas Container */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden">
-
-        {/* Dynamic Background Grid */}
-        <motion.div
-          style={{ y: bgGridY }}
-          className="absolute inset-0 opacity-10 pointer-events-none"
+      <div className="relative z-10 container-f1 max-w-[1400px] mx-auto px-4 pt-24">
+        
+        {/* BENTO BOX GRID */}
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-24"
         >
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-[#050505]"></div>
-        </motion.div>
-
-        {/* Speed Lines Effect */}
-        <motion.div
-          style={{ opacity: speedLinesOpacity }}
-          className="absolute inset-0 pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 contrast-150 brightness-100 mix-blend-overlay"
-        />
-
-        {/* Cinematic Spotlight */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05),transparent_70%)] blur-[100px] opacity-30" />
-        </div>
-
-        {/* The 3D Car Model */}
-        <div className="absolute inset-0 z-0">
-          <F1CarCanvas scrollProgress={smoothProgress} />
-        </div>
-
-        {/* Vignette & Color Grading */}
-        <div className="absolute inset-x-0 bottom-0 pointer-events-none bg-gradient-to-t from-[#050505] to-transparent h-48 z-10" />
-        <div className="absolute inset-x-0 top-0 pointer-events-none bg-gradient-to-b from-[#050505] via-[#050505]/60 to-transparent h-96 z-10" />
-
-        {/* --- DYNAMIC TEXT LAYERS --- */}
-        <div className="relative z-10 h-full w-full pointer-events-none">
-
-          {/* SECTION 1: INTRO */}
-          <motion.div
-            style={{ opacity: introOpacity, scale: introScale, y: introY, filter: introBlur }}
-            className="absolute inset-0 flex flex-col items-center justify-center p-6"
-          >
-            <div className="overflow-hidden">
-              <motion.h1
-                initial={{ y: 100 }} animate={{ y: 0 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className="text-7xl md:text-[10rem] font-black text-white leading-none tracking-tighter"
-              >
-                FAN<span className="text-[#e10600]">F1</span>X
-              </motion.h1>
-            </div>
-            <motion.p
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 1 }}
-              className="text-xl md:text-2xl text-gray-400 tracking-[0.5em] font-light mt-4 uppercase"
-            >
-              The Apex of Analytics
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1, duration: 1 }}
-              className="absolute bottom-12 flex flex-col items-center gap-2 text-white/40"
-            >
-
-              <div className="w-px h-12 bg-gradient-to-b from-[#e10600] to-transparent"></div>
-            </motion.div>
+          
+          {/* 1. HERO CELL (col-span-full) */}
+          <motion.div variants={itemVariants} className="col-span-1 md:col-span-4 lg:col-span-6 flex flex-col md:flex-row items-center justify-between py-12 px-8 liquid-glass-card relative group overflow-hidden">
+             {/* Ambient glow behind hero */}
+             <div className="absolute -inset-10 bg-gradient-radial from-[#e10600]/20 to-transparent blur-3xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+             
+             <div className="flex-1 text-center md:text-left">
+                <div className="inline-flex items-center gap-3 mb-4 px-4 py-1.5 bg-black/40 border border-white/10 rounded-full">
+                  <div className="w-2 h-2 bg-[#e10600] rounded-full animate-pulse shadow-[0_0_8px_#e10600]"></div>
+                  <span className="text-xs font-mono text-gray-300 tracking-[0.2em] uppercase font-bold">Global Telemetry Online</span>
+                </div>
+                <h1 className="text-5xl md:text-7xl font-black text-white leading-none tracking-tighter mb-2">
+                  RACE CONTROL
+                </h1>
+                <p className="text-lg md:text-xl text-gray-400 tracking-[0.3em] font-light uppercase">
+                  Live Data Center
+                </p>
+             </div>
+             
+             <div className="mt-8 md:mt-0">
+               <motion.div whileTap={{ scale: 0.97 }}>
+                 <Link 
+                   to={isAuthenticated ? "/dashboard" : "/signup"}
+                   className="group/btn flex items-center gap-3 py-4 px-8 bg-[#e10600] rounded-lg relative overflow-hidden transition-[box-shadow,background-color] duration-300 hover:bg-[#ff1e18] hover:shadow-[0_0_30px_rgba(225,6,0,0.4)]"
+                 >
+                   <span className="font-heading font-black text-xl text-white uppercase tracking-widest relative z-10">
+                     {isAuthenticated ? 'Enter Paddock' : 'Initialize'}
+                   </span>
+                   <ChevronRight className="w-6 h-6 text-white relative z-10 opacity-90 group-hover/btn:translate-x-1 transition-transform duration-300" />
+                 </Link>
+               </motion.div>
+             </div>
           </motion.div>
 
-          {/* SECTION 2: AERODYNAMICS */}
-          <motion.div
-            style={{ opacity: aeroOpacity, x: aeroX, filter: aeroBlur }}
-            className="absolute inset-0 flex items-center justify-start px-8 md:px-24"
-          >
-            <div className="max-w-xl border-l-2 border-[#e10600] pl-8 py-4 backdrop-blur-sm bg-black/10">
-              <div className="flex items-center gap-3 mb-4 text-[#e10600]">
-                <div className="w-2 h-2 bg-[#e10600] rounded-full animate-pulse"></div>
-                <span className="text-xs font-mono tracking-[0.3em]">AERODYNAMICS_MODULE</span>
-              </div>
-              <h2 className="text-5xl md:text-8xl font-black text-white mb-6 leading-[0.85] tracking-tighter">
-                PRECISION<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-600">ENGINEERING</span>
-              </h2>
-              <p className="text-lg text-gray-300 font-light leading-relaxed max-w-md border-t border-white/10 pt-6">
-                Experience data visualization refined to the millisecond. Every curve, every lap, captured with aerodynamic efficiency.
-              </p>
-            </div>
-          </motion.div>
-
-          {/* SECTION 3: HYBRID POWER */}
-          <motion.div
-            style={{ opacity: powerOpacity, x: powerX, filter: powerBlur }}
-            className="absolute inset-0 flex items-center justify-end px-8 md:px-24"
-          >
-            <div className="max-w-xl border-r-2 border-[#e10600] pr-8 py-4 text-right backdrop-blur-sm bg-black/10">
-              <div className="flex items-center justify-end gap-3 mb-4 text-[#e10600]">
-                <span className="text-xs font-mono tracking-[0.3em]">POWER_UNIT_TELEMETRY</span>
-                <div className="w-2 h-2 bg-[#e10600] rounded-full animate-pulse"></div>
-              </div>
-              <h2 className="text-5xl md:text-8xl font-black text-white mb-6 leading-[0.85] tracking-tighter">
-                HYBRID<br /><span className="text-transparent bg-clip-text bg-gradient-to-l from-gray-200 to-gray-600">PERFORMANCE</span>
-              </h2>
-              <p className="text-lg text-gray-300 font-light leading-relaxed max-w-md ml-auto border-t border-white/10 pt-6">
-                Unleash the full potential of F1 analytics. Real-time processing meets historical depth.
-              </p>
-            </div>
-          </motion.div>
-
-          {/* SECTION 4: CTA / VICTORY */}
-          <motion.div
-            style={{ opacity: ctaOpacity, scale: ctaScale, filter: ctaBlur }}
-            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-auto"
-          >
-            <div className="text-center">
-              <h2 className="text-6xl md:text-9xl font-black text-white mb-12 tracking-tighter">
-                RACE <span className="text-[#e10600]">READY</span>
-              </h2>
-
-              <div className="flex flex-col md:flex-row items-center justify-center gap-8">
-                {isAuthenticated ? (
-                  <Link
-                    to="/dashboard"
-                    className="group relative px-12 py-6 bg-[#e10600] text-white overflow-hidden skew-x-[-10deg] hover:shadow-[0_0_40px_rgba(225,6,0,0.5)] transition-all duration-300"
-                  >
-                    <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300" />
-                    <div className="flex items-center gap-4 skew-x-[10deg]">
-                      <span className="font-bold text-xl tracking-widest">ENTER PADDOCK</span>
-                      <ChevronRight className="w-6 h-6" />
-                    </div>
-                  </Link>
-                ) : (
+          {/* 2. NEXT RACE CELL */}
+          <motion.div variants={itemVariants} className="col-span-1 md:col-span-2 lg:col-span-2 relative group h-[500px]">
+             {/* Red ambient glow */}
+             <div className="absolute -inset-2 bg-gradient-radial from-[#e10600]/30 to-transparent blur-2xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+             
+             <div className="liquid-glass-card h-full flex flex-col relative">
+                {/* Header */}
+                <div className="p-6 pb-0 flex justify-between items-start border-b border-white/5 pb-4">
+                   <div className="flex items-center gap-2 text-white font-mono text-sm font-bold tracking-widest uppercase">
+                     <Calendar className="w-4 h-4 text-[#e10600]" /> Next Race
+                   </div>
+                   <span className="live-indicator text-[10px] tracking-[0.2em]">LIVE</span>
+                </div>
+                
+                {nextRace ? (
                   <>
-                    <Link
-                      to="/signup"
-                      className="group relative px-12 py-6 bg-[#e10600] text-white overflow-hidden skew-x-[-10deg] hover:shadow-[0_0_40px_rgba(225,6,0,0.5)] transition-all duration-300"
-                    >
-                      <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300" />
-                      <div className="flex items-center gap-4 skew-x-[10deg]">
-                        <span className="font-bold text-xl tracking-widest">JOIN TEAM</span>
-                        <Zap className="w-6 h-6" />
+                    <div className="flex-1 relative flex items-center justify-center overflow-hidden p-6">
+                      <div className="absolute top-0 right-0 p-4 z-10 pointer-events-none">
+                        <span className="tabular-nums font-display text-8xl font-black text-white/[0.03] leading-none">{String(nextRace.round).padStart(2, '0')}</span>
+                      </div>
+                      <img
+                        src={getRaceTrackImage(nextRace.round) || nextRace.image}
+                        alt={nextRace.circuit}
+                        className="object-contain h-full w-full max-h-[200px] relative z-0 opacity-90 invert mix-blend-screen transition-transform duration-700 group-hover:scale-105"
+                        onError={(e) => e.currentTarget.style.display = 'none'}
+                      />
+                    </div>
+                    <div className="p-6 bg-black/40 border-t border-white/5 backdrop-blur-md">
+                      <div className="text-[10px] text-[#e10600] font-bold uppercase tracking-[0.2em] mb-1">{nextRace.country}</div>
+                      <h3 className="text-2xl font-heading font-black text-white uppercase leading-tight mb-4 truncate" title={nextRace.name}>{nextRace.name.replace('Grand Prix', 'GP')}</h3>
+                      
+                      <div className="grid grid-cols-4 gap-1 text-center">
+                        {[{l: 'D', v: timeLeft.days}, {l: 'H', v: timeLeft.hours}, {l: 'M', v: timeLeft.minutes}, {l: 'S', v: timeLeft.seconds}].map((t, i) => (
+                           <div key={t.l} className="bg-white/5 rounded border border-white/10 p-2">
+                             <div className="tabular-nums font-display font-black text-xl text-white">{t.v}</div>
+                             <div className="text-[9px] text-gray-500 uppercase tracking-widest mt-1">{t.l}</div>
+                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-gray-500 font-mono text-sm">Loading Calendar...</div>
+                )}
+             </div>
+          </motion.div>
+
+          {/* 3. DRIVER STANDINGS CELL */}
+          <motion.div variants={itemVariants} className="col-span-1 md:col-span-2 lg:col-span-2 relative group h-[500px]">
+             {/* Gold ambient glow */}
+             <div className="absolute -inset-2 bg-gradient-radial from-[#d4af37]/20 to-transparent blur-2xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+             
+             <div className="liquid-glass-card h-full flex flex-col">
+                <div className="p-6 flex justify-between items-center border-b border-white/5">
+                   <div className="flex items-center gap-2 text-white font-mono text-sm font-bold tracking-widest uppercase">
+                     <Trophy className="w-4 h-4 text-tertiary-400" /> Drivers Top 5
+                   </div>
+                   <Link to="/standings" className="text-gray-500 hover:text-white transition-colors"><ChevronRight className="w-5 h-5"/></Link>
+                </div>
+                
+                <div className="p-4 flex flex-col gap-2 flex-1 justify-center">
+                  {driverStandings.length > 0 ? driverStandings.map((driver, index) => (
+                    <Link to={`/drivers/${driver.id}`} key={driver.id}>
+                      <div className="group/row flex items-center justify-between p-3 bg-black/20 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10 transition-all duration-200 relative overflow-hidden">
+                        {/* Interactive colored glass highlight */}
+                        <div className="absolute inset-0 opacity-0 group-hover/row:opacity-10 transition-opacity duration-300" style={{ backgroundColor: getTeamColor(driver.team) }}></div>
+                        
+                        <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r" style={{ backgroundColor: getTeamColor(driver.team) }} />
+                        <div className="flex items-center gap-4 pl-3 relative z-10">
+                          <span className="tabular-nums font-heading text-2xl font-black opacity-30 w-6 text-center">{index + 1}</span>
+                          <div>
+                            <div className="font-bold text-white text-md leading-none mb-1">{driver.name}</div>
+                            <div className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">{driver.team}</div>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-baseline gap-1 relative z-10">
+                          <span className="tabular-nums font-mono text-xl font-bold text-white">{driver.points}</span>
+                          <span className="text-[9px] text-gray-500 uppercase tracking-widest">PTS</span>
+                        </div>
                       </div>
                     </Link>
-                    <Link
-                      to="/login"
-                      className="group px-12 py-6 border border-white/20 text-white skew-x-[-10deg] hover:bg-white/5 transition-all duration-300"
-                    >
-                      <span className="block font-bold text-xl tracking-widest skew-x-[10deg]">LOGIN</span>
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
+                  )) : (
+                    Array.from({length: 5}).map((_, i) => <div key={i} className="h-[60px] bg-white/5 rounded-lg border border-white/5 animate-pulse" />)
+                  )}
+                </div>
+             </div>
           </motion.div>
-        </div>
 
-        {/* --- TELEMETRY SIDEBAR (Fixed) --- */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-8 pointer-events-none z-20">
-          <div className="flex flex-col items-center gap-2">
+          {/* 4. CONSTRUCTOR STANDINGS CELL */}
+          <motion.div variants={itemVariants} className="col-span-1 md:col-span-2 lg:col-span-2 relative group h-[500px]">
+             {/* Blue ambient glow */}
+             <div className="absolute -inset-2 bg-gradient-radial from-blue-500/20 to-transparent blur-2xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+             
+             <div className="liquid-glass-card h-full flex flex-col">
+                <div className="p-6 flex justify-between items-center border-b border-white/5">
+                   <div className="flex items-center gap-2 text-white font-mono text-sm font-bold tracking-widest uppercase">
+                     <Flag className="w-4 h-4 text-accent-400" /> Constructors
+                   </div>
+                   <Link to="/standings" className="text-gray-500 hover:text-white transition-colors"><ChevronRight className="w-5 h-5"/></Link>
+                </div>
+                
+                <div className="p-4 flex flex-col gap-2 flex-1 justify-center">
+                  {constructorStandings.length > 0 ? constructorStandings.map((team, index) => (
+                    <div key={team.id} className="group/row flex items-center justify-between p-3 bg-black/20 hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10 transition-all duration-200 relative overflow-hidden">
+                      {/* Interactive colored glass highlight */}
+                      <div className="absolute inset-0 opacity-0 group-hover/row:opacity-10 transition-opacity duration-300" style={{ backgroundColor: getTeamColor(team.name) }}></div>
+                      
+                      <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r" style={{ backgroundColor: getTeamColor(team.name) }} />
+                      <div className="flex items-center gap-4 pl-3 relative z-10">
+                        <span className="tabular-nums font-heading text-2xl font-black opacity-30 w-6 text-center">{index + 1}</span>
+                        <div>
+                          <div className="font-bold text-white text-md leading-none mb-1">{team.name}</div>
+                          <div className="flex items-center gap-2">
+                             <div className="text-[10px] font-mono text-tertiary-400 uppercase tracking-wider">{team.wins} WINS</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right flex items-baseline gap-1 relative z-10">
+                        <span className="tabular-nums font-mono text-xl font-bold text-white">{team.points}</span>
+                        <span className="text-[9px] text-gray-500 uppercase tracking-widest">PTS</span>
+                      </div>
+                    </div>
+                  )) : (
+                    Array.from({length: 5}).map((_, i) => <div key={i} className="h-[60px] bg-white/5 rounded-lg border border-white/5 animate-pulse" />)
+                  )}
+                </div>
+             </div>
+          </motion.div>
 
-            <div className="w-px h-32 bg-gray-800 relative overflow-hidden">
-              <motion.div
-                style={{ height: smoothProgress }}
-                className="absolute top-0 w-full bg-[#e10600]"
-              />
-            </div>
-            <span className="text-[10px] text-[#e10600] font-mono">01</span>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {[0, 1, 2, 3].map(i => (
-              <div key={i} className="w-1 h-1 bg-gray-700 rounded-full" />
-            ))}
-          </div>
-        </div>
-
+        </motion.div>
+        
       </div>
     </div>
   );

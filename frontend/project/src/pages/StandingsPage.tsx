@@ -59,18 +59,33 @@ const StandingsPage: React.FC = () => {
     }, [season]);
 
     const getPositionChange = (standing: Driver | Constructor) => {
+        // positionsMoved convention (set by backend):
+        //   positive  -> entity gained positions (moved UP the table)   -> green up arrow
+        //   negative  -> entity lost positions   (moved DOWN the table) -> red down arrow
+        //   zero/null -> no change this round                           -> grey dash
         if (!standing.positionsMoved || standing.positionsMoved === 0) {
-            return <div className="flex items-center justify-center"><Minus className="h-3 w-3 text-gray-600" /></div>;
+            return (
+                <div className="flex items-center justify-center">
+                    <span className="inline-flex items-center justify-center w-7 h-5 rounded text-gray-600 bg-white/5 text-xs font-mono">
+                        <Minus className="h-3 w-3" />
+                    </span>
+                </div>
+            );
         }
 
-        const Icon = standing.positionsMoved > 0 ? ArrowUp : ArrowDown;
-        const color = standing.positionsMoved > 0 ? 'text-green-500' : 'text-red-500';
+        const gained = standing.positionsMoved > 0;
+        const Icon = gained ? ArrowUp : ArrowDown;
         const absMoved = Math.abs(standing.positionsMoved);
+        const pillClass = gained
+            ? 'bg-green-500/15 text-green-400 border border-green-500/30'
+            : 'bg-red-500/15 text-red-400 border border-red-500/30';
 
         return (
-            <div className="flex items-center justify-center gap-1">
-                <Icon className={`h-3 w-3 ${color}`} />
-                <span className={`text-xs font-mono ${color}`}>{absMoved}</span>
+            <div className="flex items-center justify-center">
+                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-mono font-bold ${pillClass}`}>
+                    <Icon className="h-3 w-3 shrink-0" />
+                    {absMoved}
+                </span>
             </div>
         );
     };

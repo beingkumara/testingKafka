@@ -16,6 +16,8 @@ import LoadingScreen from '../components/ui/LoadingScreen';
 import { getRaceTrackImage } from '../utils/imageUtils';
 import WeatherCard from '../components/WeatherCard';
 import GuideTab from '../components/GuideTab';
+import { RaceCostEstimator } from '../components/estimator/RaceCostEstimator';
+
 
 interface RaceDetails {
   _id: string;
@@ -272,6 +274,7 @@ const RaceDetailsPage: React.FC = () => {
           /* Travel Guide Tab Content */
           <div className="animate-fade-in">
             <GuideTab circuitId={raceDetails.circuit.circuitId} />
+            <div className="mt-8"><RaceCostEstimator raceId={raceDetails.circuit.circuitId} /></div>
           </div>
         )}
       </div>

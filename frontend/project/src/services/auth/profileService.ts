@@ -1,5 +1,5 @@
 import { ProfileUpdateRequest, ProfileUpdateResponse, User } from '../../types/auth.types';
-import { authApi } from '../api';
+import { authApi, f1Api } from '../api';
 
 /**
  * Update user profile
@@ -110,3 +110,29 @@ export const getCurrentUser = async (): Promise<User> => {
  * @param data - Profile data to update
  * @returns Promise with updated user data
  */
+
+export interface FollowStatus {
+  followers: number;
+  following: number;
+  isFollowing: boolean;
+}
+
+export const followUser = async (username: string): Promise<void> => {
+  await f1Api.post(`/users/${username}/follow`, {}, true);
+};
+
+export const unfollowUser = async (username: string): Promise<void> => {
+  await f1Api.delete(`/users/${username}/unfollow`, true);
+};
+
+export const getFollowStatus = async (username: string): Promise<FollowStatus> => {
+  return await f1Api.get<FollowStatus>(`/users/${username}/follow-status`, true);
+};
+
+export const getFollowers = async (username: string): Promise<string[]> => {
+  return await f1Api.get<string[]>(`/users/${username}/followers`, true);
+};
+
+export const getFollowing = async (username: string): Promise<string[]> => {
+  return await f1Api.get<string[]>(`/users/${username}/following`, true);
+};

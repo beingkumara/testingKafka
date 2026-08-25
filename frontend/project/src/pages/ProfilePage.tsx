@@ -5,12 +5,21 @@ import { fetchUserProfile } from '../services/auth/profileService';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import ProfileStats from '../components/profile/ProfileStats';
 import EditProfileModal from '../components/profile/EditProfileModal';
+import FollowListModal from '../components/profile/FollowListModal';
 import LoadingScreen from '../components/ui/LoadingScreen';
+import { useParams } from 'react-router-dom';
+import { followUser, unfollowUser, getFollowStatus, FollowStatus } from '../services/auth/profileService';
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
   const token = localStorage.getItem('authToken') || '';
+  const { username: routeUsername } = useParams<{ username?: string }>();
+  
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
+  const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
+  const [followStatus, setFollowStatus] = useState<FollowStatus | undefined>(undefined);
+
 
   // Local user state to handle updates immediately before context refreshes
   const [profileData, setProfileData] = useState(user);
@@ -18,15 +27,16 @@ const ProfilePage: React.FC = () => {
 
   // Sync with context
   useEffect(() => {
-    if (user) {
+    if (user && !routeUsername) {
       setProfileData(user);
     }
-  }, [user]);
+  }, [user, routeUsername]);
 
   // Load fresh profile data on mount
   useEffect(() => {
     async function loadProfile() {
-      if (user?.email) {
+      // For now we only fetch current user since we need email for fetchUserProfile
+      if (user?.email && !routeUsername) {
         setIsLoadingProfile(true);
         try {
           const profile = await fetchUserProfile(token, user.email);
@@ -40,7 +50,33 @@ const ProfilePage: React.FC = () => {
     }
 
     loadProfile();
-  }, [token, user?.email]);
+  }, [token, user?.email, routeUsername]);
+
+  const displayUsername = routeUsername || user?.username;
+  const isCurrentUser = !routeUsername || routeUsername === user?.username;
+
+  useEffect(() => {
+    if (displayUsername) {
+      getFollowStatus(displayUsername)
+        .then(setFollowStatus)
+        .catch(console.error);
+    }
+  }, [displayUsername]);
+
+  const handleFollowToggle = async () => {
+    if (!displayUsername) return;
+    try {
+      if (followStatus?.isFollowing) {
+        await unfollowUser(displayUsername);
+        setFollowStatus(prev => prev ? { ...prev, isFollowing: false, followers: prev.followers - 1 } : undefined);
+      } else {
+        await followUser(displayUsername);
+        setFollowStatus(prev => prev ? { ...prev, isFollowing: true, followers: prev.followers + 1 } : undefined);
+      }
+    } catch (e) {
+      console.error('Failed to toggle follow status', e);
+    }
+  };
 
   if (!user && !isLoadingProfile) {
     return (
@@ -68,6 +104,11 @@ const ProfilePage: React.FC = () => {
           {/* Header Section */}
           <ProfileHeader
             user={profileData}
+            isCurrentUser={isCurrentUser}
+            followStatus={followStatus}
+            onFollowToggle={handleFollowToggle}
+            onShowFollowers={() => setIsFollowersModalOpen(true)}
+            onShowFollowing={() => setIsFollowingModalOpen(true)}
             onEditClick={() => setIsEditModalOpen(true)}
           />
 
@@ -175,6 +216,24 @@ const ProfilePage: React.FC = () => {
               onClose={() => setIsEditModalOpen(false)}
               currentUser={profileData}
             />
+          )}
+
+          {/* Follow Lists Modals */}
+          {displayUsername && (
+            <>
+              <FollowListModal
+                isOpen={isFollowersModalOpen}
+                onClose={() => setIsFollowersModalOpen(false)}
+                title="Followers"
+                username={displayUsername}
+              />
+              <FollowListModal
+                isOpen={isFollowingModalOpen}
+                onClose={() => setIsFollowingModalOpen(false)}
+                title="Following"
+                username={displayUsername}
+              />
+            </>
           )}
         </motion.div>
       </div>

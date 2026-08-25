@@ -1,7 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff, Activity, Trophy, Database, ShieldCheck, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+// Feature Showcase Component for the right side of the screen
+const FeatureShowcase = () => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15, delayChildren: 0.3 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: 20 },
+    visible: { 
+      opacity: 1, 
+      x: 0,
+      transition: { type: "spring", stiffness: 300, damping: 24 }
+    }
+  };
+
+  return (
+    <div className="absolute right-0 top-0 bottom-0 w-[55%] hidden lg:flex flex-col justify-center p-16 pointer-events-none z-10">
+      <div className="w-full max-w-2xl ml-auto space-y-12">
+        {/* Top Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="border-b border-white/10 pb-6"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-2 h-2 bg-[#e10600] rounded-full shadow-[0_0_8px_#e10600]"></div>
+            <span className="text-xs font-mono text-[#e10600] tracking-[0.3em] uppercase">Paddock Perks</span>
+          </div>
+          <h2 className="text-4xl font-heading font-black text-white tracking-widest uppercase">
+            Initialize Access
+          </h2>
+        </motion.div>
+
+        {/* Features List */}
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid gap-6"
+        >
+          <motion.div variants={itemVariants} className="flex items-start gap-6 bg-black/40 backdrop-blur-md p-6 rounded-xl border border-white/10">
+            <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center shrink-0 border border-white/10">
+              <Calendar className="w-6 h-6 text-[#e10600]" />
+            </div>
+            <div>
+              <h3 className="text-xl font-heading font-bold text-white uppercase tracking-wider mb-2">Race Calendar</h3>
+              <p className="text-gray-400 font-light text-sm">Stay up to date with the latest race schedules, track information, and upcoming grand prix events.</p>
+            </div>
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="flex items-start gap-6 bg-black/40 backdrop-blur-md p-6 rounded-xl border border-white/10">
+            <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center shrink-0 border border-white/10">
+              <Trophy className="w-6 h-6 text-[#d4af37]" />
+            </div>
+            <div>
+              <h3 className="text-xl font-heading font-bold text-white uppercase tracking-wider mb-2">Global Standings</h3>
+              <p className="text-gray-400 font-light text-sm">Track the constructor and driver championship battles with real-time points updates.</p>
+            </div>
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="flex items-start gap-6 bg-black/40 backdrop-blur-md p-6 rounded-xl border border-white/10">
+            <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center shrink-0 border border-white/10">
+              <ShieldCheck className="w-6 h-6 text-blue-500" />
+            </div>
+            <div>
+              <h3 className="text-xl font-heading font-bold text-white uppercase tracking-wider mb-2">Follow Favorites</h3>
+              <p className="text-gray-400 font-light text-sm">Build your custom profile and follow your favorite drivers and constructors across the grid.</p>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
 
 const SignupPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -10,9 +91,6 @@ const SignupPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  const [passwordFeedback, setPasswordFeedback] = useState('');
-  const [isEmailValid, setIsEmailValid] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const passwordInputRef = React.useRef<HTMLInputElement>(null);
@@ -64,30 +142,20 @@ const SignupPage: React.FC = () => {
     return emailRegex.test(email);
   };
 
-  // Update password strength when password changes
-  useEffect(() => {
-    const strength = calculatePasswordStrength(password);
-    setPasswordStrength(strength);
-
-    if (strength === 0) {
-      setPasswordFeedback('');
-    } else if (strength < 40) {
-      setPasswordFeedback('Weak');
-    } else if (strength < 70) {
-      setPasswordFeedback('Moderate');
+  // Compute derived state directly during render
+  const passwordStrength = calculatePasswordStrength(password);
+  let passwordFeedback = '';
+  if (passwordStrength > 0) {
+    if (passwordStrength < 40) {
+      passwordFeedback = 'Weak';
+    } else if (passwordStrength < 70) {
+      passwordFeedback = 'Moderate';
     } else {
-      setPasswordFeedback('Strong');
+      passwordFeedback = 'Strong';
     }
-  }, [password]);
+  }
 
-  // Validate email when it changes
-  useEffect(() => {
-    if (email) {
-      setIsEmailValid(validateEmail(email));
-    } else {
-      setIsEmailValid(true); // Don't show error when field is empty
-    }
-  }, [email]);
+  const isEmailValid = email ? validateEmail(email) : true;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,253 +200,253 @@ const SignupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        <div className="relative">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="glass-card"
+    <div className="min-h-[calc(100vh-80px)] relative flex items-center overflow-hidden">
+      {/* Full-bleed F1 race start background */}
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-10000 hover:scale-105"
+        style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1578255321055-d2c70c27ed6d?auto=format&fit=crop&w=1920&q=80')",
+        }}
+      />
+      {/* Dark gradient overlay — completely opaque on left, fading to right */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/20" />
+      {/* Bottom vignette */}
+      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-dark-800/80 to-transparent" />
+
+      {/* Feature Showcase Display (Desktop Right Side) */}
+      <FeatureShowcase />
+
+      {/* Speed lines accent */}
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-[#e10600] via-primary-500 to-transparent opacity-80" />
+
+      {/* Signup Card */}
+      <div className="relative z-20 w-full max-w-md px-4 lg:ml-[10%]">
+        <motion.div
+          initial={{ scale: 0.96, opacity: 0, x: -20 }}
+          animate={{ scale: 1, opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {/* Card — outer radius xl (12px) wraps inner content with p-8 (32px) */}
+          <div
+            className="relative overflow-hidden rounded-2xl group"
+            style={{
+              background: 'rgba(10, 10, 14, 0.7)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(225,6,0,0.1) inset',
+            }}
           >
+            {/* Interactive ambient glow on hover */}
+            <div className="absolute -inset-2 bg-gradient-radial from-[#e10600]/20 to-transparent blur-xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+            {/* Red accent top border */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#e10600] via-[#ff1e18] to-transparent" />
+
+            {/* Angular corner accent */}
+            <div
+              className="absolute top-0 right-0 w-16 h-16 bg-[#e10600]/10"
+              style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 0)' }}
+            />
+
             <div className="p-8">
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold">Create Your Account</h1>
-                <p className="text-secondary-600 dark:text-secondary-300 mt-2">
-                  Join F1nity and elevate your Formula 1 experience
+              {/* Header */}
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#e10600] animate-pulse shadow-[0_0_5px_#e10600]" />
+                  <span className="text-[10px] font-mono text-[#e10600] uppercase tracking-[0.3em]">New Authorization</span>
+                </div>
+                <h1 className="text-3xl font-heading font-black text-white tracking-wider uppercase mb-1">
+                  Request Access
+                </h1>
+                <p className="text-gray-400 text-sm font-sans normal-case tracking-normal font-light">
+                  Join fanf1x and elevate your Formula 1 experience.
                 </p>
               </div>
 
-              {formError && (
-                <div className="bg-error-500/10 border border-error-500 text-error-500 p-3 rounded-md mb-6">
-                  {formError}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <label
-                    htmlFor="name"
-                    className="block text-sm font-medium mb-1"
+              {/* Error message */}
+              <AnimatePresence>
+                {formError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -10 }}
+                    className="bg-[#e10600]/10 border border-[#e10600]/40 text-red-400 p-3 rounded-lg mb-6 text-sm font-mono flex items-center gap-2"
                   >
-                    Full Name
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#e10600]"></div>
+                    {formError}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <form onSubmit={handleSubmit} noValidate>
+                {/* Full Name */}
+                <div className="mb-4">
+                  <label htmlFor="name" className="block text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                    Designation
                   </label>
                   <input
                     id="name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="f1-input"
+                    className="f1-input focus:border-[#e10600] focus:shadow-[0_0_15px_rgba(225,6,0,0.2)] transition-all duration-300 w-full bg-black/40 border-white/10"
                     placeholder="John Doe"
                     required
                   />
                 </div>
 
+                {/* Email */}
                 <div className="mb-4">
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Email
+                  <label htmlFor="email" className="block text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                    Comms Frequency (Email)
                   </label>
                   <input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className={`f1-input ${email && !isEmailValid ? 'border-error-500' : ''}`}
-                    placeholder="your.email@example.com"
+                    className={`f1-input focus:border-[#e10600] focus:shadow-[0_0_15px_rgba(225,6,0,0.2)] transition-all duration-300 w-full bg-black/40 border-white/10 ${email && !isEmailValid ? 'border-red-500/50' : ''}`}
+                    placeholder="driver@fanf1x.com"
                     required
                   />
                   {email && !isEmailValid && (
-                    <p className="mt-1 text-xs text-error-500">
-                      Please enter a valid email address
+                    <p className="mt-1 text-[10px] font-mono text-red-400 pl-1">
+                      Invalid frequency format
                     </p>
                   )}
                 </div>
 
+                {/* Password */}
                 <div className="mb-4">
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Password
+                  <label htmlFor="password" className="block text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                    Security Code
                   </label>
-                  <div className="relative">
+                  <div className="relative group/input">
                     <input
                       id="password"
                       ref={passwordInputRef}
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="f1-input pr-10"
-                      placeholder="Enter your password"
+                      className="f1-input pr-12 focus:border-[#e10600] focus:shadow-[0_0_15px_rgba(225,6,0,0.2)] transition-all duration-300 w-full bg-black/40 border-white/10"
+                      placeholder="••••••••"
                       required
-                      aria-describedby="password-requirements"
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-secondary-500 hover:text-secondary-700 focus:outline-none"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        // Store current cursor position
-                        const cursorPosition = passwordInputRef.current?.selectionStart || 0;
+                      className="absolute inset-y-0 right-0 flex items-center justify-center w-12 text-gray-500 hover:text-white transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#e10600] rounded-r-lg"
+                      onClick={() => {
+                        const cursor = passwordInputRef.current?.selectionStart || 0;
                         setShowPassword(!showPassword);
-                        // Return focus to the password f1-input and restore cursor position
                         setTimeout(() => {
                           if (passwordInputRef.current) {
                             passwordInputRef.current.focus();
-                            passwordInputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+                            passwordInputRef.current.setSelectionRange(cursor, cursor);
                           }
                         }, 0);
                       }}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      tabIndex={-1} // Prevent tab focus on the button
+                      tabIndex={-1}
                     >
-                      {showPassword ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-                          <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clipRule="evenodd" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                          <path d="M3.53 2.47a.75.75 0 00-1.06 1.06l18 18a.75.75 0 101.06-1.06l-18-18zM22.676 12.553a11.249 11.249 0 01-2.631 4.31l-3.099-3.099a5.25 5.25 0 00-6.71-6.71L7.759 4.577a11.217 11.217 0 014.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113z" />
-                          <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0115.75 12zM12.53 15.713l-4.243-4.244a3.75 3.75 0 004.243 4.243z" />
-                          <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 00-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 016.75 12z" />
-                        </svg>
-                      )}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                   {password && (
-                    <>
-                      <div className="mt-2">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-medium">Password Strength:</span>
-                          <span className={`text-xs font-medium ${passwordStrength < 40 ? 'text-error-500' :
-                            passwordStrength < 70 ? 'text-warning-500' :
-                              'text-success-500'
-                            }`}>
-                            {passwordFeedback}
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full bg-secondary-200 dark:bg-secondary-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full ${passwordStrength < 40 ? 'bg-error-500' :
-                              passwordStrength < 70 ? 'bg-warning-500' :
-                                'bg-success-500'
-                              }`}
-                            style={{ width: `${passwordStrength}%` }}
-                          ></div>
-                        </div>
+                    <div className="mt-2 pl-1 pr-1">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[9px] font-mono text-gray-500 uppercase tracking-widest">Strength</span>
+                        <span className={`text-[9px] font-mono tracking-widest uppercase ${passwordStrength < 40 ? 'text-red-400' :
+                          passwordStrength < 70 ? 'text-yellow-400' :
+                            'text-[#e10600]'
+                          }`}>
+                          {passwordFeedback}
+                        </span>
                       </div>
-                      <div id="password-requirements" className="mt-2 text-xs text-secondary-600 dark:text-secondary-400">
-                        <p>Password must:</p>
-                        <ul className="list-disc pl-4 mt-1 space-y-1">
-                          <li className={password.length >= 8 ? 'text-success-500' : ''}>
-                            Be at least 8 characters long
-                          </li>
-                          <li className={/[a-zA-Z]/.test(password) && /[0-9]/.test(password) ? 'text-success-500' : ''}>
-                            Contain both letters and numbers
-                          </li>
-                        </ul>
+                      <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-300 ${passwordStrength < 40 ? 'bg-red-500' :
+                            passwordStrength < 70 ? 'bg-yellow-500' :
+                              'bg-[#e10600]'
+                            }`}
+                          style={{ width: `${passwordStrength}%` }}
+                        ></div>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
 
-                <div className="mb-6">
-                  <label
-                    htmlFor="confirmPassword"
-                    className="block text-sm font-medium mb-1"
-                  >
-                    Confirm Password
+                {/* Confirm Password */}
+                <div className="mb-8">
+                  <label htmlFor="confirmPassword" className="block text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                    Confirm Code
                   </label>
-                  <div className="relative">
+                  <div className="relative group/input">
                     <input
                       id="confirmPassword"
                       ref={confirmPasswordInputRef}
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="f1-input pr-10"
-                      placeholder="Re-enter your password"
+                      className="f1-input pr-12 focus:border-[#e10600] focus:shadow-[0_0_15px_rgba(225,6,0,0.2)] transition-all duration-300 w-full bg-black/40 border-white/10"
+                      placeholder="••••••••"
                       required
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-secondary-500 hover:text-secondary-700 focus:outline-none"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        // Store current cursor position
-                        const cursorPosition = confirmPasswordInputRef.current?.selectionStart || 0;
+                      className="absolute inset-y-0 right-0 flex items-center justify-center w-12 text-gray-500 hover:text-white transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[#e10600] rounded-r-lg"
+                      onClick={() => {
+                        const cursor = confirmPasswordInputRef.current?.selectionStart || 0;
                         setShowConfirmPassword(!showConfirmPassword);
-                        // Return focus to the confirm password input and restore cursor position
                         setTimeout(() => {
                           if (confirmPasswordInputRef.current) {
                             confirmPasswordInputRef.current.focus();
-                            confirmPasswordInputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+                            confirmPasswordInputRef.current.setSelectionRange(cursor, cursor);
                           }
                         }, 0);
                       }}
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                      tabIndex={-1} // Prevent tab focus on the button
+                      tabIndex={-1}
                     >
-                      {showConfirmPassword ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                          <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
-                          <path fillRule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" clipRule="evenodd" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                          <path d="M3.53 2.47a.75.75 0 00-1.06 1.06l18 18a.75.75 0 101.06-1.06l-18-18zM22.676 12.553a11.249 11.249 0 01-2.631 4.31l-3.099-3.099a5.25 5.25 0 00-6.71-6.71L7.759 4.577a11.217 11.217 0 014.242-.827c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113z" />
-                          <path d="M15.75 12c0 .18-.013.357-.037.53l-4.244-4.243A3.75 3.75 0 0115.75 12zM12.53 15.713l-4.243-4.244a3.75 3.75 0 004.243 4.243z" />
-                          <path d="M6.75 12c0-.619.107-1.213.304-1.764l-3.1-3.1a11.25 11.25 0 00-2.63 4.31c-.12.362-.12.752 0 1.114 1.489 4.467 5.704 7.69 10.675 7.69 1.5 0 2.933-.294 4.242-.827l-2.477-2.477A5.25 5.25 0 016.75 12z" />
-                        </svg>
-                      )}
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
-                <div className="mb-6">
-                  <button
-                    type="submit"
-                    className={`btn btn-primary w-full py-3 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                      }`}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <span className="flex items-center justify-center">
-                        <div className="loader h-5 w-5 mr-2"></div>
-                        Creating account...
-                      </span>
-                    ) : (
-                      'Sign Up'
-                    )}
-                  </button>
-                </div>
+                {/* Submit */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-full py-4 bg-[#e10600] hover:bg-[#ff1e18] text-white rounded-lg font-heading font-black tracking-widest uppercase transition-all duration-300 flex items-center justify-center gap-3 relative overflow-hidden shadow-[0_0_20px_rgba(225,6,0,0.3)] hover:shadow-[0_0_30px_rgba(225,6,0,0.5)] ${isSubmitting ? 'opacity-70 pointer-events-none' : ''}`}
+                >
+                  <div className="absolute inset-0 bg-white/20 translate-y-full hover:translate-y-0 transition-transform duration-300" />
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin relative z-10" />
+                      <span className="relative z-10">Authenticating...</span>
+                    </>
+                  ) : (
+                    <span className="relative z-10">Request Access</span>
+                  )}
+                </motion.button>
 
-                <div className="text-center text-sm">
-                  <span className="text-secondary-600 dark:text-secondary-300">
-                    Already have an account?{' '}
-                  </span>
-                  <Link
-                    to="/login"
-                    className="text-primary-500 hover:text-primary-600 font-medium"
-                  >
-                    Log in
-                  </Link>
+                {/* Login link */}
+                <div className="text-center mt-8 pt-6 border-t border-white/5">
+                  <p className="text-sm text-gray-500 font-light">
+                    Already have clearance?{' '}
+                    <Link
+                      to="/login"
+                      className="text-white hover:text-[#e10600] font-bold tracking-wide transition-colors"
+                    >
+                      Log In
+                    </Link>
+                  </p>
                 </div>
               </form>
             </div>
-
-            <div className="racing-line h-2 w-full"></div>
-          </motion.div>
-
-          {/* Decorative F1 UI elements */}
-          <div className="absolute -z-10 -top-6 -right-6 h-24 w-24 rounded-full border-8 border-dashed border-secondary-200 dark:border-secondary-700"></div>
-          <div className="absolute -z-10 -bottom-4 -left-4 h-16 w-16 bg-primary-500/20 rounded-full blur-lg"></div>
-        </div>
+          </div>
+        </motion.div>
       </div>
+
     </div>
   );
 };

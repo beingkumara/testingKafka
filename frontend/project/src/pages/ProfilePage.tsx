@@ -63,15 +63,61 @@ const ProfilePage: React.FC = () => {
     }
   }, [displayUsername]);
 
+  useEffect(() => {
+    const handleFollowChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { username: targetUsername, isFollowing } = customEvent.detail;
+      
+      setFollowStatus(prev => {
+        if (!prev) return prev;
+        
+        let newFollowers = prev.followers;
+        let newFollowing = prev.following;
+        let newIsFollowing = prev.isFollowing;
+        let changed = false;
+
+        if (displayUsername === targetUsername) {
+          // If we were already following/unfollowing, don't double count
+          if (prev.isFollowing !== isFollowing) {
+            newIsFollowing = isFollowing;
+            newFollowers = isFollowing ? prev.followers + 1 : Math.max(0, prev.followers - 1);
+            changed = true;
+          }
+        }
+        
+        if (isCurrentUser) {
+          // As current user, our following count changes
+          // Wait, if displayUsername === targetUsername AND isCurrentUser, that means we followed ourselves? Impossible.
+          // So if we're viewing our own profile, we just increment/decrement our following count.
+          // But we don't have isFollowing for ourselves (it's meaningless).
+          // We don't have a check for double counting here, but the event should only fire once per action.
+          newFollowing = isFollowing ? prev.following + 1 : Math.max(0, prev.following - 1);
+          changed = true;
+        }
+
+        if (changed) {
+          return {
+            ...prev,
+            isFollowing: newIsFollowing,
+            followers: newFollowers,
+            following: newFollowing
+          };
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener('followStatusChanged', handleFollowChange);
+    return () => window.removeEventListener('followStatusChanged', handleFollowChange);
+  }, [displayUsername, isCurrentUser]);
+
   const handleFollowToggle = async () => {
     if (!displayUsername) return;
     try {
       if (followStatus?.isFollowing) {
         await unfollowUser(displayUsername);
-        setFollowStatus(prev => prev ? { ...prev, isFollowing: false, followers: prev.followers - 1 } : undefined);
       } else {
         await followUser(displayUsername);
-        setFollowStatus(prev => prev ? { ...prev, isFollowing: true, followers: prev.followers + 1 } : undefined);
       }
     } catch (e) {
       console.error('Failed to toggle follow status', e);

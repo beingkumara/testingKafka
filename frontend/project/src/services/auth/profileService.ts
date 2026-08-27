@@ -119,10 +119,12 @@ export interface FollowStatus {
 
 export const followUser = async (username: string): Promise<void> => {
   await f1Api.post(`/users/${username}/follow`, {}, true);
+  window.dispatchEvent(new CustomEvent('followStatusChanged', { detail: { username, isFollowing: true } }));
 };
 
 export const unfollowUser = async (username: string): Promise<void> => {
   await f1Api.delete(`/users/${username}/unfollow`, true);
+  window.dispatchEvent(new CustomEvent('followStatusChanged', { detail: { username, isFollowing: false } }));
 };
 
 export const getFollowStatus = async (username: string): Promise<FollowStatus> => {
@@ -135,4 +137,19 @@ export const getFollowers = async (username: string): Promise<string[]> => {
 
 export const getFollowing = async (username: string): Promise<string[]> => {
   return await f1Api.get<string[]>(`/users/${username}/following`, true);
+};
+
+export interface UserSearchResult {
+  username: string;
+  profilePicture?: string;
+  favoriteDriver?: string;
+  favoriteTeam?: string;
+  isFollowing: boolean;
+}
+
+export const searchUsers = async (query: string): Promise<UserSearchResult[]> => {
+  if (!query || query.trim() === '') {
+    return [];
+  }
+  return await f1Api.get<UserSearchResult[]>(`/users/search?q=${encodeURIComponent(query)}`, true);
 };

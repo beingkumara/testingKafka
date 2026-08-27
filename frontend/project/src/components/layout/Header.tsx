@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 
 import Logo from '../ui/Logo';
+import UserSearch from './UserSearch';
 import { DEFAULT_PROFILE_PICTURE } from '../../utils/imageUtils';
 
 const Header: React.FC = () => {
@@ -73,6 +74,9 @@ const Header: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="hidden md:flex items-center space-x-1"
           >
+            {/* Search Bar */}
+            <UserSearch />
+
             {/* User Profile / Auth */}
             <div className="flex items-center ml-6 pl-6 border-l border-white/10 space-x-4">
               {/* LIVE indicator — always shown to create "broadcast" feel */}

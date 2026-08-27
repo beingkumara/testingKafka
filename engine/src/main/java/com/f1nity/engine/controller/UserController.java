@@ -1,6 +1,8 @@
 package com.f1nity.engine.controller;
 
 import com.f1nity.engine.service.FollowService;
+import com.f1nity.engine.service.UserService;
+import com.f1nity.library.models.authentication.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -17,16 +20,22 @@ import java.util.Map;
 public class UserController {
 
     private final FollowService followService;
+    private final UserService userService;
 
     @Autowired
-    public UserController(FollowService followService) {
+    public UserController(FollowService followService, UserService userService) {
         this.followService = followService;
+        this.userService = userService;
     }
 
     private String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
-            return authentication.getName();
+            String name = authentication.getName();
+            if (name != null && !name.equals("anonymousUser")) {
+                return userService.resolveUsername(name);
+            }
+            return name;
         }
         return null;
     }
@@ -78,6 +87,27 @@ public class UserController {
         }
         response.put("isFollowing", isFollowing);
 
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Map<String, Object>>> searchUsers(@RequestParam String q) {
+        String currentUsername = getCurrentUsername();
+        List<User> users = userService.searchUsers(q);
+        List<Map<String, Object>> response = users.stream().map(user -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("username", user.getUsername());
+            map.put("profilePicture", user.getProfilePicture());
+            map.put("favoriteDriver", user.getFavoriteDriver());
+            map.put("favoriteTeam", user.getFavoriteTeam());
+            
+            boolean isFollowing = false;
+            if (currentUsername != null && !currentUsername.equals("anonymousUser") && !currentUsername.equals(user.getUsername())) {
+                isFollowing = followService.isFollowing(currentUsername, user.getUsername());
+            }
+            map.put("isFollowing", isFollowing);
+            return map;
+        }).collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
 }

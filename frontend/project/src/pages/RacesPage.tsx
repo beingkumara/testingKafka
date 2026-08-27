@@ -34,6 +34,9 @@ const RacesPage: React.FC = () => {
     setFilteredRaces(activeTab === 'upcoming' ? upcoming : completed);
   }, [races, activeTab]);
 
+  // The very first upcoming race (for highlighting)
+  const nextRaceId = races.filter(r => !r.completed)[0]?.id;
+
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -72,85 +75,118 @@ const RacesPage: React.FC = () => {
       </div>
 
       <div className="container-f1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredRaces.map((race, index) => (
+        {filteredRaces.map((race, index) => {
+          const isNextRace = race.id === nextRaceId;
+          return (
           <motion.div
             key={race.id}
-            initial={{ y: 20, opacity: 0 }}
+            initial={{ y: 16, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
-            className={`
-                group relative overflow-hidden rounded-lg border transition-all duration-300
-                ${race.completed
-                ? 'bg-dark-900 border-white/5 hover:border-white/10 opacity-80 hover:opacity-100'
-                : 'bg-dark-800 border-white/10 hover:border-primary-500 hover:shadow-2xl hover:shadow-primary-900/20'
-              }
-            `}
+            transition={{ duration: 0.3, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
+            className="group relative overflow-hidden rounded-xl"
+            style={{
+              background: race.completed ? '#0c0c10' : '#111116',
+              border: isNextRace ? '1px solid rgba(225,6,0,0.5)' : race.completed ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(255,255,255,0.08)',
+              boxShadow: isNextRace ? '0 0 20px rgba(225,6,0,0.15)' : 'none',
+              opacity: race.completed ? 0.85 : 1,
+              transition: 'border-color 200ms ease-out, box-shadow 200ms ease-out, opacity 200ms ease-out',
+            }}
           >
-            {/* Header Image Area */}
-            {/* Header Image Area */}
-            <div className="h-40 relative bg-white/5 flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 bg-[url('/images/grid.png')] opacity-10"></div>
-              <img
-                src={getRaceTrackImage(race.round) || race.image}
-                alt={`${race.circuit} layout`}
-                className="object-contain h-full w-full relative z-0 opacity-80 invert mix-blend-screen transition-transform duration-500 group-hover:scale-105"
-                onError={(e) => e.currentTarget.style.display = 'none'}
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute top-0 right-0 p-3 z-10">
-                <span className="font-mono text-4xl font-bold text-white/10 select-none">{String(race.round).padStart(2, '0')}</span>
-              </div>
-
-              {/* Status Badge */}
-              <div className="absolute top-3 left-3 z-10">
-                {race.completed ? (
-                  <span className="flex items-center gap-1 bg-gray-900/10 backdrop-blur-sm text-gray-600 border border-gray-200 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">
-                    <CheckCircle className="w-3 h-3" /> Finished
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 bg-primary-600 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest shadow-lg">
-                    <Calendar className="w-3 h-3" /> Upcoming
-                  </span>
+              {/* Header Image Area */}
+              <div className="h-40 relative bg-white/5 flex items-center justify-center overflow-hidden">
+                {/* Completed: checkered flag stripe */}
+                {race.completed && (
+                  <div className="absolute top-0 left-0 right-0 h-[3px] z-20" style={{ background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 8px, transparent 8px, transparent 16px)' }} />
                 )}
+                {/* Next Race: glowing top red stripe */}
+                {isNextRace && (
+                  <div className="absolute top-0 left-0 right-0 h-[3px] z-20 bg-gradient-to-r from-primary-600 via-primary-500 to-transparent" />
+                )}
+
+                {/* NEXT RACE badge */}
+                {isNextRace && (
+                  <div className="absolute top-3 right-3 z-20">
+                    <span className="live-indicator text-[9px] tracking-[0.3em]">Next Race</span>
+                  </div>
+                )}
+
+                <div className="absolute inset-0 bg-[url('/images/grid.png')] opacity-10 pointer-events-none"></div>
+                <img
+                  src={getRaceTrackImage(race.round) || race.image}
+                  alt={`${race.circuit} layout`}
+                  className="object-contain h-full w-full relative z-0 opacity-80 invert mix-blend-screen group-hover:scale-105"
+                  style={{ transition: 'transform 500ms ease-out' }}
+                  onError={(e) => e.currentTarget.style.display = 'none'}
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute top-0 right-0 p-3 z-10">
+                  <span className="tabular-nums font-display text-5xl font-black text-white/[0.07] select-none">{String(race.round).padStart(2, '0')}</span>
+                </div>
+
+                {/* Status Badge */}
+                <div className="absolute top-3 left-3 z-10">
+                  {race.completed ? (
+                    <span className="flex items-center gap-1 bg-black/60 backdrop-blur-sm text-gray-500 border border-white/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest">
+                      <CheckCircle className="w-3 h-3" /> Finished
+                    </span>
+                  ) : !isNextRace && (
+                    <span className="flex items-center gap-1 bg-primary-600/90 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest shadow-lg">
+                      <Calendar className="w-3 h-3" /> Upcoming
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
 
             {/* Content */}
             <div className="p-5 relative">
               <div className="mb-4">
                 <div className="text-xs text-primary-500 font-bold uppercase tracking-widest mb-1">{race.country}</div>
-                <h3 className="text-xl font-heading font-bold text-white uppercase leading-tight group-hover:text-primary-500 transition-colors">
-                  {race.name.replace('Grand Prix', '')} <span className="text-white/40">GP</span>
+                <h3
+                  className="text-xl font-heading font-bold text-white uppercase leading-tight"
+                  style={{ transition: 'color 200ms ease-out' }}
+                >
+                  {race.name.replace('Grand Prix', '')} <span className="text-white/30">GP</span>
                 </h3>
-                <p className="text-xs text-gray-500 mt-1 truncate">{race.circuit}</p>
+                <p className="text-xs text-gray-600 mt-1 truncate font-mono">{race.circuit}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-y-3 gap-x-2 border-t border-white/5 pt-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-3 h-3 text-gray-500" />
-                  <span className="text-xs font-mono text-gray-300">{new Date(race.date).toLocaleDateString()}</span>
+              <div className="grid grid-cols-2 gap-y-2 gap-x-2 border-t border-white/5 pt-3 mb-4">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="w-3 h-3 text-gray-600" />
+                  <span className="tabular-nums text-[11px] font-mono text-gray-400">{new Date(race.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
                 </div>
-                <div className="flex items-center gap-2 justify-end">
-                  <Clock className="w-3 h-3 text-gray-500" />
-                  <span className="text-xs font-mono text-gray-300">{race.time || 'TBA'}</span>
+                <div className="flex items-center gap-1.5 justify-end">
+                  <Clock className="w-3 h-3 text-gray-600" />
+                  <span className="tabular-nums text-[11px] font-mono text-gray-400">{race.time || 'TBA'}</span>
                 </div>
               </div>
 
               <Link
                 to={`/races/${race.id}`}
-                className={`
-                        w-full flex items-center justify-center gap-2 py-2 rounded text-xs font-bold uppercase tracking-widest border transition-all
-                        ${race.completed
-                    ? 'border-white/10 text-gray-400 hover:text-white hover:border-white/30'
-                    : 'bg-primary-600 border-transparent text-white hover:bg-primary-700'
-                  }
-                    `}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md text-xs font-bold uppercase tracking-widest border"
+                style={{
+                  background: race.completed ? 'transparent' : '#C10500',
+                  borderColor: race.completed ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  color: race.completed ? '#9ca3af' : '#fff',
+                  transition: 'background-color 200ms ease-out, color 200ms ease-out, border-color 200ms ease-out',
+                }}
+                onMouseEnter={e => {
+                  const el = e.currentTarget;
+                  if (race.completed) { el.style.color = '#fff'; el.style.borderColor = 'rgba(255,255,255,0.3)'; }
+                  else { el.style.backgroundColor = '#A10400'; }
+                }}
+                onMouseLeave={e => {
+                  const el = e.currentTarget;
+                  if (race.completed) { el.style.color = '#9ca3af'; el.style.borderColor = 'rgba(255,255,255,0.12)'; }
+                  else { el.style.backgroundColor = '#C10500'; }
+                }}
               >
-                {race.completed ? 'Results' : 'Race Hub'} <ChevronRight className="w-3 h-3" />
+                {race.completed ? 'Race Results' : 'Race Hub'} <ChevronRight className="w-3 h-3" />
               </Link>
             </div>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
 
       {filteredRaces.length === 0 && (

@@ -142,7 +142,8 @@ public class DataIngestionService {
         System.out.println("Updating driver active status based on 2026 lineup...");
         List<Driver> allDrivers = driverRepo.findAll();
         for (Driver d : allDrivers) {
-            if (DRIVERS_2026.contains(d.getFullName().toUpperCase())) {
+            String fullName = d.getFullName();
+            if (fullName != null && !fullName.isBlank() && DRIVERS_2026.contains(fullName.toUpperCase())) {
                 d.setActive(true);
             } else {
                 d.setActive(false);
@@ -172,9 +173,18 @@ public class DataIngestionService {
                 // calls
                 List<Race> existingRaces = raceRepo.findBySeasonAndRound(String.valueOf(year), String.valueOf(round));
                 if (existingRaces != null && !existingRaces.isEmpty()) {
-                    System.out.println("Race " + context + " already exists. Skipping accumulation.");
-                    round++;
-                    continue;
+                    boolean alreadyProcessed = false;
+                    for (Race r : existingRaces) {
+                        if (Boolean.TRUE.equals(r.getStandingsUpdated())) {
+                            alreadyProcessed = true;
+                            break;
+                        }
+                    }
+                    if (alreadyProcessed) {
+                        System.out.println("Race " + context + " already fully processed for stats. Skipping.");
+                        round++;
+                        continue;
+                    }
                 }
 
                 try {
@@ -373,6 +383,25 @@ public class DataIngestionService {
         if (driver == null || constructor == null)
             return;
 
+        // Initialize null fields for new entities
+        if (driver.getWins() == null) driver.setWins(0);
+        if (driver.getPodiums() == null) driver.setPodiums(0);
+        if (driver.getPoles() == null) driver.setPoles(0);
+        if (driver.getFastestLaps() == null) driver.setFastestLaps(0);
+        if (driver.getTotalRaces() == null) driver.setTotalRaces(0);
+        if (driver.getSprintWins() == null) driver.setSprintWins(0);
+        if (driver.getSprintPodiums() == null) driver.setSprintPodiums(0);
+        if (driver.getSprintRaces() == null) driver.setSprintRaces(0);
+
+        if (constructor.getWins() == null) constructor.setWins(0);
+        if (constructor.getPodiums() == null) constructor.setPodiums(0);
+        if (constructor.getPolePositions() == null) constructor.setPolePositions(0);
+        if (constructor.getFastestLaps() == null) constructor.setFastestLaps(0);
+        if (constructor.getTotalRaces() == null) constructor.setTotalRaces(0);
+        if (constructor.getSprintWins() == null) constructor.setSprintWins(0);
+        if (constructor.getSprintPodiums() == null) constructor.setSprintPodiums(0);
+        if (constructor.getSprintRaces() == null) constructor.setSprintRaces(0);
+
         // Update basic stats
         if (!isSprint) {
             // Main Race Stats
@@ -477,8 +506,35 @@ public class DataIngestionService {
 
     @CacheEvict(value = { "driverStandings", "constructorStandings" }, allEntries = true)
     public String updateStandings() {
-        // Driver Standings
         try {
+            // Build 2026-season-only podium counts from the race results embedded
+            // in the Race documents. Ergast's standings endpoint does not include
+            // a podiums field, and Driver/Constructor.podiums are career totals, so we
+            // derive the season count directly from stored race data. Built once here
+            // and used by both the driver and constructor loops below.
+            Map<String, Integer> driverSeasonPodiums = new HashMap<>();
+            Map<String, Integer> constructorSeasonPodiums = new HashMap<>();
+            List<Race> races2026 = raceRepo.findBySeason("2026");
+            for (Race r : races2026) {
+                if (r.getResults() == null) continue;
+                for (Result result : r.getResults()) {
+                    try {
+                        int finishPos = Integer.parseInt(result.getPosition());
+                        if (finishPos <= 3) {
+                            if (result.getDriver() != null) {
+                                driverSeasonPodiums.merge(result.getDriver().getDriverId(), 1, Integer::sum);
+                            }
+                            if (result.getConstructor() != null) {
+                                constructorSeasonPodiums.merge(result.getConstructor().getConstructorId(), 1, Integer::sum);
+                            }
+                        }
+                    } catch (NumberFormatException ignored) {
+                        // positionText can be "R" (retired), "D", "E" etc. — skip safely
+                    }
+                }
+            }
+
+            System.out.println("Fetching Driver Standings for 2026...");
             ErgastDriverStandingsResponse driverResponse = ergastClient.getDriverStandings(2026);
             if (driverResponse != null && driverResponse.MRData != null &&
                     driverResponse.MRData.StandingsTable != null &&
@@ -491,29 +547,53 @@ public class DataIngestionService {
                 for (ErgastDriverStandingsResponse.DriverStanding standing : driverStandings) {
                     String driverId = standing.Driver.getDriverId();
                     Optional<Driver> driverOpt = driverRepo.findById(driverId);
-                    if (driverOpt.isEmpty())
-                        continue;
+                    Driver driverEntity;
+                    if (driverOpt.isEmpty()) {
+                        driverEntity = new Driver();
+                        driverEntity.setDriverId(driverId);
+                        driverEntity.setFirstName(standing.Driver.getGivenName());
+                        driverEntity.setLastName(standing.Driver.getFamilyName());
+                        driverEntity.setFullName(standing.Driver.getGivenName() + " " + standing.Driver.getFamilyName());
+                        driverEntity.setNationality(standing.Driver.getNationality());
+                        if (standing.Driver.getPermanentNumber() != null) {
+                            driverEntity.setDriverNumber(standing.Driver.getPermanentNumber());
+                        }
+                        driverRepo.save(driverEntity);
+                    } else {
+                        driverEntity = driverOpt.get();
+                    }
 
                     DriverStanding ds = new DriverStanding();
                     ds.setDriverId(driverId);
-                    ds.setFullName(driverOpt.get().getFullName());
+                    // Guard against null fullName for partially-created Driver documents
+                    ds.setFullName(driverEntity.getFullName() != null ? driverEntity.getFullName() : "");
                     ds.setTeamName(!standing.Constructors.isEmpty() ? standing.Constructors.get(0).getName() : "");
                     ds.setPosition(Integer.parseInt(standing.position));
                     ds.setPoints(Double.parseDouble(standing.points));
                     ds.setWins(Integer.parseInt(standing.wins));
+                    // Season podiums derived from stored 2026 race results (see map above).
+                    // Driver.podiums is a career-long total and must NOT be used here.
+                    ds.setPodiums(driverSeasonPodiums.getOrDefault(driverId, 0));
 
                     Optional<DriverStanding> prevStanding = driverStandingsRepo.findById(driverId);
                     if (prevStanding.isPresent()) {
-                        ds.setPositionsMoved(ds.getPosition() - prevStanding.get().getPosition());
+                        // Positive = moved UP (e.g. P3 → P1 = oldPos(3) - newPos(1) = +2)
+                        // Negative = moved DOWN (e.g. P1 → P3 = oldPos(1) - newPos(3) = -2)
+                        // Zero    = no change
+                        ds.setPositionsMoved(prevStanding.get().getPosition() - ds.getPosition());
                     } else {
+                        // No previous record: debut in standings — treat as no movement
                         ds.setPositionsMoved(0);
                     }
                     updatedDriverStandings.add(ds);
                 }
 
                 if (!updatedDriverStandings.isEmpty()) {
+                    System.out.println("Saving " + updatedDriverStandings.size() + " driver standings to repo!");
                     driverStandingsRepo.deleteAll();
                     driverStandingsRepo.saveAll(updatedDriverStandings);
+                } else {
+                    System.out.println("updatedDriverStandings is EMPTY!");
                 }
             }
 
@@ -535,21 +615,37 @@ public class DataIngestionService {
                     processed.add(id);
 
                     Optional<Constructor> cOpt = constructorRepo.findById(id);
-                    if (cOpt.isEmpty())
-                        continue;
+                    Constructor constructorEntity;
+                    if (cOpt.isEmpty()) {
+                        constructorEntity = new Constructor();
+                        constructorEntity.setConstructorId(id);
+                        constructorEntity.setName(standing.Constructor.getName());
+                        constructorEntity.setNationality(standing.Constructor.getNationality());
+                        constructorEntity.setUrl(standing.Constructor.getUrl());
+                        constructorRepo.save(constructorEntity);
+                    } else {
+                        constructorEntity = cOpt.get();
+                    }
 
                     ConstructorStanding cs = new ConstructorStanding();
                     cs.setConstructorId(id);
-                    cs.setName(cOpt.get().getName());
-                    cs.setColor(cOpt.get().getColorCode());
+                    cs.setName(constructorEntity.getName());
+                    cs.setColor(constructorEntity.getColorCode());
                     cs.setPosition(Integer.parseInt(standing.position));
                     cs.setPoints(Double.parseDouble(standing.points));
                     cs.setWins(Integer.parseInt(standing.wins));
+                    // Season podiums derived from stored 2026 race results (see map above).
+                    // Constructor.podiums is a career-long total and must NOT be used here.
+                    cs.setPodiums(constructorSeasonPodiums.getOrDefault(id, 0));
 
                     Optional<ConstructorStanding> prev = constructorStandingsRepo.findById(id);
                     if (prev.isPresent()) {
-                        cs.setPositionsMoved(cs.getPosition() - prev.get().getPosition());
+                        // Positive = moved UP (e.g. P5 → P2 = oldPos(5) - newPos(2) = +3)
+                        // Negative = moved DOWN (e.g. P2 → P5 = oldPos(2) - newPos(5) = -3)
+                        // Zero    = no change
+                        cs.setPositionsMoved(prev.get().getPosition() - cs.getPosition());
                     } else {
+                        // No previous record: debut in standings — treat as no movement
                         cs.setPositionsMoved(0);
                     }
                     updatedConstructorStandings.add(cs);

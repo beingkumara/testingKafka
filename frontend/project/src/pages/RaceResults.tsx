@@ -20,7 +20,7 @@ const RaceResultsPage: React.FC = () => {
   const [year, setYear] = useState<number>(
     searchParams.get('season')
       ? parseInt(searchParams.get('season') as string, 10)
-      : 2025
+      : new Date().getFullYear()
   );
   const [round, setRound] = useState<number>(
     searchParams.get('round')
@@ -35,8 +35,9 @@ const RaceResultsPage: React.FC = () => {
   const [fastestLap, setFastestLap] = useState<{ driver: string, time: string } | null>(null);
   const [apiCalled, setApiCalled] = useState<boolean>(false);
 
-  // Generate year options from 2025 down to 1951
-  const years = Array.from({ length: 2025 - 1951 + 1 }, (_, i) => 2025 - i);
+  // Generate year options from current year down to 1951
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1951 + 1 }, (_, i) => currentYear - i);
 
   // Update URL when year or round changes
   useEffect(() => {
@@ -89,7 +90,7 @@ const RaceResultsPage: React.FC = () => {
       fetchResults();
     } else {
       setApiCalled(true);
-      setSearchParams({ season: '2025', round: '1' }, { replace: true });
+      setSearchParams({ season: new Date().getFullYear().toString(), round: '1' }, { replace: true });
     }
   }, [fetchResults, searchParams, setSearchParams]);
 

@@ -10,11 +10,13 @@
 
   html {
     scroll-behavior: smooth;
+    /* macOS antialiasing for crisp text on dark backgrounds */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-[#050505] text-white font-sans antialiased overflow-x-hidden;
-    /* Removed potential conflicting background images for the product reveal look */
+    @apply bg-dark-800 text-white font-sans overflow-x-hidden;
     background-color: #050505;
   }
 
@@ -25,20 +27,43 @@
   h5,
   h6 {
     @apply font-heading uppercase tracking-wide;
+    /* Prevent awkward single-word last lines on headings */
+    text-wrap: balance;
   }
 
-  /* Custom Scrollbar for Chrome/Safari/Webkit */
+  /* Custom Scrollbar — slim, F1-themed */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-dark-800;
+    background: #0A0A0E;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-dark-600 rounded-full hover:bg-primary-600 transition-colors;
+    background: #E10600;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #FF2010;
+  }
+
+  /* Reduced motion: disable decorative infinite animations */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-speed-line,
+    .animate-pulse-slow,
+    .animate-pulse-red,
+    .animate-shimmer,
+    .animate-float,
+    .animate-glow-border {
+      animation: none !important;
+    }
+
+    * {
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
@@ -51,7 +76,21 @@
   }
 
   .glass-card {
-    @apply glass-panel rounded-xl hover:bg-dark-600/60 transition-all duration-300;
+    /* Concentric radius: outer (xl = 12px) wraps inner content with padding */
+    @apply glass-panel rounded-xl hover:bg-dark-600/60;
+    transition-property: background-color, box-shadow;
+    transition-duration: 300ms;
+    transition-timing-function: ease-out;
+  }
+
+  /* Liquid Glass (iOS 26 / V3 Telemetry) */
+  .liquid-glass-card {
+    @apply relative bg-white/[0.02] backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4);
+    transition: background-color 300ms ease, border-color 300ms ease;
+  }
+  .liquid-glass-card:hover {
+    @apply bg-white/[0.04] border-white/20;
   }
 
   /* Neon Text */
@@ -65,17 +104,40 @@
 
   /* F1 Buttons */
   .btn-primary {
-    @apply relative px-6 py-2 bg-primary-600 text-white font-heading text-sm tracking-wider uppercase clip-path-slant transition-all duration-300 hover:bg-primary-500 hover:shadow-glow-red hover:-translate-y-0.5 active:translate-y-0;
+    @apply relative px-6 py-2 bg-primary-600 text-white font-heading text-sm tracking-wider uppercase;
     clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+    transition-property: background-color, box-shadow, transform;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+  .btn-primary:hover {
+    @apply bg-primary-500 shadow-glow-red;
+    transform: translateY(-1px);
+  }
+  .btn-primary:active {
+    transform: translateY(0);
   }
 
   .btn-secondary {
-    @apply relative px-6 py-2 bg-transparent border border-white/20 text-white font-heading text-sm tracking-wider uppercase transition-all duration-300 hover:border-primary-500 hover:text-primary-500 hover:shadow-glow-red;
+    @apply relative px-6 py-2 bg-transparent border border-white/20 text-white font-heading text-sm tracking-wider uppercase;
+    transition-property: border-color, color, box-shadow;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+  .btn-secondary:hover {
+    @apply border-primary-500 text-primary-500 shadow-glow-red;
   }
 
   /* Input Fields */
   .f1-input {
-    @apply w-full bg-dark-800/80 border border-dark-600 text-white px-4 py-3 rounded-md focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all duration-300 font-mono text-sm shadow-inner;
+    @apply w-full bg-dark-800/80 border border-dark-600 text-white px-4 py-3 rounded-md outline-none font-mono text-sm shadow-inner;
+    transition-property: border-color, box-shadow;
+    transition-duration: 200ms;
+    transition-timing-function: ease-out;
+  }
+  .f1-input:focus {
+    @apply border-primary-500;
+    box-shadow: 0 0 0 1px theme('colors.primary.500');
   }
 
   /* Telemetry/Data Cards */
@@ -109,6 +171,28 @@
   .container-f1 {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
+
+  /* LIVE Indicator */
+  .live-indicator {
+    @apply inline-flex items-center gap-1.5 text-xs font-mono font-bold text-primary-500 uppercase tracking-widest;
+  }
+
+  .live-indicator::before {
+    content: '';
+    @apply w-2 h-2 rounded-full bg-primary-500 block;
+    animation: pulse-red 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-red {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(225, 6, 0, 0.8); }
+    50%       { opacity: 0.6; box-shadow: 0 0 14px rgba(225, 6, 0, 1); }
+  }
+
+  /* Tabular data rows — ensures numbers don't shift width as they update */
+  .tabular-data {
+    font-variant-numeric: tabular-nums;
+    @apply font-mono;
+  }
 }
 
 @layer utilities {
@@ -124,14 +208,13 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 
-  /* CRT / Scanline Effects */
   /* CRT / Scanline Effects - Refined for Premium Look */
   .scanlines {
     background: linear-gradient(to bottom,
         rgba(255, 255, 255, 0),
         rgba(255, 255, 255, 0) 50%,
-        rgba(0, 0, 0, 0.1) 50%,
-        rgba(0, 0, 0, 0.1));
+        rgba(0, 0, 0, 0.08) 50%,
+        rgba(0, 0, 0, 0.08));
     background-size: 100% 3px;
     position: absolute;
     top: 0;
@@ -140,8 +223,7 @@
     bottom: 0;
     pointer-events: none;
     z-index: 10;
-    opacity: 0.4;
-    /* Reduced opacity */
+    opacity: 0.3;
   }
 
   .vignette {
@@ -155,5 +237,22 @@
     bottom: 0;
     pointer-events: none;
     z-index: 11;
+  }
+
+  /* Points bar — mini horizontal progress behind standings value */
+  .points-bar {
+    position: relative;
+  }
+
+  .points-bar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: var(--points-pct, 0%);
+    background: theme('colors.primary.500');
+    border-radius: 1px;
+    opacity: 0.5;
   }
 }

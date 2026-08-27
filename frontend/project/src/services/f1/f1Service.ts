@@ -217,7 +217,7 @@ export const getRaces = async (): Promise<Race[]> => {
 
 /**
  * Fetches race results for a specific year and round
- * @param year - Season year (1951-2025)
+ * @param year - Season year (1951-current)
  * @param round - Race round number (1-24)
  * @returns Promise with race results data
  */

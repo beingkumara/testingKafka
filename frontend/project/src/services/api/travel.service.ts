@@ -101,7 +101,25 @@ export const fetchDuffelFlightPrice = async (originIata: string, destinationIata
 // -------------------------------------------------------------
 
 export const searchOriginPlaces = async (query: string) => {
-  if (!DUFFEL_API_KEY) return [];
+  if (!DUFFEL_API_KEY) {
+    console.warn('No Duffel API key provided. Using fallback airports.');
+    const q = query.toLowerCase();
+    const fallbackAirports = [
+      { id: '1', name: 'Dubai International Airport', iata_code: 'DXB', type: 'airport' },
+      { id: '2', name: 'London Heathrow Airport', iata_code: 'LHR', type: 'airport' },
+      { id: '3', name: 'John F. Kennedy International Airport', iata_code: 'JFK', type: 'airport' },
+      { id: '4', name: 'Singapore Changi Airport', iata_code: 'SIN', type: 'airport' },
+      { id: '5', name: 'Tokyo Haneda Airport', iata_code: 'HND', type: 'airport' },
+      { id: '6', name: 'Abu Dhabi International Airport', iata_code: 'AUH', type: 'airport' },
+      { id: '7', name: 'Doha Hamad International Airport', iata_code: 'DOH', type: 'airport' },
+      { id: '8', name: 'Mumbai Chhatrapati Shivaji Airport', iata_code: 'BOM', type: 'airport' },
+      { id: '9', name: 'Delhi Indira Gandhi Airport', iata_code: 'DEL', type: 'airport' },
+      { id: '10', name: 'Los Angeles International Airport', iata_code: 'LAX', type: 'airport' },
+      { id: '11', name: 'Paris Charles de Gaulle Airport', iata_code: 'CDG', type: 'airport' },
+      { id: '12', name: 'Amsterdam Airport Schiphol', iata_code: 'AMS', type: 'airport' }
+    ];
+    return fallbackAirports.filter(a => a.name.toLowerCase().includes(q) || a.iata_code.toLowerCase().includes(q));
+  }
   try {
     const res = await fetch(`/api/duffel/places/suggestions?query=${encodeURIComponent(query)}`, {
       headers: {

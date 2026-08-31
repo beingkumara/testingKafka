@@ -103,6 +103,11 @@ public class HistoricalDataLoader {
                 file = new File("engine/src/main/resources/" + HISTORY_FILE);
             }
 
+            // Ensure the parent directories exist before attempting to write
+            if (file.getParentFile() != null && !file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
+            }
+
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, data);
             System.out.println("Data exported to " + file.getAbsolutePath());
 

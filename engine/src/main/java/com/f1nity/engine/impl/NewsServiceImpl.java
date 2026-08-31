@@ -144,7 +144,8 @@ public class NewsServiceImpl implements NewsService {
 
             if (password != null && !password.isEmpty()) {
                 boolean ssl = uri.getScheme() != null && uri.getScheme().equals("rediss");
-                this.jedisPool = new JedisPool(new redis.clients.jedis.JedisPoolConfig(), uri.getHost(), uri.getPort(),
+                int port = uri.getPort() == -1 ? 6379 : uri.getPort();
+                this.jedisPool = new JedisPool(new redis.clients.jedis.JedisPoolConfig(), uri.getHost(), port,
                         2000, password, ssl);
             } else {
                 this.jedisPool = new JedisPool(uri);

@@ -1,6 +1,6 @@
 {
   "rewrites": [
     { "source": "/api/currency/(.*)", "destination": "https://api.frankfurter.dev/v2/rates/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

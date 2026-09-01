@@ -27,6 +27,10 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -37,13 +41,26 @@ const Header: React.FC = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  // Close menu when clicking outside could be added, but route change listener covers most cases.
+  // We can also add a click-outside listener.
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (mobileMenuOpen && !target.closest('header')) {
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [mobileMenuOpen]);
+
   return (
     <header
       className={`
         ${isHomePage ? 'fixed' : 'sticky'} top-0 z-50 w-full border-b border-transparent
         transition-[background-color,backdrop-filter,border-color] duration-300
-        ${isScrolled || !isHomePage
-          ? 'bg-dark-800/85 backdrop-blur-xl shadow-glass border-white/5'
+        ${isScrolled || !isHomePage || mobileMenuOpen
+          ? 'bg-dark-800/95 backdrop-blur-xl shadow-glass border-white/10'
           : 'bg-transparent'
         }
       `}
@@ -91,14 +108,14 @@ const Header: React.FC = () => {
                     className="flex items-center space-x-3 text-sm font-medium text-white hover:text-primary-500"
                     style={{ transition: 'color 200ms ease-out' }}
                   >
-                    <div className="w-8 h-8 rounded bg-gradient-to-br from-primary-600 to-primary-800 p-0.5 clip-path-slant-left shadow-glow-red">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-600 to-primary-400 p-[2px] shadow-[0_0_15px_rgba(225,6,0,0.4)]">
                       <img
                         src={user?.profilePicture || DEFAULT_PROFILE_PICTURE}
                         alt={user?.username || 'User'}
                         onError={(e) => {
                           e.currentTarget.src = DEFAULT_PROFILE_PICTURE;
                         }}
-                        className="w-full h-full object-cover clip-path-slant-left bg-dark-900"
+                        className="w-full h-full object-cover rounded-full bg-dark-900 border-[1.5px] border-dark-900"
                       />
                     </div>
                     <span className="hidden lg:block font-heading text-xs tracking-wider uppercase">{user?.username}</span>
@@ -155,9 +172,23 @@ const Header: React.FC = () => {
 
           {/* Mobile Menu Button — 44×44px hit area */}
           <div className="flex md:hidden items-center">
+            {isAuthenticated && (
+              <Link to="/profile" className="mr-3 block">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary-600 to-primary-400 p-[2px] shadow-[0_0_10px_rgba(225,6,0,0.3)]">
+                  <img
+                    src={user?.profilePicture || DEFAULT_PROFILE_PICTURE}
+                    alt={user?.username || 'User'}
+                    onError={(e) => {
+                      e.currentTarget.src = DEFAULT_PROFILE_PICTURE;
+                    }}
+                    className="w-full h-full object-cover rounded-full bg-dark-900 border-[1.5px] border-dark-900"
+                  />
+                </div>
+              </Link>
+            )}
             <button
               onClick={toggleMobileMenu}
-              className="p-2.5 text-white hover:text-primary-500 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              className="p-2 text-white hover:text-primary-500 min-w-[44px] min-h-[44px] flex items-center justify-center"
               style={{ transition: 'color 200ms ease-out' }}
               aria-label="Toggle menu"
             >
@@ -180,22 +211,26 @@ const Header: React.FC = () => {
             <div className="px-4 py-6 space-y-4">
               {isAuthenticated ? (
                 <>
-                  <div className="flex items-center space-x-3 mb-6 pb-6 border-b border-white/5">
-                    <div className="w-10 h-10 rounded bg-primary-600 p-0.5 clip-path-slant-left shadow-glow-red">
+                  <Link 
+                    to="/profile" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 mb-6 pb-6 border-b border-white/5 cursor-pointer hover:bg-white/5 rounded-lg p-2 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary-600 to-primary-400 p-[2px] shadow-[0_0_15px_rgba(225,6,0,0.4)]">
                       <img
                         src={user?.profilePicture || DEFAULT_PROFILE_PICTURE}
                         alt={user?.username || 'User'}
                         onError={(e) => {
                           e.currentTarget.src = DEFAULT_PROFILE_PICTURE;
                         }}
-                        className="w-full h-full object-cover clip-path-slant-left bg-dark-900"
+                        className="w-full h-full object-cover rounded-full bg-dark-900 border-[1.5px] border-dark-900"
                       />
                     </div>
                     <div>
-                      <div className="font-heading text-sm uppercase tracking-wider text-white">{user?.username}</div>
+                      <div className="font-heading text-sm uppercase tracking-wider text-white hover:text-primary-500">{user?.username}</div>
                       <div className="text-xs text-primary-500 font-mono">ID: {user?.id?.substring(0, 8) || 'Unknown'}</div>
                     </div>
-                  </div>
+                  </Link>
 
                   <Link to="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center py-2 text-gray-300 hover:text-primary-500" style={{ transition: 'color 200ms ease-out' }}>
                     <Flag className="w-4 h-4 mr-3" /> Home

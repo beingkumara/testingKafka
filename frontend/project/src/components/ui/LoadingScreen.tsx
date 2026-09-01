@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
+import { createPortal } from 'react-dom';
 
 /**
  * F1 "Lights Out" Loading Screen
@@ -16,8 +17,8 @@ const LoadingScreen: React.FC = () => {
 
   // If reduced motion, just show a simple text loader
   if (reduce) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-dark-800 z-50">
+    return createPortal(
+      <div className="fixed inset-0 flex items-center justify-center bg-dark-800 z-[9999]">
         <div className="text-center">
           <div className="text-3xl font-heading font-bold text-white mb-4 tracking-widest">
             FAN<span className="text-primary-500">F1</span>X
@@ -26,12 +27,13 @@ const LoadingScreen: React.FC = () => {
             Loading...
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
-  return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#050505] z-50">
+  return createPortal(
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#050505] z-[9999]">
       {/* Background grid pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
 
@@ -97,7 +99,8 @@ const LoadingScreen: React.FC = () => {
       >
         Preparing the grid...
       </motion.p>
-    </div>
+    </div>,
+    document.body
   );
 };
 

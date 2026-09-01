@@ -1,6 +1,7 @@
 export default async function handler(req, res) {
-  const { path } = req.query;
-  const targetPath = Array.isArray(path) ? path.join('/') : path;
+  // e.g. req.url might be /api/duffel/air/offer_requests?return_offers=true
+  // We want to extract 'air/offer_requests?return_offers=true'
+  const pathWithQuery = req.url.replace(/^\/api\/duffel\/?/, '');
   const DUFFEL_API_KEY = process.env.DUFFEL_API_KEY;
 
   if (!DUFFEL_API_KEY) {
@@ -8,15 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Reconstruct the full URL with query parameters
-    const urlObj = new URL(`https://api.duffel.com/${targetPath}`);
-    
-    // Copy over query string parameters (except the 'path' injected by Vercel)
-    for (const [key, value] of Object.entries(req.query)) {
-      if (key !== 'path') {
-        urlObj.searchParams.append(key, value);
-      }
-    }
+    const urlObj = new URL(`https://api.duffel.com/${pathWithQuery}`);
 
     const options = {
       method: req.method,

@@ -21,21 +21,12 @@ export interface RealTimeTripEstimates {
 // Duffel API - Requires API Key
 // https://duffel.com/docs/api
 // -------------------------------------------------------------
-const DUFFEL_API_KEY = import.meta.env.VITE_DUFFEL_API_KEY || ''; 
-
 export const fetchDuffelFlightPrice = async (originIata: string, destinationIata: string): Promise<{ price: number; source?: FlightSource }> => {
-  if (!DUFFEL_API_KEY) {
-    console.warn('No Duffel API key provided. Falling back to heuristic.');
-    return { price: 400 }; // Fallback
-  }
-
   try {
     const url = `/api/duffel/air/offer_requests?return_offers=true`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${DUFFEL_API_KEY}`,
-        'Duffel-Version': 'v2',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -66,17 +57,17 @@ export const fetchDuffelFlightPrice = async (originIata: string, destinationIata
       if (currency === 'GBP') price *= 1.25;
       else if (currency === 'EUR') price *= 1.10;
       
+      const owner = bestOffer.owner || {};
+      const airlineName = owner.name || 'Unknown Airline';
+      const airlineLogo = owner.logo_symbol_url || '';
+      
       // Sandbox dummy flights are artificially cheap (often £30). Let's pad it for realism in the demo
-      if (owner.name === 'Duffel Airways' && price < 150) {
+      if (airlineName === 'Duffel Airways' && price < 150) {
         price += 350; // realistic baseline padding
       }
       
       console.log('[Duffel API] Using live flight price (USD normalized):', price);
 
-      const owner = bestOffer.owner || {};
-      const airlineName = owner.name || 'Unknown Airline';
-      const airlineLogo = owner.logo_symbol_url || '';
-      
       const verifyUrl = owner.conditions_of_carriage_url && !owner.conditions_of_carriage_url.includes('dummy') ? owner.conditions_of_carriage_url : `https://www.google.com/search?q=${encodeURIComponent(airlineName + ' Official Website')}`;
 
       return { 
@@ -101,8 +92,13 @@ export const fetchDuffelFlightPrice = async (originIata: string, destinationIata
 // -------------------------------------------------------------
 
 export const searchOriginPlaces = async (query: string) => {
-  if (!DUFFEL_API_KEY) {
-    console.warn('No Duffel API key provided. Using fallback airports.');
+  try {
+    const res = await fetch(`/api/duffel/places/suggestions?query=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error('API failed or API key not set');
+    const json = await res.json();
+    return json.data || [];
+  } catch (error) {
+    console.warn('No Duffel API key provided on server or fetch failed. Using fallback airports.');
     const q = query.toLowerCase();
     const fallbackAirports = [
       { id: '1', name: 'Dubai International Airport', iata_code: 'DXB', type: 'airport' },
@@ -119,19 +115,6 @@ export const searchOriginPlaces = async (query: string) => {
       { id: '12', name: 'Amsterdam Airport Schiphol', iata_code: 'AMS', type: 'airport' }
     ];
     return fallbackAirports.filter(a => a.name.toLowerCase().includes(q) || a.iata_code.toLowerCase().includes(q));
-  }
-  try {
-    const res = await fetch(`/api/duffel/places/suggestions?query=${encodeURIComponent(query)}`, {
-      headers: {
-        'Authorization': `Bearer ${DUFFEL_API_KEY}`,
-        'Duffel-Version': 'v2'
-      }
-    });
-    const json = await res.json();
-    return json.data || [];
-  } catch (error) {
-    console.error('Places API error:', error);
-    return [];
   }
 };
 

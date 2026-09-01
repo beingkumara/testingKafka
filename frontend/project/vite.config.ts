@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const liveDataScraperPlugin = () => ({
@@ -34,15 +34,31 @@ const liveDataScraperPlugin = () => ({
 });
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react(), liveDataScraperPlugin()],
-  server: {
-    proxy: {
-      '/api/currency': { target: 'https://api.frankfurter.dev', changeOrigin: true, rewrite: (path) => path.replace(/^\/api\/currency/, '/v2/rates') },
-      '/api/duffel': { target: 'https://api.duffel.com', changeOrigin: true, rewrite: (path) => path.replace(/^\/api\/duffel/, '') }
-    }
-  },
-  optimizeDeps: {
-    exclude: ['lucide-react'],
-  },
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  return {
+    plugins: [react(), liveDataScraperPlugin()],
+    server: {
+      proxy: {
+        '/api/currency': { target: 'https://api.frankfurter.dev', changeOrigin: true, rewrite: (path) => path.replace(/^\/api\/currency/, '/v2/rates') },
+        '/api/duffel': { 
+          target: 'https://api.duffel.com', 
+          changeOrigin: true, 
+          rewrite: (path) => path.replace(/^\/api\/duffel/, ''),
+          configure: (proxy, options) => {
+            proxy.on('proxyReq', (proxyReq, req, res) => {
+              const apiKey = env.DUFFEL_API_KEY || env.VITE_DUFFEL_API_KEY;
+              if (apiKey) {
+                proxyReq.setHeader('Authorization', `Bearer ${apiKey}`);
+                proxyReq.setHeader('Duffel-Version', 'v2');
+              }
+            });
+          }
+        }
+      }
+    },
+    optimizeDeps: {
+      exclude: ['lucide-react'],
+    },
+  };
 });

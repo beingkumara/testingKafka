@@ -29,6 +29,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import org.springframework.beans.factory.annotation.Value;
+
 @Service
 public class AuthenticationServiceImpl {
     private final UserRepository userRepository;
@@ -43,6 +49,9 @@ public class AuthenticationServiceImpl {
     @Autowired
     private JavaMailSender mailSender;
 
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String googleClientId;
+
     public AuthenticationServiceImpl(UserRepository userRepository,
             JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder, PasswordResetTokenRepository tokenRepo,
             AuthenticationUtil authenticationUtil, SecureOTPGenerator otpGenerator) {
@@ -52,6 +61,46 @@ public class AuthenticationServiceImpl {
         this.tokenRepo = tokenRepo;
         this.authenticationUtil = authenticationUtil;
         this.otpGenerator = otpGenerator;
+    }
+
+    public ResponseEntity<?> googleLogin(String credential) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
+            
+            GoogleIdToken idToken = verifier.verify(credential);
+            if (idToken == null) {
+                return ResponseEntity.badRequest().body("Invalid ID token.");
+            }
+            
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+            
+            User userByEmail = userRepository.findByEmail(email);
+            if (userByEmail == null) {
+                // User doesn't exist, register them
+                User newUser = new User(name, passwordEncoder.encode(UUID.randomUUID().toString()), email);
+                newUser.setAuthProvider("GOOGLE");
+                userRepository.save(newUser);
+                userByEmail = newUser;
+            }
+            
+            UserDetails userDetails = new org.springframework.security.core.userdetails.User(
+                    userByEmail.getEmail(),
+                    userByEmail.getPassword(),
+                    Collections.emptyList());
+                    
+            String token = jwtTokenProvider.generateToken(userDetails);
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("message", "Login Success");
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Google sign-in failed: " + e.getMessage());
+        }
     }
 
     public ResponseEntity<?> login(User user) {

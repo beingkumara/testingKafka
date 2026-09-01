@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { loginUser, registerUser } from '../services';
+import { loginUser, registerUser, googleLoginUser } from '../services';
 import { fetchUserProfile, updateUserProfile, getCurrentUser } from '../services/auth/profileService';
 import { User, AuthContextType, ProfileUpdateRequest } from '../types/auth.types';
 import { STORAGE_KEYS } from '../config/constants';
@@ -42,6 +42,22 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       setUser(data.user);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to login');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const googleLogin = async (credential: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = await googleLoginUser(credential);
+      setToken(data.token);
+      setUser(data.user);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to login with Google');
       throw err;
     } finally {
       setIsLoading(false);
@@ -100,6 +116,7 @@ const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
         isAuthenticated: !!user,
         isLoading,
         login,
+        googleLogin,
         signup,
         logout,
         updateProfile,

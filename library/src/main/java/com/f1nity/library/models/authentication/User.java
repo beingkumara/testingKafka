@@ -25,6 +25,7 @@ public class User implements UserDetails {
     private String favoriteTeam;
     private String profilePicture;
     private String coverPhoto;
+    private String authProvider;
 
     public User() {
     }
@@ -122,6 +123,14 @@ public class User implements UserDetails {
 
     public void setCoverPhoto(String coverPhoto) {
         this.coverPhoto = coverPhoto;
+    }
+
+    public String getAuthProvider() {
+        return authProvider;
+    }
+
+    public void setAuthProvider(String authProvider) {
+        this.authProvider = authProvider;
     }
 
     @Override

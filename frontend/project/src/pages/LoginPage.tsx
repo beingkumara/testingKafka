@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Activity, Zap, BarChart2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
 
 // Dynamic Telemetry Component for the right side of the screen
 const TelemetryDisplay = () => {
@@ -128,7 +129,7 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const passwordInputRef = React.useRef<HTMLInputElement>(null);
 
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -319,6 +320,45 @@ const LoginPage: React.FC = () => {
                     <span className="relative z-10">Initialize Sequence</span>
                   )}
                 </motion.button>
+
+                {/* Google Sign in */}
+                <div className="mt-6 flex flex-col items-center justify-center">
+                  <div className="flex items-center w-full mb-6">
+                    <div className="flex-1 border-t border-white/10"></div>
+                    <span className="px-3 text-[10px] font-mono text-gray-500 tracking-widest uppercase">Or</span>
+                    <div className="flex-1 border-t border-white/10"></div>
+                  </div>
+                  
+                  <div className="w-full flex justify-center">
+                    <GoogleLogin
+                      onSuccess={async (credentialResponse) => {
+                        try {
+                          setIsSubmitting(true);
+                          setFormError('');
+                          if (credentialResponse.credential) {
+                            await googleLogin(credentialResponse.credential);
+                            navigate('/dashboard');
+                          }
+                        } catch (error) {
+                          if (error instanceof Error) {
+                            setFormError(error.message);
+                          } else {
+                            setFormError('Failed to log in with Google. Please try again.');
+                          }
+                        } finally {
+                          setIsSubmitting(false);
+                        }
+                      }}
+                      onError={() => {
+                        console.log('Login Failed');
+                        setFormError('Google Sign-In failed.');
+                      }}
+                      useOneTap
+                      theme="filled_black"
+                      shape="pill"
+                    />
+                  </div>
+                </div>
 
                 {/* Sign up link */}
                 <div className="text-center mt-8 pt-6 border-t border-white/5">

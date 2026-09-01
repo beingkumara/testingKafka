@@ -25,8 +25,8 @@ spring:
       client:
         registration:
           google:
-            client-id: 1012662831288-saksn9f9o1rm7itl3uuvamo0spt90oc0.apps.googleusercontent.com
-            client-secret: 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
+            client-id: ${GOOGLE_CLIENT_ID:your-client-id.apps.googleusercontent.com}
+            client-secret: ${GOOGLE_CLIENT_SECRET:your-client-secret}
             scope: email, profile
             redirect-uri: http://localhost:8085/api/f1nity/v1/auth/login/oauth2/code/google
 

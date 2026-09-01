@@ -63,6 +63,30 @@ export const loginUser = async (email: string, password: string): Promise<AuthRe
 };
 
 /**
+ * Google Login user
+ */
+export const googleLoginUser = async (credential: string): Promise<AuthResponse> => {
+  try {
+    const response = await fetch(`${AUTH_API_URL}/google-login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ credential }),
+    });
+
+    const loginApiData: LoginApiResponse = await handleApiResponse(response);
+    const { token } = loginApiData;
+    
+    // After successful login and getting the token, fetch the user profile
+    return getUserProfile(token);
+  } catch (error) {
+    console.error('Google Login error:', error);
+    throw error;
+  }
+};
+
+/**
  * Register user
  */
 export const registerUser = async (

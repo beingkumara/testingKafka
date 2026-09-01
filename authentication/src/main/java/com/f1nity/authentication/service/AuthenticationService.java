@@ -24,6 +24,10 @@ public class AuthenticationService {
         return authenticationServiceImpl.register(authRequest);
     }
 
+    public ResponseEntity<?> googleLogin(String credential) {
+        return authenticationServiceImpl.googleLogin(credential);
+    }
+
     public ResponseEntity<?> forgotPassword(String username){
         return authenticationServiceImpl.forgotPassword(username);
     }

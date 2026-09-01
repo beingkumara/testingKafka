@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Activity, Trophy, Database, ShieldCheck, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
 
 // Feature Showcase Component for the right side of the screen
 const FeatureShowcase = () => {
@@ -96,7 +97,7 @@ const SignupPage: React.FC = () => {
   const passwordInputRef = React.useRef<HTMLInputElement>(null);
   const confirmPasswordInputRef = React.useRef<HTMLInputElement>(null);
 
-  const { signup } = useAuth();
+  const { signup, googleLogin } = useAuth();
   const navigate = useNavigate();
 
   // Check if password meets requirements
@@ -428,6 +429,45 @@ const SignupPage: React.FC = () => {
                     <span className="relative z-10">Request Access</span>
                   )}
                 </motion.button>
+
+                {/* Google Sign in */}
+                <div className="mt-6 flex flex-col items-center justify-center">
+                  <div className="flex items-center w-full mb-6">
+                    <div className="flex-1 border-t border-white/10"></div>
+                    <span className="px-3 text-[10px] font-mono text-gray-500 tracking-widest uppercase">Or</span>
+                    <div className="flex-1 border-t border-white/10"></div>
+                  </div>
+                  
+                  <div className="w-full flex justify-center">
+                    <GoogleLogin
+                      onSuccess={async (credentialResponse) => {
+                        try {
+                          setIsSubmitting(true);
+                          setFormError('');
+                          if (credentialResponse.credential) {
+                            await googleLogin(credentialResponse.credential);
+                            navigate('/dashboard');
+                          }
+                        } catch (error) {
+                          if (error instanceof Error) {
+                            setFormError(error.message);
+                          } else {
+                            setFormError('Failed to sign up with Google. Please try again.');
+                          }
+                        } finally {
+                          setIsSubmitting(false);
+                        }
+                      }}
+                      onError={() => {
+                        console.log('Login Failed');
+                        setFormError('Google Sign-In failed.');
+                      }}
+                      useOneTap
+                      theme="filled_black"
+                      shape="pill"
+                    />
+                  </div>
+                </div>
 
                 {/* Login link */}
                 <div className="text-center mt-8 pt-6 border-t border-white/5">

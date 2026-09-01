@@ -37,6 +37,7 @@ public class SecurityConfig {
                             // Public endpoints - no authentication required
                             .requestMatchers("/api/fanf1x/v1/auth/health").permitAll()
                             .requestMatchers("/api/fanf1x/v1/auth/login").permitAll()
+                            .requestMatchers("/api/fanf1x/v1/auth/google-login").permitAll()
                             .requestMatchers("/api/fanf1x/v1/auth/register").permitAll()
                             .requestMatchers("/api/fanf1x/v1/auth/forgot-password").permitAll()
                             .requestMatchers("/api/fanf1x/v1/auth/reset-password").permitAll()

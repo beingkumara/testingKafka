@@ -33,6 +33,11 @@ public class AuthenticationController {
         return authenticationService.login(user);
     }
 
+    @PostMapping("/google-login")
+    public ResponseEntity<?> googleLogin(@RequestBody com.f1nity.library.models.authentication.GoogleLoginRequest request) {
+        return authenticationService.googleLogin(request.getCredential());
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody AuthRequest request) {
         return authenticationService.register(request);

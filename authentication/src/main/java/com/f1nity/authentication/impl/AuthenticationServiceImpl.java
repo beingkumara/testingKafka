@@ -76,12 +76,19 @@ public class AuthenticationServiceImpl {
             
             GoogleIdToken.Payload payload = idToken.getPayload();
             String email = payload.getEmail();
-            String name = (String) payload.get("name");
             
             User userByEmail = userRepository.findByEmail(email);
             if (userByEmail == null) {
+                // Derive a clean, unique username from the email prefix (not the Google display name,
+                // which can contain spaces and is not guaranteed to be unique).
+                String baseUsername = email.split("@")[0].replaceAll("[^a-zA-Z0-9_]", "");
+                String username = baseUsername;
+                int counter = 1;
+                while (userRepository.findByUsername(username) != null) {
+                    username = baseUsername + counter++;
+                }
                 // User doesn't exist, register them
-                User newUser = new User(name, passwordEncoder.encode(UUID.randomUUID().toString()), email);
+                User newUser = new User(username, passwordEncoder.encode(UUID.randomUUID().toString()), email);
                 newUser.setAuthProvider("GOOGLE");
                 userRepository.save(newUser);
                 userByEmail = newUser;

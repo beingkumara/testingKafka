@@ -3,8 +3,10 @@ import { useLocation } from 'react-router-dom';
 import { Search, Loader2, UserPlus, UserMinus } from 'lucide-react';
 import { searchUsers, followUser, unfollowUser, UserSearchResult } from '../../services/auth/profileService';
 import { DEFAULT_PROFILE_PICTURE } from '../../utils/imageUtils';
+import { useAuth } from '../../context/AuthContext';
 
 const UserSearch: React.FC = () => {
+  const { user: currentUser } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<UserSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -60,12 +62,18 @@ const UserSearch: React.FC = () => {
       } else {
         await followUser(username);
       }
+      const newIsFollowing = !isFollowing;
       // Update local state
-      setResults(prev => prev.map(u => 
-        u.username === username ? { ...u, isFollowing: !isFollowing } : u
+      setResults(prev => prev.map(u =>
+        u.username === username ? { ...u, isFollowing: newIsFollowing } : u
       ));
+      // Notify ProfilePage (and any other listener) so counts update in real time
+      window.dispatchEvent(new CustomEvent('followStatusChanged', {
+        detail: { username, isFollowing: newIsFollowing }
+      }));
     } catch (error) {
       console.error('Error toggling follow status:', error);
+
     }
   };
 
@@ -108,17 +116,19 @@ const UserSearch: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => handleFollowToggle(user.username, user.isFollowing)}
-                  className={`ml-2 p-1.5 rounded transition-colors ${
-                    user.isFollowing 
-                      ? 'bg-white/10 text-gray-300 hover:bg-red-500/20 hover:text-red-400'
-                      : 'bg-primary-600/20 text-primary-500 hover:bg-primary-600 hover:text-white'
-                  }`}
-                  title={user.isFollowing ? "Unfollow" : "Follow"}
-                >
-                  {user.isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                </button>
+                {currentUser?.username !== user.username && (
+                  <button
+                    onClick={() => handleFollowToggle(user.username, user.isFollowing)}
+                    className={`ml-2 p-1.5 rounded transition-colors ${
+                      user.isFollowing 
+                        ? 'bg-white/10 text-gray-300 hover:bg-red-500/20 hover:text-red-400'
+                        : 'bg-primary-600/20 text-primary-500 hover:bg-primary-600 hover:text-white'
+                    }`}
+                    title={user.isFollowing ? "Unfollow" : "Follow"}
+                  >
+                    {user.isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                  </button>
+                )}
               </li>
             ))}
           </ul>

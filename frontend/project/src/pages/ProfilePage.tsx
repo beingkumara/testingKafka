@@ -53,7 +53,7 @@ const ProfilePage: React.FC = () => {
   }, [token, user?.email, routeUsername]);
 
   const displayUsername = routeUsername || user?.username;
-  const isCurrentUser = !routeUsername || routeUsername === user?.username;
+  const isCurrentUser = !routeUsername || routeUsername.trim().toLowerCase() === user?.username?.trim().toLowerCase();
 
   useEffect(() => {
     if (displayUsername) {

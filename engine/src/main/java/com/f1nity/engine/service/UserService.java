@@ -1,25 +1,24 @@
 package com.f1nity.engine.service;
 
 import com.f1nity.library.models.authentication.User;
-import com.f1nity.library.repository.authentication.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
     private final MongoTemplate authMongoTemplate;
 
     @Autowired
-    public UserService(UserRepository userRepository, @Qualifier("authMongoTemplate") MongoTemplate authMongoTemplate) {
-        this.userRepository = userRepository;
+    public UserService(@Qualifier("authMongoTemplate") MongoTemplate authMongoTemplate) {
         this.authMongoTemplate = authMongoTemplate;
     }
 
@@ -45,7 +44,16 @@ public class UserService {
         if (query == null || query.trim().isEmpty()) {
             return List.of();
         }
-        return userRepository.searchUsers(query).stream()
+        // Use authMongoTemplate directly since UserRepository is bound to the primary (engine) DB,
+        // not the authentication DB where users are actually stored.
+        Pattern regex = Pattern.compile(Pattern.quote(query.trim()), Pattern.CASE_INSENSITIVE);
+        Criteria criteria = new Criteria().orOperator(
+                Criteria.where("username").regex(regex),
+                Criteria.where("email").regex(regex),
+                Criteria.where("favoriteDriver").regex(regex),
+                Criteria.where("favoriteTeam").regex(regex)
+        );
+        return authMongoTemplate.find(new Query(criteria), User.class, "user").stream()
                 .map(user -> {
                     // Create a safe copy of the user for public consumption
                     User safeUser = new User();

@@ -208,7 +208,7 @@ export const getRaces = async (): Promise<Race[]> => {
         latitude: parseFloat(race.Circuit.Location.lat),
         longitude: parseFloat(race.Circuit.Location.long),
       };
-    });
+    }).sort((a, b) => a.round - b.round);
   } catch (error) {
     console.error('Error fetching races:', error);
     return [];

@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/users")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class UserController {
 
     private final FollowService followService;
@@ -45,6 +44,9 @@ public class UserController {
         String currentUsername = getCurrentUsername();
         if (currentUsername == null || currentUsername.equals("anonymousUser")) {
             return ResponseEntity.status(401).body("Unauthorized");
+        }
+        if (currentUsername.equalsIgnoreCase(username)) {
+            return ResponseEntity.badRequest().body("You cannot follow yourself.");
         }
         try {
             followService.followUser(currentUsername, username);

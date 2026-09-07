@@ -22,37 +22,37 @@ public class FollowService {
         if (followerUsername.equals(followingUsername)) {
             throw new IllegalArgumentException("Users cannot follow themselves");
         }
-        if (!followRepository.existsByFollowerUsernameAndFollowingUsername(followerUsername, followingUsername)) {
+        if (!followRepository.existsByFollowerUsernameIgnoreCaseAndFollowingUsernameIgnoreCase(followerUsername, followingUsername)) {
             Follow follow = new Follow(followerUsername, followingUsername);
             followRepository.save(follow);
         }
     }
 
     public void unfollowUser(String followerUsername, String followingUsername) {
-        followRepository.deleteByFollowerUsernameAndFollowingUsername(followerUsername, followingUsername);
+        followRepository.deleteByFollowerUsernameIgnoreCaseAndFollowingUsernameIgnoreCase(followerUsername, followingUsername);
     }
 
     public List<String> getFollowers(String username) {
-        return followRepository.findByFollowingUsername(username).stream()
+        return followRepository.findByFollowingUsernameIgnoreCase(username).stream()
                 .map(Follow::getFollowerUsername)
                 .collect(Collectors.toList());
     }
 
     public List<String> getFollowing(String username) {
-        return followRepository.findByFollowerUsername(username).stream()
+        return followRepository.findByFollowerUsernameIgnoreCase(username).stream()
                 .map(Follow::getFollowingUsername)
                 .collect(Collectors.toList());
     }
 
     public boolean isFollowing(String followerUsername, String followingUsername) {
-        return followRepository.existsByFollowerUsernameAndFollowingUsername(followerUsername, followingUsername);
+        return followRepository.existsByFollowerUsernameIgnoreCaseAndFollowingUsernameIgnoreCase(followerUsername, followingUsername);
     }
 
     public long getFollowerCount(String username) {
-        return followRepository.countByFollowingUsername(username);
+        return followRepository.countByFollowingUsernameIgnoreCase(username);
     }
 
     public long getFollowingCount(String username) {
-        return followRepository.countByFollowerUsername(username);
+        return followRepository.countByFollowerUsernameIgnoreCase(username);
     }
 }

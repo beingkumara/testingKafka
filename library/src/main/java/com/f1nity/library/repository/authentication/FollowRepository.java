@@ -9,11 +9,11 @@ import java.util.Optional;
 
 @Repository
 public interface FollowRepository extends MongoRepository<Follow, String> {
-    List<Follow> findByFollowerUsername(String followerUsername);
-    List<Follow> findByFollowingUsername(String followingUsername);
-    Optional<Follow> findByFollowerUsernameAndFollowingUsername(String followerUsername, String followingUsername);
-    boolean existsByFollowerUsernameAndFollowingUsername(String followerUsername, String followingUsername);
-    void deleteByFollowerUsernameAndFollowingUsername(String followerUsername, String followingUsername);
-    long countByFollowerUsername(String followerUsername);
-    long countByFollowingUsername(String followingUsername);
+    List<Follow> findByFollowerUsernameIgnoreCase(String followerUsername);
+    List<Follow> findByFollowingUsernameIgnoreCase(String followingUsername);
+    Optional<Follow> findByFollowerUsernameIgnoreCaseAndFollowingUsernameIgnoreCase(String followerUsername, String followingUsername);
+    boolean existsByFollowerUsernameIgnoreCaseAndFollowingUsernameIgnoreCase(String followerUsername, String followingUsername);
+    void deleteByFollowerUsernameIgnoreCaseAndFollowingUsernameIgnoreCase(String followerUsername, String followingUsername);
+    long countByFollowerUsernameIgnoreCase(String followerUsername);
+    long countByFollowingUsernameIgnoreCase(String followingUsername);
 }
